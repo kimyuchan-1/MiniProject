@@ -1,0 +1,57 @@
+signals
+sido					시도
+sigungu				시군구
+road_type				도로 종류(01:고속국도, 02:일반국도, 03:특별시도, 04:지방도, 05:시도, 06:군도, 07:구도, 99:기타)
+road_direction			도로 방향(01:상행, 02:하행, 03:양방향)
+address				주소
+signal_lat				위도
+signal_lon				경도
+road_shape				도로 형태(01:단일로, 02:교차로, 99:기타)
+main_road				주도로 여부
+signal_id				신호등 관리번호
+signal_type				신호등 종류(01:차량등, 02:보행등, 03:버스신호등, 04:자전거신호등, 05:차량보조등, 06:경보등, 07:가변등, 99:기타등)
+button				보행자작동신호기유무
+remain_time			잔여시간표시기유무
+sound_signal			시각장애인용음향신호기유무
+org_code				행정기관코드
+
+crosswalks
+sido					시도
+sigungu				시군구
+doro					도로명
+address				주소
+crosswalk_id			횡단번호 관리번호
+crosswalk_type			횡단보도 종류( 01:일반형, 02:대각선, 03:스테거드, 04:도류화,99:기타)
+highland				고원식 적용 여부
+crosswalk_lat			위도
+crosswalk_lon			경도
+roadnum				차로수
+crosswalk_width			횡단보도 폭
+crosswalk_length			횡단보도 길이
+signal				보행자신호등유무
+button				보행자작동신호기유무
+sound_signal			음향신호기설치유무
+bump				보도턱낮춤여부
+braille_block			점자블록유무
+spotlight				집중조명시설유무
+org_code				관리기관 코드
+
+- 횡단보도종류 :
+* ) 일반형 : 단일로에 설치된 횡단보도
+2) 대각선 : 노면에 대각선 방향으로 가로질러 설치하는 횡단보도
+3) 스테거드 : 보행자가 도로를 두 번 나누어 횡단하게 하는 횡단보도
+4) 도류화 : 교차로 내 교통섬이 포함된 횡단보도
+5) 기타 : 기타 횡단보도 종류
+
+crosswalk_signal			
+signal_id				신호등 번호
+crosswalk_id			횡단보도 번호
+signal_lat				신호등 위도
+signal_lon				신호등 경도
+crosswalk_lat			횡단보도 위도
+crosswalk_lon			횡단보도 경도
+match_method			신호등, 횡단보도 연결 방법
+distance_m				신호등-횡단보도 거리
+confidence				가중치
+sido					시도
+sigungu				시군구
