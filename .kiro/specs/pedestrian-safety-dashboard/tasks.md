@@ -124,6 +124,10 @@
     - **검증: 요구사항 4.3**
 
 - [ ] 7. Next.js 프론트엔드 프로젝트 설정
+
+
+
+
   - Next.js 14 프로젝트 생성 및 TypeScript 설정
   - Tailwind CSS, Leaflet, Chart.js 의존성 설치
   - 기본 프로젝트 구조 및 라우팅 설정
