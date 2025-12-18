@@ -55,3 +55,26 @@ distance_m				신호등-횡단보도 거리
 confidence				가중치
 sido					시도
 sigungu				시군구
+
+district
+district_code			지역 구분 코드
+district_name			지역명
+available				유효여부
+
+passenger_accident
+accident_id			사고 번호
+year				사고 년도
+district_code			지역 구분 코드
+detail				상세 지역
+accident_count			사고건수
+casualty_count			사상자수
+fatality_count			사망자수
+serious_injury_count		중상자수
+minor_injury_count			경상자수
+reported_injury_count		부상신고자수
+accident_lon			사고 경도
+accident_lat			사고 위도
+hotspot_polygon			다발지역 폴리곤
+
+
+
