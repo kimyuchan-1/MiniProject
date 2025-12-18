@@ -2,7 +2,7 @@
 
 ## 개요
 
-횡단보도 신호등 설치 현황과 보행 안전 리스크 분석 대시보드는 Spring Boot 백엔드와 React 프론트엔드로 구성된 웹 애플리케이션입니다. MySQL 데이터베이스에 저장된 횡단보도, 신호등, 사고다발지역 데이터를 분석하여 개선 우선순위를 제공합니다.
+횡단보도 신호등 설치 현황과 보행 안전 리스크 분석 대시보드는 Spring Boot 백엔드와 Next.js 프론트엔드로 구성된 웹 애플리케이션입니다. 전국→시도→구 단계별 확대가 가능한 인터랙티브 지도와 히트맵을 통해 사고 다발지역을 시각화하고, 신호등 유무에 따른 사고 효과를 분석합니다. 시민 참여형 건의 게시판을 통해 신호등 설치 요청을 수집하고 관리합니다.
 
 ## 아키텍처
 
@@ -13,9 +13,11 @@
 │   Next.js Web  │    │  Spring Boot    │    │   MySQL DB      │
 │   Frontend     │◄──►│   Backend       │◄──►│                 │
 │                │    │                 │    │                 │
-│ - Dashboard    │    │ - REST APIs     │    │ - crosswalks    │
-│ - Map View     │    │ - Data Service  │    │ - signals       │
-│ - Analytics    │    │ - Score Engine  │    │ - accidents     │
+│ - Interactive  │    │ - REST APIs     │    │ - crosswalks    │
+│   Map (3-Level)│    │ - Signal Effect │    │ - signals       │
+│ - Heatmap      │    │   Analysis      │    │ - accidents     │
+│ - Suggestion   │    │ - Suggestion    │    │ - suggestions   │
+│   Board        │    │   Management    │    │ - users         │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
@@ -26,6 +28,9 @@
 - Spring Data JPA
 - MySQL Connector
 - Spring Web (REST API)
+- Spring Security
+- Spring OAuth2 Client
+- Lombok
 - Jackson (JSON 처리)
 
 **프론트엔드 (Next.js)**
@@ -47,43 +52,400 @@
 #### 1. 데이터 모델 (Entity)
 ```java
 @Entity
+@Table(name = "crosswalks")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Crosswalk {
     @Id
-    private String crosswalkId;
-    private String city;
-    private String district;
-    private Double latitude;
-    private Double longitude;
-    private Boolean hasPedestrianSignal;
-    private Boolean hasAudioSignal;
-    private Boolean hasRemainingTimeDisplay;
-    // ... 기타 필드
-}
-
-@Entity 
-public class TrafficSignal {
-    @Id
-    private String signalId;
-    private String city;
-    private String district;
-    private Double latitude;
-    private Double longitude;
-    private Boolean hasRemainingTimeDisplay;
-    private Boolean hasAudioSignal;
-    private Boolean hasPedestrianButton;
-    // ... 기타 필드
+    @Column(name = "cw_uid")
+    private String cwUid;
+    
+    private String sido;
+    private String sigungu;
+    private String address;
+    
+    @Column(name = "crosswalk_type")
+    private Integer crosswalkType;
+    
+    private Integer highland;
+    
+    @Column(name = "crosswalk_lat", precision = 10, scale = 8)
+    private BigDecimal crosswalkLat;
+    
+    @Column(name = "crosswalk_lon", precision = 11, scale = 8)
+    private BigDecimal crosswalkLon;
+    
+    private Integer roadnum;
+    
+    @Column(name = "crosswalk_width", precision = 5, scale = 2)
+    private BigDecimal crosswalkWidth;
+    
+    @Column(name = "crosswalk_length", precision = 5, scale = 2)
+    private BigDecimal crosswalkLength;
+    
+    private Integer signal;           // 보행자신호등유무
+    private Integer button;           // 보행자작동신호기유무
+    
+    @Column(name = "sound_signal")
+    private Integer soundSignal;      // 음향신호기설치유무
+    
+    private Integer bump;             // 보도턱낮춤여부
+    
+    @Column(name = "braille_block")
+    private Integer brailleBlock;     // 점자블록유무
+    
+    private Integer spotlight;        // 집중조명시설유무
+    
+    @Column(name = "org_code")
+    private Integer orgCode;
+    
+    @CreationTimestamp
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+    
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 }
 
 @Entity
+@Table(name = "traffic_signals")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class TrafficSignal {
+    @Id
+    @Column(name = "sg_uid")
+    private String sgUid;
+    
+    private String sido;
+    private String sigungu;
+    
+    @Column(name = "road_type")
+    private Integer roadType;
+    
+    @Column(name = "road_direction")
+    private Integer roadDirection;
+    
+    private String address;
+    
+    @Column(name = "signal_lat", precision = 10, scale = 8)
+    private BigDecimal signalLat;
+    
+    @Column(name = "signal_lon", precision = 11, scale = 8)
+    private BigDecimal signalLon;
+    
+    @Column(name = "road_shape")
+    private Integer roadShape;
+    
+    @Column(name = "main_road")
+    private Integer mainRoad;
+    
+    @Column(name = "signal_type")
+    private Integer signalType;
+    
+    private Integer button;           // 보행자작동신호기유무
+    
+    @Column(name = "remain_time")
+    private Integer remainTime;       // 잔여시간표시기유무
+    
+    @Column(name = "sound_signal")
+    private Integer soundSignal;      // 시각장애인용음향신호기유무
+    
+    @Column(name = "org_code")
+    private Integer orgCode;
+    
+    @CreationTimestamp
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+    
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+}
+
+@Entity
+@Table(name = "accident_hotspots")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class AccidentHotspot {
     @Id
-    private Long id;
-    private String region;
-    private Double latitude;
-    private Double longitude;
-    private Integer accidentCount;
+    @Column(name = "accident_id")
+    private Long accidentId;
+    
     private Integer year;
-    // ... 기타 필드
+    
+    @Column(name = "district_code")
+    private Long districtCode;
+    
+    private String detail;
+    
+    @Column(name = "accident_count")
+    private Integer accidentCount;
+    
+    @Column(name = "casualty_count")
+    private Integer casualtyCount;
+    
+    @Column(name = "fatality_count")
+    private Integer fatalityCount;
+    
+    @Column(name = "serious_injury_count")
+    private Integer seriousInjuryCount;
+    
+    @Column(name = "minor_injury_count")
+    private Integer minorInjuryCount;
+    
+    @Column(name = "reported_injury_count")
+    private Integer reportedInjuryCount;
+    
+    @Column(name = "accident_lon", precision = 11, scale = 8)
+    private BigDecimal accidentLon;
+    
+    @Column(name = "accident_lat", precision = 10, scale = 8)
+    private BigDecimal accidentLat;
+    
+    @Column(name = "hotspot_polygon", columnDefinition = "JSON")
+    private String hotspotPolygon;
+    
+    @CreationTimestamp
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+}
+
+@Entity
+@Table(name = "crosswalk_signal_mapping")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class CrosswalkSignalMapping {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    @Column(name = "cw_uid")
+    private String cwUid;
+    
+    @Column(name = "sg_uid")
+    private String sgUid;
+    
+    @Column(name = "distance_m", precision = 8, scale = 3)
+    private BigDecimal distanceM;
+    
+    @Column(precision = 6, scale = 6)
+    private BigDecimal confidence;
+    
+    private String sido;
+    private String sigungu;
+    
+    @CreationTimestamp
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+}
+
+@Entity
+@Table(name = "districts")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class District {
+    @Id
+    @Column(name = "district_code")
+    private Long districtCode;
+    
+    @Column(name = "district_name")
+    private String districtName;
+    
+    private Integer available;
+    
+    @CreationTimestamp
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+}
+
+@Entity
+@Table(name = "suggestions")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Suggestion {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    @Column(name = "user_id")
+    private Long userId;
+    
+    private String title;
+    
+    @Column(columnDefinition = "TEXT")
+    private String content;
+    
+    @Column(name = "location_lat", precision = 10, scale = 8)
+    private BigDecimal locationLat;
+    
+    @Column(name = "location_lon", precision = 11, scale = 8)
+    private BigDecimal locationLon;
+    
+    private String address;
+    private String sido;
+    private String sigungu;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "suggestion_type")
+    private SuggestionType suggestionType;
+    
+    @Enumerated(EnumType.STRING)
+    private SuggestionStatus status;
+    
+    @Column(name = "priority_score", precision = 5, scale = 2)
+    private BigDecimal priorityScore;
+    
+    @Column(name = "like_count")
+    private Integer likeCount = 0;
+    
+    @Column(name = "view_count")
+    private Integer viewCount = 0;
+    
+    @Column(name = "admin_response", columnDefinition = "TEXT")
+    private String adminResponse;
+    
+    @Column(name = "admin_id")
+    private Long adminId;
+    
+    @Column(name = "processed_at")
+    private LocalDateTime processedAt;
+    
+    @CreationTimestamp
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+    
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+    
+    // 연관관계
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", insertable = false, updatable = false)
+    private User user;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "admin_id", insertable = false, updatable = false)
+    private User admin;
+}
+
+@Entity
+@Table(name = "suggestion_likes")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class SuggestionLike {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    @Column(name = "suggestion_id")
+    private Long suggestionId;
+    
+    @Column(name = "user_id")
+    private Long userId;
+    
+    @CreationTimestamp
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+    
+    // 연관관계
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "suggestion_id", insertable = false, updatable = false)
+    private Suggestion suggestion;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", insertable = false, updatable = false)
+    private User user;
+}
+
+@Entity
+@Table(name = "suggestion_comments")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class SuggestionComment {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    @Column(name = "suggestion_id")
+    private Long suggestionId;
+    
+    @Column(name = "user_id")
+    private Long userId;
+    
+    @Column(columnDefinition = "TEXT")
+    private String content;
+    
+    @Column(name = "parent_id")
+    private Long parentId;
+    
+    @CreationTimestamp
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+    
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+    
+    // 연관관계
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "suggestion_id", insertable = false, updatable = false)
+    private Suggestion suggestion;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", insertable = false, updatable = false)
+    private User user;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id", insertable = false, updatable = false)
+    private SuggestionComment parent;
+}
+
+// Enum 클래스들
+@Getter
+@RequiredArgsConstructor
+public enum SuggestionType {
+    SIGNAL("신호등 설치"),
+    CROSSWALK("횡단보도 설치"),
+    FACILITY("기타 시설");
+    
+    private final String description;
+}
+
+@Getter
+@RequiredArgsConstructor
+public enum SuggestionStatus {
+    PENDING("접수"),
+    REVIEWING("검토중"),
+    APPROVED("승인"),
+    REJECTED("반려"),
+    COMPLETED("완료");
+    
+    private final String description;
 }
 ```
 
@@ -91,10 +453,11 @@ public class AccidentHotspot {
 ```java
 @Service
 public class SafetyAnalysisService {
-    public DashboardStats getDashboardStats();
-    public List<CrosswalkWithScore> getImprovementCandidates(int limit);
+    public DashboardStats getDashboardStats(String sido, String sigungu);
+    public List<CrosswalkWithScore> getImprovementCandidates(String sido, String sigungu, int limit);
     public VulnerabilityScore calculateVulnerabilityScore(Crosswalk crosswalk);
     public RiskScore calculateRiskScore(Double lat, Double lng);
+    public SignalEffectAnalysis analyzeSignalEffect(String sido, String sigungu);
 }
 
 @Service
@@ -102,6 +465,26 @@ public class DataImportService {
     public void importCrosswalkData(MultipartFile csvFile);
     public void importSignalData(MultipartFile csvFile);
     public void importAccidentData(MultipartFile csvFile);
+}
+
+@Service
+public class MapService {
+    public List<AccidentHotspot> getAccidentHeatmapData(String sido, String sigungu);
+    public List<Crosswalk> getCrosswalksByRegion(String sido, String sigungu);
+    public List<TrafficSignal> getSignalsByRegion(String sido, String sigungu);
+    public RegionalStatistics getRegionalStatistics(String sido, String sigungu);
+}
+
+@Service
+public class SuggestionService {
+    public Page<Suggestion> getSuggestions(Pageable pageable, SuggestionStatus status, String region);
+    public Suggestion createSuggestion(CreateSuggestionRequest request, Long userId);
+    public Suggestion updateSuggestionStatus(Long suggestionId, SuggestionStatus status, String adminResponse, Long adminId);
+    public void likeSuggestion(Long suggestionId, Long userId);
+    public void unlikeSuggestion(Long suggestionId, Long userId);
+    public List<SuggestionComment> getComments(Long suggestionId);
+    public SuggestionComment addComment(Long suggestionId, String content, Long userId, Long parentId);
+    public SuggestionStatistics getSuggestionStatistics();
 }
 ```
 
@@ -112,22 +495,88 @@ public class DataImportService {
 public class DashboardController {
     
     @GetMapping("/dashboard/stats")
-    public ResponseEntity<DashboardStats> getDashboardStats();
+    public ResponseEntity<DashboardStats> getDashboardStats(
+        @RequestParam(required = false) String sido,
+        @RequestParam(required = false) String sigungu);
+    
+    @GetMapping("/map/heatmap")
+    public ResponseEntity<List<AccidentHotspot>> getAccidentHeatmap(
+        @RequestParam(required = false) String sido,
+        @RequestParam(required = false) String sigungu);
     
     @GetMapping("/map/crosswalks")
-    public ResponseEntity<List<CrosswalkDto>> getCrosswalks();
+    public ResponseEntity<List<Crosswalk>> getCrosswalks(
+        @RequestParam(required = false) String sido,
+        @RequestParam(required = false) String sigungu);
     
     @GetMapping("/map/signals") 
-    public ResponseEntity<List<SignalDto>> getSignals();
+    public ResponseEntity<List<TrafficSignal>> getSignals(
+        @RequestParam(required = false) String sido,
+        @RequestParam(required = false) String sigungu);
     
-    @GetMapping("/map/accidents")
-    public ResponseEntity<List<AccidentDto>> getAccidentHotspots();
+    @GetMapping("/analysis/signal-effect")
+    public ResponseEntity<SignalEffectAnalysis> getSignalEffectAnalysis(
+        @RequestParam(required = false) String sido,
+        @RequestParam(required = false) String sigungu);
     
     @GetMapping("/analysis/improvement-candidates")
-    public ResponseEntity<List<ImprovementCandidate>> getImprovementCandidates();
+    public ResponseEntity<List<ImprovementCandidate>> getImprovementCandidates(
+        @RequestParam(required = false) String sido,
+        @RequestParam(required = false) String sigungu,
+        @RequestParam(defaultValue = "20") int limit);
+}
+
+@RestController
+@RequestMapping("/api/suggestions")
+public class SuggestionController {
     
-    @GetMapping("/analysis/correlation")
-    public ResponseEntity<CorrelationData> getVulnerabilityAccidentCorrelation();
+    @GetMapping
+    public ResponseEntity<Page<Suggestion>> getSuggestions(
+        @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+        @RequestParam(required = false) SuggestionStatus status,
+        @RequestParam(required = false) String region);
+    
+    @PostMapping
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<Suggestion> createSuggestion(
+        @RequestBody @Valid CreateSuggestionRequest request,
+        Authentication authentication);
+    
+    @GetMapping("/{id}")
+    public ResponseEntity<Suggestion> getSuggestion(@PathVariable Long id);
+    
+    @PutMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Suggestion> updateSuggestionStatus(
+        @PathVariable Long id,
+        @RequestBody @Valid UpdateSuggestionStatusRequest request,
+        Authentication authentication);
+    
+    @PostMapping("/{id}/like")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<Void> likeSuggestion(
+        @PathVariable Long id,
+        Authentication authentication);
+    
+    @DeleteMapping("/{id}/like")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<Void> unlikeSuggestion(
+        @PathVariable Long id,
+        Authentication authentication);
+    
+    @GetMapping("/{id}/comments")
+    public ResponseEntity<List<SuggestionComment>> getComments(@PathVariable Long id);
+    
+    @PostMapping("/{id}/comments")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<SuggestionComment> addComment(
+        @PathVariable Long id,
+        @RequestBody @Valid AddCommentRequest request,
+        Authentication authentication);
+    
+    @GetMapping("/statistics")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<SuggestionStatistics> getSuggestionStatistics();
 }
 ```
 
@@ -218,59 +667,181 @@ export async function GET(request: Request) {
 #### crosswalks 테이블
 ```sql
 CREATE TABLE crosswalks (
-    crosswalk_id VARCHAR(50) PRIMARY KEY,
-    city VARCHAR(100) NOT NULL,
-    district VARCHAR(100) NOT NULL,
-    road_name VARCHAR(200),
-    address VARCHAR(500),
-    latitude DECIMAL(10, 8) NOT NULL,
-    longitude DECIMAL(11, 8) NOT NULL,
-    has_pedestrian_signal BOOLEAN DEFAULT FALSE,
-    has_audio_signal BOOLEAN DEFAULT FALSE,
-    has_remaining_time_display BOOLEAN DEFAULT FALSE,
-    has_braille_block BOOLEAN DEFAULT FALSE,
-    green_time INT,
-    red_time INT,
+    cw_uid VARCHAR(20) PRIMARY KEY,                    -- 횡단보도 고유 ID
+    sido VARCHAR(50) NOT NULL,                         -- 시도
+    sigungu VARCHAR(50) NOT NULL,                      -- 시군구
+    address VARCHAR(500) NOT NULL,                     -- 주소
+    crosswalk_type TINYINT NOT NULL,                   -- 횡단보도 종류 (1-4, 99)
+    highland TINYINT DEFAULT 0,                        -- 고원식 적용 여부 (0/1)
+    crosswalk_lat DECIMAL(10, 8) NOT NULL,             -- 위도
+    crosswalk_lon DECIMAL(11, 8) NOT NULL,             -- 경도
+    roadnum TINYINT,                                   -- 차로수
+    crosswalk_width DECIMAL(5, 2),                     -- 횡단보도 폭(m)
+    crosswalk_length DECIMAL(5, 2),                    -- 횡단보도 길이(m)
+    signal TINYINT DEFAULT 0,                          -- 보행자신호등유무 (0/1)
+    button TINYINT DEFAULT 0,                          -- 보행자작동신호기유무 (0/1)
+    sound_signal TINYINT DEFAULT 0,                    -- 음향신호기설치유무 (0/1)
+    bump TINYINT DEFAULT 0,                            -- 보도턱낮춤여부 (0/1)
+    braille_block TINYINT DEFAULT 0,                   -- 점자블록유무 (0/1)
+    spotlight TINYINT DEFAULT 0,                       -- 집중조명시설유무 (0/1)
+    org_code INT,                                      -- 관리기관 코드
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_location (latitude, longitude),
-    INDEX idx_city_district (city, district)
+    
+    INDEX idx_location (crosswalk_lat, crosswalk_lon),
+    INDEX idx_region (sido, sigungu),
+    INDEX idx_facilities (signal, sound_signal, button, spotlight)
 );
 ```
 
 #### traffic_signals 테이블
 ```sql
 CREATE TABLE traffic_signals (
-    signal_id VARCHAR(50) PRIMARY KEY,
-    city VARCHAR(100) NOT NULL,
-    district VARCHAR(100) NOT NULL,
-    road_name VARCHAR(200),
-    latitude DECIMAL(10, 8) NOT NULL,
-    longitude DECIMAL(11, 8) NOT NULL,
-    has_remaining_time_display BOOLEAN DEFAULT FALSE,
-    has_audio_signal BOOLEAN DEFAULT FALSE,
-    has_pedestrian_button BOOLEAN DEFAULT FALSE,
-    signal_type VARCHAR(50),
+    sg_uid VARCHAR(20) PRIMARY KEY,                    -- 신호등 고유 ID
+    sido VARCHAR(50) NOT NULL,                         -- 시도
+    sigungu VARCHAR(50) NOT NULL,                      -- 시군구
+    road_type TINYINT,                                 -- 도로 종류 (1-7, 99)
+    road_direction TINYINT,                            -- 도로 방향 (1-3)
+    address VARCHAR(500) NOT NULL,                     -- 주소
+    signal_lat DECIMAL(10, 8) NOT NULL,                -- 위도
+    signal_lon DECIMAL(11, 8) NOT NULL,                -- 경도
+    road_shape TINYINT,                                -- 도로 형태 (1-2, 99)
+    main_road TINYINT DEFAULT 0,                       -- 주도로 여부 (0/1)
+    signal_type TINYINT,                               -- 신호등 종류 (1-7, 99)
+    button TINYINT DEFAULT 0,                          -- 보행자작동신호기유무 (0/1)
+    remain_time TINYINT DEFAULT 0,                     -- 잔여시간표시기유무 (0/1)
+    sound_signal TINYINT DEFAULT 0,                    -- 시각장애인용음향신호기유무 (0/1)
+    org_code INT,                                      -- 행정기관코드
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_location (latitude, longitude),
-    INDEX idx_city_district (city, district)
+    
+    INDEX idx_location (signal_lat, signal_lon),
+    INDEX idx_region (sido, sigungu),
+    INDEX idx_features (button, remain_time, sound_signal)
 );
 ```
 
 #### accident_hotspots 테이블
 ```sql
 CREATE TABLE accident_hotspots (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    region VARCHAR(200) NOT NULL,
-    latitude DECIMAL(10, 8) NOT NULL,
-    longitude DECIMAL(11, 8) NOT NULL,
-    accident_count INT NOT NULL,
-    year INT NOT NULL,
-    severity_level VARCHAR(20),
+    accident_id BIGINT PRIMARY KEY,                    -- 사고 번호
+    year SMALLINT NOT NULL,                            -- 사고 년도
+    district_code BIGINT,                              -- 지역 구분 코드
+    detail VARCHAR(200),                               -- 상세 지역
+    accident_count SMALLINT NOT NULL,                  -- 사고건수
+    casualty_count SMALLINT DEFAULT 0,                 -- 사상자수
+    fatality_count SMALLINT DEFAULT 0,                 -- 사망자수
+    serious_injury_count SMALLINT DEFAULT 0,           -- 중상자수
+    minor_injury_count SMALLINT DEFAULT 0,             -- 경상자수
+    reported_injury_count SMALLINT DEFAULT 0,          -- 부상신고자수
+    accident_lon DECIMAL(11, 8) NOT NULL,              -- 사고 경도
+    accident_lat DECIMAL(10, 8) NOT NULL,              -- 사고 위도
+    hotspot_polygon JSON,                              -- 다발지역 폴리곤 (GeoJSON)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_location (latitude, longitude),
-    INDEX idx_year (year)
+    
+    INDEX idx_location (accident_lat, accident_lon),
+    INDEX idx_year (year),
+    INDEX idx_district (district_code),
+    INDEX idx_severity (fatality_count, serious_injury_count)
+);
+```
+
+#### crosswalk_signal_mapping 테이블 (연결 관계)
+```sql
+CREATE TABLE crosswalk_signal_mapping (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    cw_uid VARCHAR(20) NOT NULL,                       -- 횡단보도 ID
+    sg_uid VARCHAR(20) NOT NULL,                       -- 신호등 ID
+    distance_m DECIMAL(8, 3),                          -- 거리(m)
+    confidence DECIMAL(6, 6),                          -- 가중치
+    sido VARCHAR(50),                                  -- 시도
+    sigungu VARCHAR(50),                               -- 시군구
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (cw_uid) REFERENCES crosswalks(cw_uid),
+    FOREIGN KEY (sg_uid) REFERENCES traffic_signals(sg_uid),
+    INDEX idx_crosswalk (cw_uid),
+    INDEX idx_signal (sg_uid),
+    INDEX idx_distance (distance_m)
+);
+```
+
+#### districts 테이블 (참조용)
+```sql
+CREATE TABLE districts (
+    district_code BIGINT PRIMARY KEY,                  -- 지역 구분 코드
+    district_name VARCHAR(200) NOT NULL,               -- 지역명
+    available TINYINT DEFAULT 1,                       -- 유효여부 (0/1)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    INDEX idx_name (district_name)
+);
+```
+
+#### suggestions 테이블 (건의사항)
+```sql
+CREATE TABLE suggestions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,                           -- 작성자 ID
+    title VARCHAR(200) NOT NULL,                       -- 건의 제목
+    content TEXT NOT NULL,                             -- 건의 내용
+    location_lat DECIMAL(10, 8) NOT NULL,              -- 건의 위치 위도
+    location_lon DECIMAL(11, 8) NOT NULL,              -- 건의 위치 경도
+    address VARCHAR(500),                              -- 건의 위치 주소
+    sido VARCHAR(50),                                  -- 시도
+    sigungu VARCHAR(50),                               -- 시군구
+    suggestion_type ENUM('SIGNAL', 'CROSSWALK', 'FACILITY') DEFAULT 'SIGNAL', -- 건의 유형
+    status ENUM('PENDING', 'REVIEWING', 'APPROVED', 'REJECTED', 'COMPLETED') DEFAULT 'PENDING', -- 처리 상태
+    priority_score DECIMAL(5, 2) DEFAULT 0,           -- 우선순위 점수
+    like_count INT DEFAULT 0,                          -- 좋아요 수
+    view_count INT DEFAULT 0,                          -- 조회수
+    admin_response TEXT,                               -- 관리자 답변
+    admin_id BIGINT,                                   -- 처리 관리자 ID
+    processed_at TIMESTAMP NULL,                       -- 처리 완료 시간
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (admin_id) REFERENCES users(id),
+    INDEX idx_location (location_lat, location_lon),
+    INDEX idx_region (sido, sigungu),
+    INDEX idx_status (status),
+    INDEX idx_created (created_at),
+    INDEX idx_priority (priority_score DESC)
+);
+```
+
+#### suggestion_likes 테이블 (건의사항 좋아요)
+```sql
+CREATE TABLE suggestion_likes (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    suggestion_id BIGINT NOT NULL,                     -- 건의사항 ID
+    user_id BIGINT NOT NULL,                           -- 사용자 ID
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (suggestion_id) REFERENCES suggestions(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_user_suggestion (user_id, suggestion_id),
+    INDEX idx_suggestion (suggestion_id)
+);
+```
+
+#### suggestion_comments 테이블 (건의사항 댓글)
+```sql
+CREATE TABLE suggestion_comments (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    suggestion_id BIGINT NOT NULL,                     -- 건의사항 ID
+    user_id BIGINT NOT NULL,                           -- 작성자 ID
+    content TEXT NOT NULL,                             -- 댓글 내용
+    parent_id BIGINT NULL,                             -- 대댓글인 경우 부모 댓글 ID
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (suggestion_id) REFERENCES suggestions(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (parent_id) REFERENCES suggestion_comments(id) ON DELETE CASCADE,
+    INDEX idx_suggestion (suggestion_id),
+    INDEX idx_created (created_at)
 );
 ```
 
@@ -278,6 +849,10 @@ CREATE TABLE accident_hotspots (
 
 #### DashboardStats
 ```java
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class DashboardStats {
     private long totalCrosswalks;
     private double pedestrianSignalRatio;
@@ -286,33 +861,131 @@ public class DashboardStats {
     private long accidentHotspotCount;
     private List<RegionStats> topRiskyRegions;
 }
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class RegionStats {
+    private String sido;
+    private String sigungu;
+    private long crosswalkCount;
+    private long accidentCount;
+    private double riskScore;
+}
 ```
 
 #### ImprovementCandidate
 ```java
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ImprovementCandidate {
-    private String crosswalkId;
+    private String cwUid;              // 횡단보도 ID
     private String address;
-    private double latitude;
-    private double longitude;
+    private BigDecimal latitude;
+    private BigDecimal longitude;
     private double facilityScore;      // 시설 취약 점수 (0-5점)
     private double riskScore;          // 위험 점수 (0-3점)
     private double totalScore;         // 최종 점수 = facilityScore * 0.4 + riskScore * 0.6
     private List<String> missingFeatures;
     private String recommendedImprovement;
     private double nearestAccidentDistance; // 가장 가까운 사고다발지까지 거리(m)
+    
+    // 시설 현황
+    private boolean hasSignal;         // 보행자신호등
+    private boolean hasButton;         // 보행자작동신호기
+    private boolean hasSoundSignal;    // 음향신호기
+    private boolean hasSpotlight;      // 집중조명
+    private boolean hasBrailleBlock;   // 점자블록
 }
+```
 
-#### ScoreCalculationRequest
+#### CrosswalkDto
 ```java
-public class ScoreCalculationRequest {
-    private boolean hasAudioSignal;
-    private boolean hasRemainingTimeDisplay;
-    private boolean hasPedestrianButton;
-    private boolean hasIntensiveLighting;
-    private double latitude;
-    private double longitude;
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class CrosswalkDto {
+    private String cwUid;
+    private String sido;
+    private String sigungu;
+    private String address;
+    private BigDecimal crosswalkLat;
+    private BigDecimal crosswalkLon;
+    private Integer signal;
+    private Integer button;
+    private Integer soundSignal;
+    private Integer spotlight;
+    private Integer brailleBlock;
+    private Double facilityScore;
+    private Double riskScore;
 }
+```
+
+#### SignalDto
+```java
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class SignalDto {
+    private String sgUid;
+    private String sido;
+    private String sigungu;
+    private String address;
+    private BigDecimal signalLat;
+    private BigDecimal signalLon;
+    private Integer button;
+    private Integer remainTime;
+    private Integer soundSignal;
+    private Integer signalType;
+}
+```
+
+#### AccidentDto
+```java
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class AccidentDto {
+    private Long accidentId;
+    private Integer year;
+    private String detail;
+    private Integer accidentCount;
+    private Integer fatalityCount;
+    private Integer seriousInjuryCount;
+    private BigDecimal accidentLat;
+    private BigDecimal accidentLon;
+    private String hotspotPolygon;
+}
+```
+
+#### CorrelationData
+```java
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class CorrelationData {
+    private List<RegionCorrelation> regionData;
+    
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class RegionCorrelation {
+        private String regionName;
+        private double vulnerabilityRatio;    // 취약시설 비율
+        private double accidentDensity;       // 사고다발지 밀도
+        private long totalCrosswalks;
+        private long totalAccidents;
+    }
+}
+```
 ```
 
 ## 정확성 속성
@@ -501,3 +1174,214 @@ public double calculateTotalScore(double facilityScore, double riskScore) {
 #### 개선 시나리오 분석
 - What-if 분석: 특정 시설 설치 시 점수 변화 시뮬레이션
 - 예산 대비 효과 분석 기능
+
+## 보안 및 인증
+
+### Spring Security 설정
+
+#### 1. OAuth2 클라이언트 설정
+```java
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+    
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+            .authorizeHttpRequests(authz -> authz
+                .requestMatchers("/api/public/**").permitAll()
+                .requestMatchers("/api/dashboard/**").authenticated()
+                .requestMatchers("/api/map/**").authenticated()
+                .requestMatchers("/api/analysis/**").authenticated()
+                .anyRequest().authenticated()
+            )
+            .oauth2Login(oauth2 -> oauth2
+                .loginPage("/login")
+                .defaultSuccessUrl("/dashboard")
+                .userInfoEndpoint(userInfo -> userInfo
+                    .userService(customOAuth2UserService())
+                )
+            )
+            .logout(logout -> logout
+                .logoutSuccessUrl("/")
+                .invalidateHttpSession(true)
+                .clearAuthentication(true)
+            )
+            .csrf(csrf -> csrf.disable())
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()));
+        
+        return http.build();
+    }
+    
+    @Bean
+    public CustomOAuth2UserService customOAuth2UserService() {
+        return new CustomOAuth2UserService();
+    }
+    
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowCredentials(true);
+        
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+}
+```
+
+#### 2. 사용자 엔티티
+```java
+@Entity
+@Table(name = "users")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class User {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    @Column(unique = true)
+    private String email;
+    
+    private String name;
+    private String picture;
+    
+    @Enumerated(EnumType.STRING)
+    private Role role;
+    
+    @Enumerated(EnumType.STRING)
+    private Provider provider;
+    
+    private String providerId;
+    
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+    
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
+}
+
+@Getter
+@RequiredArgsConstructor
+public enum Role {
+    ADMIN("ROLE_ADMIN", "관리자"),
+    USER("ROLE_USER", "일반사용자");
+    
+    private final String key;
+    private final String title;
+}
+
+@Getter
+@RequiredArgsConstructor
+public enum Provider {
+    GOOGLE("google"),
+    NAVER("naver"),
+    KAKAO("kakao");
+    
+    private final String registrationId;
+}
+```
+
+#### 3. OAuth2 사용자 서비스
+```java
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
+    
+    private final UserRepository userRepository;
+    
+    @Override
+    public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
+        OAuth2UserService<OAuth2UserRequest, OAuth2User> delegate = new DefaultOAuth2UserService();
+        OAuth2User oAuth2User = delegate.loadUser(userRequest);
+        
+        String registrationId = userRequest.getClientRegistration().getRegistrationId();
+        String userNameAttributeName = userRequest.getClientRegistration()
+                .getProviderDetails().getUserInfoEndpoint().getUserNameAttributeName();
+        
+        OAuthAttributes attributes = OAuthAttributes.of(registrationId, userNameAttributeName, oAuth2User.getAttributes());
+        
+        User user = saveOrUpdate(attributes);
+        
+        return new DefaultOAuth2User(
+                Collections.singleton(new SimpleGrantedAuthority(user.getRole().getKey())),
+                attributes.getAttributes(),
+                attributes.getNameAttributeKey()
+        );
+    }
+    
+    private User saveOrUpdate(OAuthAttributes attributes) {
+        User user = userRepository.findByEmail(attributes.getEmail())
+                .map(entity -> entity.update(attributes.getName(), attributes.getPicture()))
+                .orElse(attributes.toEntity());
+        
+        return userRepository.save(user);
+    }
+}
+```
+
+### API 접근 제어
+
+#### 1. 역할 기반 접근 제어
+- **ADMIN**: 모든 API 접근 가능, 데이터 임포트 기능
+- **USER**: 대시보드 조회, 분석 기능만 접근 가능
+
+#### 2. API 엔드포인트 보안
+```java
+@RestController
+@RequestMapping("/api")
+@RequiredArgsConstructor
+public class DashboardController {
+    
+    @GetMapping("/dashboard/stats")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<DashboardStats> getDashboardStats() {
+        // 구현
+    }
+    
+    @PostMapping("/admin/import/crosswalks")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ImportResult> importCrosswalks(@RequestParam MultipartFile file) {
+        // 구현
+    }
+}
+```
+
+### 환경 설정
+
+#### application.yml
+```yaml
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - email
+              - profile
+          naver:
+            client-id: ${NAVER_CLIENT_ID}
+            client-secret: ${NAVER_CLIENT_SECRET}
+            scope:
+              - name
+              - email
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+        provider:
+          naver:
+            authorization-uri: https://nid.naver.com/oauth2.0/authorize
+            token-uri: https://nid.naver.com/oauth2.0/token
+            user-info-uri: https://openapi.naver.com/v1/nid/me
+            user-name-attribute: response
+```
