@@ -2,7 +2,7 @@
 
 ## 개요
 
-횡단보도 신호등 설치 현황과 보행 안전 리스크 분석 대시보드는 Spring Boot 백엔드와 Next.js 프론트엔드로 구성된 웹 애플리케이션입니다. 전국→시도→구 단계별 확대가 가능한 인터랙티브 지도와 히트맵을 통해 사고 다발지역을 시각화하고, 신호등 유무에 따른 사고 효과를 분석합니다. 시민 참여형 건의 게시판을 통해 신호등 설치 요청을 수집하고 관리합니다.
+시도별·시군구별·월별 보행자 사고 데이터 기반 교통 안전 분석 대시보드는 Spring Boot 백엔드와 Next.js 프론트엔드로 구성된 웹 애플리케이션입니다. 전국→시도→구 단계별 확대가 가능한 인터랙티브 지도를 통해 월별 사고 트렌드를 시각화하고, KPI 중심의 안전 현황 분석을 제공합니다. 사고 예측 모델링, 투자 우선순위 분석, 실시간 모니터링 등 고급 분석 기능과 시민 참여형 건의 시스템을 포함합니다.
 
 ## 아키텍처
 
@@ -14,10 +14,13 @@
 │   Frontend     │◄──►│   Backend       │◄──►│                 │
 │                │    │                 │    │                 │
 │ - Interactive  │    │ - REST APIs     │    │ - crosswalks    │
-│   Map (3-Level)│    │ - Signal Effect │    │ - signals       │
-│ - Heatmap      │    │   Analysis      │    │ - accidents     │
-│ - Suggestion   │    │ - Suggestion    │    │ - suggestions   │
-│   Board        │    │   Management    │    │ - users         │
+│   Map (3-Level)│    │ - KPI Dashboard │    │ - signals       │
+│ - KPI Dashboard│    │ - Prediction    │    │ - monthly_      │
+│ - Trend Charts │    │   Models        │    │   accidents     │
+│ - Prediction   │    │ - Investment    │    │ - suggestions   │
+│   Analytics    │    │   Optimizer     │    │ - users         │
+│ - Real-time    │    │ - Alert System  │    │ - predictions   │
+│   Monitoring   │    │ - Notification  │    │ - investments   │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
@@ -486,6 +489,42 @@ public class SuggestionService {
     public SuggestionComment addComment(Long suggestionId, String content, Long userId, Long parentId);
     public SuggestionStatistics getSuggestionStatistics();
 }
+
+@Service
+public class PredictionService {
+    public List<AccidentPrediction> predictAccidents(String sido, String sigungu, int months);
+    public AccidentPrediction getMonthlyPrediction(String sido, String sigungu, int year, int month);
+    public PredictionAccuracy validatePredictions(String sido, String sigungu, int year, int month);
+    public List<RiskForecast> generateRiskForecast(String sido, String sigungu);
+    public SignalInstallationEffect simulateSignalInstallation(BigDecimal lat, BigDecimal lon);
+}
+
+@Service
+public class InvestmentService {
+    public InvestmentPlan createInvestmentPlan(CreateInvestmentPlanRequest request, Long userId);
+    public List<InvestmentItem> optimizeInvestmentPlan(Long planId, BigDecimal budget);
+    public InvestmentROI calculateROI(Long planId);
+    public List<InvestmentPriority> getInvestmentPriorities(String sido, String sigungu, BigDecimal budget);
+    public InvestmentReport generateInvestmentReport(Long planId);
+}
+
+@Service
+public class AlertService {
+    public void createAlert(AlertType type, String title, String message, String sido, String sigungu);
+    public List<AlertNotification> getUnreadAlerts(String role);
+    public void markAsRead(Long alertId);
+    public void checkAccidentSpikes();
+    public void checkNewHotspots();
+    public void sendPredictionAlerts();
+}
+
+@Service
+public class KPIService {
+    public KPIDashboard getKPIDashboard(String sido, String sigungu);
+    public List<KPITrend> getKPITrends(String sido, String sigungu, int months);
+    public SafetyIndex calculateSafetyIndex(String sido, String sigungu);
+    public List<RegionalComparison> compareRegionalKPIs();
+}
 ```
 
 #### 3. REST API 컨트롤러
@@ -577,6 +616,111 @@ public class SuggestionController {
     @GetMapping("/statistics")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<SuggestionStatistics> getSuggestionStatistics();
+}
+
+@RestController
+@RequestMapping("/api/predictions")
+public class PredictionController {
+    
+    @GetMapping("/accidents")
+    @PreAuthorize("hasRole('ANALYST')")
+    public ResponseEntity<List<AccidentPrediction>> predictAccidents(
+        @RequestParam(required = false) String sido,
+        @RequestParam(required = false) String sigungu,
+        @RequestParam(defaultValue = "3") int months);
+    
+    @GetMapping("/risk-forecast")
+    @PreAuthorize("hasRole('ANALYST')")
+    public ResponseEntity<List<RiskForecast>> getRiskForecast(
+        @RequestParam(required = false) String sido,
+        @RequestParam(required = false) String sigungu);
+    
+    @PostMapping("/simulate-signal")
+    @PreAuthorize("hasRole('ANALYST')")
+    public ResponseEntity<SignalInstallationEffect> simulateSignalInstallation(
+        @RequestBody @Valid SimulateSignalRequest request);
+    
+    @GetMapping("/accuracy")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<PredictionAccuracy> getPredictionAccuracy(
+        @RequestParam String sido,
+        @RequestParam String sigungu,
+        @RequestParam int year,
+        @RequestParam int month);
+}
+
+@RestController
+@RequestMapping("/api/investments")
+public class InvestmentController {
+    
+    @PostMapping("/plans")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<InvestmentPlan> createInvestmentPlan(
+        @RequestBody @Valid CreateInvestmentPlanRequest request,
+        Authentication authentication);
+    
+    @GetMapping("/plans/{id}/optimize")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<List<InvestmentItem>> optimizeInvestmentPlan(
+        @PathVariable Long id,
+        @RequestParam BigDecimal budget);
+    
+    @GetMapping("/priorities")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<List<InvestmentPriority>> getInvestmentPriorities(
+        @RequestParam(required = false) String sido,
+        @RequestParam(required = false) String sigungu,
+        @RequestParam BigDecimal budget);
+    
+    @GetMapping("/plans/{id}/roi")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<InvestmentROI> calculateROI(@PathVariable Long id);
+    
+    @GetMapping("/plans/{id}/report")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<InvestmentReport> generateReport(@PathVariable Long id);
+}
+
+@RestController
+@RequestMapping("/api/kpi")
+public class KPIController {
+    
+    @GetMapping("/dashboard")
+    public ResponseEntity<KPIDashboard> getKPIDashboard(
+        @RequestParam(required = false) String sido,
+        @RequestParam(required = false) String sigungu);
+    
+    @GetMapping("/trends")
+    public ResponseEntity<List<KPITrend>> getKPITrends(
+        @RequestParam(required = false) String sido,
+        @RequestParam(required = false) String sigungu,
+        @RequestParam(defaultValue = "12") int months);
+    
+    @GetMapping("/safety-index")
+    public ResponseEntity<SafetyIndex> getSafetyIndex(
+        @RequestParam(required = false) String sido,
+        @RequestParam(required = false) String sigungu);
+    
+    @GetMapping("/regional-comparison")
+    public ResponseEntity<List<RegionalComparison>> getRegionalComparison();
+}
+
+@RestController
+@RequestMapping("/api/alerts")
+public class AlertController {
+    
+    @GetMapping("/unread")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<List<AlertNotification>> getUnreadAlerts(Authentication authentication);
+    
+    @PutMapping("/{id}/read")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<Void> markAsRead(@PathVariable Long id);
+    
+    @PostMapping("/manual")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<AlertNotification> createManualAlert(
+        @RequestBody @Valid CreateAlertRequest request);
 }
 ```
 
@@ -721,28 +865,60 @@ CREATE TABLE traffic_signals (
 );
 ```
 
-#### accident_hotspots 테이블
+#### monthly_accidents 테이블 (월별 사고 데이터)
 ```sql
-CREATE TABLE accident_hotspots (
-    accident_id BIGINT PRIMARY KEY,                    -- 사고 번호
-    year SMALLINT NOT NULL,                            -- 사고 년도
-    district_code BIGINT,                              -- 지역 구분 코드
-    detail VARCHAR(200),                               -- 상세 지역
-    accident_count SMALLINT NOT NULL,                  -- 사고건수
+CREATE TABLE monthly_accidents (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    sido VARCHAR(50) NOT NULL,                         -- 시도
+    sigungu VARCHAR(50) NOT NULL,                      -- 시군구
+    year SMALLINT NOT NULL,                            -- 년도
+    month TINYINT NOT NULL,                            -- 월 (1-12)
+    accident_count SMALLINT DEFAULT 0,                 -- 사고건수
     casualty_count SMALLINT DEFAULT 0,                 -- 사상자수
     fatality_count SMALLINT DEFAULT 0,                 -- 사망자수
     serious_injury_count SMALLINT DEFAULT 0,           -- 중상자수
     minor_injury_count SMALLINT DEFAULT 0,             -- 경상자수
-    reported_injury_count SMALLINT DEFAULT 0,          -- 부상신고자수
-    accident_lon DECIMAL(11, 8) NOT NULL,              -- 사고 경도
-    accident_lat DECIMAL(10, 8) NOT NULL,              -- 사고 위도
-    hotspot_polygon JSON,                              -- 다발지역 폴리곤 (GeoJSON)
+    pedestrian_accident_count SMALLINT DEFAULT 0,      -- 보행자 사고건수
+    pedestrian_fatality_count SMALLINT DEFAULT 0,      -- 보행자 사망자수
+    weather_condition VARCHAR(20),                     -- 날씨 조건
+    road_condition VARCHAR(20),                        -- 도로 조건
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
-    INDEX idx_location (accident_lat, accident_lon),
-    INDEX idx_year (year),
-    INDEX idx_district (district_code),
-    INDEX idx_severity (fatality_count, serious_injury_count)
+    UNIQUE KEY unique_region_month (sido, sigungu, year, month),
+    INDEX idx_region (sido, sigungu),
+    INDEX idx_date (year, month),
+    INDEX idx_pedestrian (pedestrian_accident_count, pedestrian_fatality_count)
+);
+```
+
+#### accident_hotspots 테이블 (사고 다발지역)
+```sql
+CREATE TABLE accident_hotspots (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    sido VARCHAR(50) NOT NULL,                         -- 시도
+    sigungu VARCHAR(50) NOT NULL,                      -- 시군구
+    hotspot_name VARCHAR(200),                         -- 다발지역명
+    center_lat DECIMAL(10, 8) NOT NULL,                -- 중심 위도
+    center_lon DECIMAL(11, 8) NOT NULL,                -- 중심 경도
+    radius_m INT DEFAULT 100,                          -- 반경(미터)
+    accident_count SMALLINT NOT NULL,                  -- 총 사고건수
+    pedestrian_accident_count SMALLINT DEFAULT 0,      -- 보행자 사고건수
+    fatality_count SMALLINT DEFAULT 0,                 -- 사망자수
+    analysis_period_start DATE,                        -- 분석 기간 시작
+    analysis_period_end DATE,                          -- 분석 기간 종료
+    risk_level ENUM('LOW', 'MEDIUM', 'HIGH', 'CRITICAL') DEFAULT 'MEDIUM', -- 위험도
+    has_crosswalk TINYINT DEFAULT 0,                   -- 횡단보도 존재 여부
+    has_signal TINYINT DEFAULT 0,                      -- 신호등 존재 여부
+    signal_functionality_score DECIMAL(3, 2),          -- 신호등 기능 점수 (0-1)
+    improvement_priority DECIMAL(5, 2),                -- 개선 우선순위 점수
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    INDEX idx_location (center_lat, center_lon),
+    INDEX idx_region (sido, sigungu),
+    INDEX idx_risk (risk_level, improvement_priority),
+    INDEX idx_signal_status (has_signal, signal_functionality_score)
 );
 ```
 
@@ -842,6 +1018,104 @@ CREATE TABLE suggestion_comments (
     FOREIGN KEY (parent_id) REFERENCES suggestion_comments(id) ON DELETE CASCADE,
     INDEX idx_suggestion (suggestion_id),
     INDEX idx_created (created_at)
+);
+```
+
+#### accident_predictions 테이블 (사고 예측 데이터)
+```sql
+CREATE TABLE accident_predictions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    sido VARCHAR(50) NOT NULL,                         -- 시도
+    sigungu VARCHAR(50) NOT NULL,                      -- 시군구
+    prediction_year SMALLINT NOT NULL,                 -- 예측 년도
+    prediction_month TINYINT NOT NULL,                 -- 예측 월
+    predicted_accident_count DECIMAL(8, 2),            -- 예측 사고건수
+    predicted_fatality_count DECIMAL(8, 2),            -- 예측 사망자수
+    confidence_interval_lower DECIMAL(8, 2),           -- 신뢰구간 하한
+    confidence_interval_upper DECIMAL(8, 2),           -- 신뢰구간 상한
+    model_version VARCHAR(20),                         -- 모델 버전
+    prediction_accuracy DECIMAL(5, 4),                 -- 예측 정확도
+    actual_accident_count SMALLINT,                    -- 실제 사고건수 (검증용)
+    actual_fatality_count SMALLINT,                    -- 실제 사망자수 (검증용)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    UNIQUE KEY unique_prediction (sido, sigungu, prediction_year, prediction_month, model_version),
+    INDEX idx_region_date (sido, sigungu, prediction_year, prediction_month),
+    INDEX idx_accuracy (prediction_accuracy)
+);
+```
+
+#### investment_plans 테이블 (투자 계획)
+```sql
+CREATE TABLE investment_plans (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    plan_name VARCHAR(200) NOT NULL,                   -- 계획명
+    sido VARCHAR(50) NOT NULL,                         -- 시도
+    sigungu VARCHAR(50),                               -- 시군구 (전체 시도인 경우 NULL)
+    total_budget DECIMAL(15, 2) NOT NULL,              -- 총 예산
+    plan_year SMALLINT NOT NULL,                       -- 계획 년도
+    status ENUM('DRAFT', 'APPROVED', 'IN_PROGRESS', 'COMPLETED') DEFAULT 'DRAFT',
+    expected_accident_reduction DECIMAL(5, 2),         -- 예상 사고 감소율
+    expected_roi DECIMAL(8, 4),                        -- 예상 ROI
+    created_by BIGINT NOT NULL,                        -- 작성자 ID
+    approved_by BIGINT,                                -- 승인자 ID
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (created_by) REFERENCES users(id),
+    FOREIGN KEY (approved_by) REFERENCES users(id),
+    INDEX idx_region (sido, sigungu),
+    INDEX idx_year_status (plan_year, status)
+);
+```
+
+#### investment_items 테이블 (투자 항목)
+```sql
+CREATE TABLE investment_items (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    plan_id BIGINT NOT NULL,                           -- 투자 계획 ID
+    hotspot_id BIGINT,                                 -- 사고 다발지역 ID
+    item_type ENUM('SIGNAL_INSTALL', 'SIGNAL_UPGRADE', 'CROSSWALK_INSTALL', 'FACILITY_UPGRADE') NOT NULL,
+    location_lat DECIMAL(10, 8) NOT NULL,              -- 설치 위치 위도
+    location_lon DECIMAL(11, 8) NOT NULL,              -- 설치 위치 경도
+    estimated_cost DECIMAL(12, 2) NOT NULL,            -- 예상 비용
+    priority_score DECIMAL(8, 4) NOT NULL,             -- 우선순위 점수
+    expected_accident_reduction SMALLINT,              -- 예상 사고 감소 건수
+    implementation_order INT,                          -- 실행 순서
+    status ENUM('PLANNED', 'APPROVED', 'IN_PROGRESS', 'COMPLETED') DEFAULT 'PLANNED',
+    completion_date DATE,                              -- 완료 예정일
+    actual_cost DECIMAL(12, 2),                        -- 실제 비용
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (plan_id) REFERENCES investment_plans(id) ON DELETE CASCADE,
+    FOREIGN KEY (hotspot_id) REFERENCES accident_hotspots(id),
+    INDEX idx_plan (plan_id),
+    INDEX idx_location (location_lat, location_lon),
+    INDEX idx_priority (priority_score DESC)
+);
+```
+
+#### alert_notifications 테이블 (알림 관리)
+```sql
+CREATE TABLE alert_notifications (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    alert_type ENUM('ACCIDENT_SPIKE', 'NEW_HOTSPOT', 'PREDICTION_ALERT', 'SYSTEM_ALERT') NOT NULL,
+    title VARCHAR(200) NOT NULL,                       -- 알림 제목
+    message TEXT NOT NULL,                             -- 알림 내용
+    severity ENUM('LOW', 'MEDIUM', 'HIGH', 'CRITICAL') DEFAULT 'MEDIUM',
+    sido VARCHAR(50),                                  -- 관련 시도
+    sigungu VARCHAR(50),                               -- 관련 시군구
+    related_data JSON,                                 -- 관련 데이터 (JSON)
+    is_read TINYINT DEFAULT 0,                         -- 읽음 여부
+    recipient_role ENUM('ADMIN', 'ANALYST', 'MANAGER', 'ALL') DEFAULT 'ALL',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    read_at TIMESTAMP NULL,                            -- 읽은 시간
+    
+    INDEX idx_type_severity (alert_type, severity),
+    INDEX idx_region (sido, sigungu),
+    INDEX idx_created (created_at),
+    INDEX idx_unread (is_read, created_at)
 );
 ```
 
