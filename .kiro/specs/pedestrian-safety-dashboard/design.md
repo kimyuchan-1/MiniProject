@@ -1663,6 +1663,12 @@ spring:
               - email
             authorization-grant-type: authorization_code
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+          github:
+            client-id: ${GITHUB_CLIENT_ID}
+            client-secret: ${GITHUB_CLIENT_SECRET}
+            scope:
+              - user:email
+              - read:user
         provider:
           naver:
             authorization-uri: https://nid.naver.com/oauth2.0/authorize

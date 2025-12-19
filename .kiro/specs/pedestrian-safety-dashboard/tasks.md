@@ -233,7 +233,7 @@
   - 기본 프로젝트 구조 및 라우팅 설정
   - _요구사항: 7.1_
 
-- [ ] 12. Next.js 프론트엔드 프로젝트 설정
+- [x] 12. Next.js 프론트엔드 프로젝트 설정
   - Next.js 16 프로젝트 생성 및 TypeScript 설정
   - Tailwind CSS, Leaflet, Chart.js, React-Query, D3.js 의존성 설치
   - OAuth2 인증을 위한 NextAuth.js 설정
@@ -388,12 +388,19 @@
     - _요구사항: 5.2, 5.3_
 
 - [ ] 22. 사용자 인증 및 권한 관리 UI 구현
-  - [ ] 22.1 로그인/로그아웃 UI 구현
-    - OAuth2 로그인 버튼 (Google, Naver, Kakao)
+  - [x] 22.1 기본 레이아웃 및 인증 UI 구현
+    - Root layout 구현 (app/layout.tsx)
+    - Header 컴포넌트 구현 (네비게이션, 사용자 프로필)
+    - 로그인 페이지 구현 (app/signin/page.tsx)
+    - Root 페이지 구현 (app/page.tsx)
+    - _요구사항: 8.3_
+
+  - [x] 22.2 OAuth2 로그인 기능 구현
+    - OAuth2 로그인 버튼 (Google, Naver, GitHub)
     - 사용자 프로필 표시 및 로그아웃 기능
     - _요구사항: 8.3_
 
-  - [ ] 22.2 권한별 UI 제어 구현
+  - [ ] 22.3 권한별 UI 제어 구현
     - ANALYST, MANAGER, ADMIN 권한별 메뉴 분리
     - 권한에 따른 기능 접근 제어
     - _요구사항: 8.3_
