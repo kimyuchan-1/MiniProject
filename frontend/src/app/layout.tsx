@@ -17,11 +17,7 @@ export const metadata: Metadata = {
   description: "횡단보도 신호등 설치 현황과 보행 안전 리스크 분석 대시보드",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko">
       <head>
@@ -32,9 +28,7 @@ export default function RootLayout({
           crossOrigin=""
         />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen w-full`}>
         {children}
       </body>
     </html>

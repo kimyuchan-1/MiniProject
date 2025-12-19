@@ -37,13 +37,14 @@
 - Jackson (JSON 처리)
 
 **프론트엔드 (Next.js)**
-- Next.js 14 (App Router)
-- React 18
+- Next.js 16 (App Router)
+- React 19
 - TypeScript
 - Leaflet (지도 라이브러리)
 - Chart.js (차트 라이브러리)
+- D3.js (고급 데이터 시각화)
 - Axios (HTTP 클라이언트)
-- Tailwind CSS 또는 Material-UI (스타일링)
+- Tailwind CSS (스타일링)
 
 **데이터베이스**
 - MySQL 8.0+
@@ -726,25 +727,35 @@ public class AlertController {
 
 ### 프론트엔드 컴포넌트 (Next.js)
 
-#### 1. 페이지 구조 (App Router)
+#### 1. 페이지 구조 (Next.js 16 App Router)
 ```typescript
 // app/page.tsx - 메인 대시보드 페이지
 export default function Dashboard() {
   return (
     <div className="dashboard">
-      <StatsOverview />
-      <MapView />
-      <AnalyticsPanel />
+      <KPIDashboard />
+      <InteractiveMap />
+      <MonthlyTrendChart />
     </div>
   );
 }
 
-// app/analysis/page.tsx - 분석 페이지
-export default function AnalysisPage() {
+// app/predictions/page.tsx - 예측 분석 페이지
+export default function PredictionsPage() {
   return (
-    <div className="analysis">
-      <CorrelationChart />
-      <ImprovementTable />
+    <div className="predictions">
+      <AccidentPredictionChart />
+      <SignalEffectSimulation />
+    </div>
+  );
+}
+
+// app/investments/page.tsx - 투자 최적화 페이지
+export default function InvestmentsPage() {
+  return (
+    <div className="investments">
+      <InvestmentPlanDashboard />
+      <ROIAnalysis />
     </div>
   );
 }

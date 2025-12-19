@@ -234,10 +234,10 @@
   - _요구사항: 7.1_
 
 - [ ] 12. Next.js 프론트엔드 프로젝트 설정
-  - Next.js 14 프로젝트 생성 및 TypeScript 설정
+  - Next.js 16 프로젝트 생성 및 TypeScript 설정
   - Tailwind CSS, Leaflet, Chart.js, React-Query, D3.js 의존성 설치
   - OAuth2 인증을 위한 NextAuth.js 설정
-  - 기본 프로젝트 구조 및 라우팅 설정
+  - 기본 프로젝트 구조 및 라우팅 설정 (App Router)
   - _요구사항: 7.1_
 
 - [ ] 13. Next.js API 라우트 구현
@@ -415,10 +415,11 @@
     - _요구사항: 7.3_
 
 - [ ] 25. 성능 최적화 및 배포 준비
-  - [ ] 25.1 Next.js 빌드 최적화
+  - [ ] 25.1 Next.js 16 빌드 최적화
     - 이미지 최적화 및 코드 스플리팅
     - 정적 생성 및 서버 사이드 렌더링 설정
     - 월별 데이터 캐싱 전략 구현
+    - Next.js 16 새로운 성능 최적화 기능 활용
     - _요구사항: 7.1_
 
   - [ ] 25.2 Spring Boot 프로덕션 설정
