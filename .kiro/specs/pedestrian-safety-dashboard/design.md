@@ -32,7 +32,7 @@
 - MySQL Connector
 - Spring Web (REST API)
 - Spring Security
-- Spring OAuth2 Client
+- Spring Session JDBC
 - Lombok
 - Jackson (JSON 처리)
 
