@@ -1,5 +1,6 @@
 'use client'
 
+import KPICard from '@/components/KPICard';
 import { useState, useEffect } from 'react';
 
 interface RegionData {
@@ -10,7 +11,7 @@ interface RegionData {
   safetyIndex: number;
 }
 
-interface KPIData {
+export interface KPIData {
   totalCrosswalks: number;
   signalInstallationRate: number;
   accidentReductionRate: number;
@@ -63,7 +64,7 @@ export default function Dashboard() {
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">교통 안전 분석 대시보드</h1>
+              <h1 className="text-2xl font-bold text-gray-900">보행자 안전 분석 대시보드</h1>
               <p className="text-gray-600 mt-1">보행자 사고 데이터 기반 안전 현황 분석</p>
             </div>
             <div className="flex gap-4">
@@ -89,44 +90,18 @@ export default function Dashboard() {
         {/* KPI 대시보드 */}
         <div className="mb-8">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            핵심 성과 지표 (KPI) - {selectedRegion}
+            횡단보도 신호등 설치 현황 - {selectedRegion}
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div className="bg-white p-6 rounded-lg shadow-sm border">
-              <div className="text-sm font-medium text-gray-500 mb-2">
-                전체 횡단보도
-              </div>
-              <div className="text-2xl font-bold text-gray-900">{kpiData.totalCrosswalks.toLocaleString()}</div>
-              <div className="text-xs text-gray-500 mt-1">개소</div>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm border">
-              <div className="text-sm font-medium text-gray-500 mb-2">
-                신호등 설치율
-              </div>
-              <div className="text-2xl font-bold text-blue-600">{kpiData.signalInstallationRate}%</div>
-              <div className="text-xs text-green-600 mt-1">↑ {kpiData.monthlyChange}% 전월 대비</div>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm border">
-              <div className="text-sm font-medium text-gray-500 mb-2">
-                사고 감소율
-              </div>
-              <div className="text-2xl font-bold text-green-600">{kpiData.accidentReductionRate}%</div>
-              <div className="text-xs text-green-600 mt-1">전년 동월 대비</div>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm border">
-              <div className="text-sm font-medium text-gray-500 mb-2">
-                안전 지수
-              </div>
-              <div className="text-2xl font-bold text-purple-600">{kpiData.safetyIndex}</div>
-              <div className="text-xs text-gray-500 mt-1">100점 만점</div>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm border">
-              <div className="text-sm font-medium text-gray-500 mb-2">
-                월별 변화율
-              </div>
-              <div className="text-2xl font-bold text-orange-600">+{kpiData.monthlyChange}%</div>
-              <div className="text-xs text-gray-500 mt-1">안전도 개선</div>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <KPICard title = "전체 횡단보도" content = {kpiData.totalCrosswalks.toLocaleString()} caption = "개소" color = "gray"/>
+            <KPICard title = "신호등 설치율" content = {kpiData.signalInstallationRate+"%"} 
+                    caption = {kpiData.monthlyChange > 0 
+                    ? `↑ ${kpiData.monthlyChange}% 전월 대비` 
+                    : kpiData.monthlyChange < 0 ? `↓ ${kpiData.monthlyChange}% 전월 대비`
+                    : "변동 없음"} 
+                    color = {kpiData.monthlyChange > 0 ? "green" : kpiData.monthlyChange == 0 ? "gray" : "red"}/>
+            <KPICard title = "사고 감소율" content = {kpiData.accidentReductionRate+"%"}  caption = "전년 동월 대비" color = {kpiData.accidentReductionRate > 0 ? "green" : kpiData.accidentReductionRate == 0 ? "gray" : "red"}/>
+            <KPICard title = "안전 지수" content = {kpiData.safetyIndex+"%"}  caption = "100점 만점" color = "gray"/>
           </div>
         </div>
 
@@ -149,9 +124,9 @@ export default function Dashboard() {
                 </button>
               </div>
             </div>
-            <div className="bg-white rounded-lg shadow-sm border h-[500px] relative overflow-hidden">
+            <div className="bg-white rounded-lg shadow-sm border h-125 relative overflow-hidden">
               {/* 지도 플레이스홀더 */}
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center">
+              <div className="absolute inset-0 bg-linear-to-br from-blue-50 to-green-50 flex items-center justify-center">
                 <div className="text-center">
                   <div className="text-4xl mb-4">🗺️</div>
                   <p className="text-gray-600 mb-2">인터랙티브 지도</p>

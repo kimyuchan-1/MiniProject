@@ -1337,6 +1337,10 @@ public class CorrelationData {
 *모든* 데이터 로딩 요청에 대해, API 응답에 로딩 상태 정보가 포함되어야 한다
 **검증: 요구사항 7.3**
 
+### 속성 16: 세션 인증 상태 관리
+*모든* 인증된 사용자 세션에 대해, 세션 만료 전까지 사용자 정보와 권한이 일관되게 유지되어야 한다
+**검증: 요구사항 12.2, 12.4**
+
 ## 오류 처리
 
 ### 데이터 검증 오류
@@ -1462,35 +1466,56 @@ public double calculateTotalScore(double facilityScore, double riskScore) {
 
 ## 보안 및 인증
 
-### Spring Security 설정
+### Spring Security 세션 기반 인증 설정
 
-#### 1. OAuth2 클라이언트 설정
+#### 1. 세션 기반 인증 설정
 ```java
 @Configuration
 @EnableWebSecurity
+@EnableGlobalMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
+    
+    @Autowired
+    private CustomUserDetailsService userDetailsService;
+    
+    @Autowired
+    private CustomAuthenticationSuccessHandler successHandler;
+    
+    @Autowired
+    private CustomAuthenticationFailureHandler failureHandler;
     
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/api/public/**").permitAll()
+                .requestMatchers("/api/public/**", "/api/auth/**").permitAll()
                 .requestMatchers("/api/dashboard/**").authenticated()
                 .requestMatchers("/api/map/**").authenticated()
                 .requestMatchers("/api/analysis/**").authenticated()
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
-            .oauth2Login(oauth2 -> oauth2
-                .loginPage("/login")
-                .defaultSuccessUrl("/dashboard")
-                .userInfoEndpoint(userInfo -> userInfo
-                    .userService(customOAuth2UserService())
-                )
+            .formLogin(form -> form
+                .loginPage("/api/auth/login")
+                .loginProcessingUrl("/api/auth/login")
+                .usernameParameter("email")
+                .passwordParameter("password")
+                .successHandler(successHandler)
+                .failureHandler(failureHandler)
+                .permitAll()
             )
             .logout(logout -> logout
-                .logoutSuccessUrl("/")
+                .logoutUrl("/api/auth/logout")
+                .logoutSuccessUrl("/api/auth/logout/success")
                 .invalidateHttpSession(true)
                 .clearAuthentication(true)
+                .deleteCookies("JSESSIONID")
+            )
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                .maximumSessions(1)
+                .maxSessionsPreventsLogin(false)
+                .sessionRegistry(sessionRegistry())
             )
             .csrf(csrf -> csrf.disable())
             .cors(cors -> cors.configurationSource(corsConfigurationSource()));
@@ -1499,14 +1524,19 @@ public class SecurityConfig {
     }
     
     @Bean
-    public CustomOAuth2UserService customOAuth2UserService() {
-        return new CustomOAuth2UserService();
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+    
+    @Bean
+    public SessionRegistry sessionRegistry() {
+        return new SessionRegistryImpl();
     }
     
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+        configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost:3000", "http://localhost:3001"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
@@ -1518,7 +1548,7 @@ public class SecurityConfig {
 }
 ```
 
-#### 2. 사용자 엔티티
+#### 2. 사용자 엔티티 (세션 기반)
 ```java
 @Entity
 @Table(name = "users")
@@ -1532,8 +1562,11 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(unique = true)
+    @Column(unique = true, nullable = false)
     private String email;
+    
+    @Column(nullable = false)
+    private String password;
     
     private String name;
     private String picture;
@@ -1541,10 +1574,16 @@ public class User {
     @Enumerated(EnumType.STRING)
     private Role role;
     
-    @Enumerated(EnumType.STRING)
-    private Provider provider;
+    @Column(name = "account_non_expired")
+    private boolean accountNonExpired = true;
     
-    private String providerId;
+    @Column(name = "account_non_locked")
+    private boolean accountNonLocked = true;
+    
+    @Column(name = "credentials_non_expired")
+    private boolean credentialsNonExpired = true;
+    
+    private boolean enabled = true;
     
     @CreationTimestamp
     private LocalDateTime createdAt;
@@ -1557,58 +1596,236 @@ public class User {
 @RequiredArgsConstructor
 public enum Role {
     ADMIN("ROLE_ADMIN", "관리자"),
-    USER("ROLE_USER", "일반사용자");
+    USER("ROLE_USER", "일반사용자"),
+    ANALYST("ROLE_ANALYST", "분석가"),
+    MANAGER("ROLE_MANAGER", "매니저");
     
     private final String key;
     private final String title;
 }
-
-@Getter
-@RequiredArgsConstructor
-public enum Provider {
-    GOOGLE("google"),
-    NAVER("naver"),
-    KAKAO("kakao");
-    
-    private final String registrationId;
-}
 ```
 
-#### 3. OAuth2 사용자 서비스
+#### 3. 사용자 인증 서비스
 ```java
 @Service
 @RequiredArgsConstructor
-@Transactional
-public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
+@Transactional(readOnly = true)
+public class CustomUserDetailsService implements UserDetailsService {
     
     private final UserRepository userRepository;
     
     @Override
-    public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
-        OAuth2UserService<OAuth2UserRequest, OAuth2User> delegate = new DefaultOAuth2UserService();
-        OAuth2User oAuth2User = delegate.loadUser(userRequest);
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + email));
         
-        String registrationId = userRequest.getClientRegistration().getRegistrationId();
-        String userNameAttributeName = userRequest.getClientRegistration()
-                .getProviderDetails().getUserInfoEndpoint().getUserNameAttributeName();
-        
-        OAuthAttributes attributes = OAuthAttributes.of(registrationId, userNameAttributeName, oAuth2User.getAttributes());
-        
-        User user = saveOrUpdate(attributes);
-        
-        return new DefaultOAuth2User(
-                Collections.singleton(new SimpleGrantedAuthority(user.getRole().getKey())),
-                attributes.getAttributes(),
-                attributes.getNameAttributeKey()
-        );
+        return new CustomUserPrincipal(user);
+    }
+}
+
+@Getter
+@RequiredArgsConstructor
+public class CustomUserPrincipal implements UserDetails {
+    
+    private final User user;
+    
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return Collections.singleton(new SimpleGrantedAuthority(user.getRole().getKey()));
     }
     
-    private User saveOrUpdate(OAuthAttributes attributes) {
-        User user = userRepository.findByEmail(attributes.getEmail())
-                .map(entity -> entity.update(attributes.getName(), attributes.getPicture()))
-                .orElse(attributes.toEntity());
+    @Override
+    public String getPassword() {
+        return user.getPassword();
+    }
+    
+    @Override
+    public String getUsername() {
+        return user.getEmail();
+    }
+    
+    @Override
+    public boolean isAccountNonExpired() {
+        return user.isAccountNonExpired();
+    }
+    
+    @Override
+    public boolean isAccountNonLocked() {
+        return user.isAccountNonLocked();
+    }
+    
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return user.isCredentialsNonExpired();
+    }
+    
+    @Override
+    public boolean isEnabled() {
+        return user.isEnabled();
+    }
+}
+```
+
+#### 4. 인증 핸들러
+```java
+@Component
+@RequiredArgsConstructor
+public class CustomAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
+    
+    private final ObjectMapper objectMapper;
+    
+    @Override
+    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, 
+                                      Authentication authentication) throws IOException {
         
-        return userRepository.save(user);
+        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+        User user = principal.getUser();
+        
+        UserSessionDto userSession = UserSessionDto.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .name(user.getName())
+                .role(user.getRole().getKey())
+                .picture(user.getPicture())
+                .build();
+        
+        response.setContentType("application/json;charset=UTF-8");
+        response.setStatus(HttpServletResponse.SC_OK);
+        response.getWriter().write(objectMapper.writeValueAsString(
+                ApiResponse.success("로그인 성공", userSession)
+        ));
+    }
+}
+
+@Component
+@RequiredArgsConstructor
+public class CustomAuthenticationFailureHandler implements AuthenticationFailureHandler {
+    
+    private final ObjectMapper objectMapper;
+    
+    @Override
+    public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response, 
+                                      AuthenticationException exception) throws IOException {
+        
+        response.setContentType("application/json;charset=UTF-8");
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.getWriter().write(objectMapper.writeValueAsString(
+                ApiResponse.error("로그인 실패: " + exception.getMessage())
+        ));
+    }
+}
+```
+
+#### 5. 인증 관련 API 컨트롤러
+```java
+@RestController
+@RequestMapping("/api/auth")
+@RequiredArgsConstructor
+public class AuthController {
+    
+    private final UserService userService;
+    private final PasswordEncoder passwordEncoder;
+    
+    @PostMapping("/register")
+    public ResponseEntity<ApiResponse<UserSessionDto>> register(@RequestBody @Valid RegisterRequest request) {
+        User user = userService.createUser(request);
+        
+        UserSessionDto userSession = UserSessionDto.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .name(user.getName())
+                .role(user.getRole().getKey())
+                .build();
+        
+        return ResponseEntity.ok(ApiResponse.success("회원가입 성공", userSession));
+    }
+    
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<UserSessionDto>> getCurrentUser(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("인증되지 않은 사용자"));
+        }
+        
+        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+        User user = principal.getUser();
+        
+        UserSessionDto userSession = UserSessionDto.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .name(user.getName())
+                .role(user.getRole().getKey())
+                .picture(user.getPicture())
+                .build();
+        
+        return ResponseEntity.ok(ApiResponse.success("사용자 정보 조회 성공", userSession));
+    }
+    
+    @PostMapping("/logout/success")
+    public ResponseEntity<ApiResponse<Void>> logoutSuccess() {
+        return ResponseEntity.ok(ApiResponse.success("로그아웃 성공", null));
+    }
+    
+    @GetMapping("/check")
+    public ResponseEntity<ApiResponse<Boolean>> checkAuthStatus(Authentication authentication) {
+        boolean isAuthenticated = authentication != null && authentication.isAuthenticated();
+        return ResponseEntity.ok(ApiResponse.success("인증 상태 확인", isAuthenticated));
+    }
+}
+```
+
+#### 6. 데이터 전송 객체
+```java
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class UserSessionDto {
+    private Long id;
+    private String email;
+    private String name;
+    private String role;
+    private String picture;
+}
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class RegisterRequest {
+    @NotBlank(message = "이메일은 필수입니다")
+    @Email(message = "올바른 이메일 형식이 아닙니다")
+    private String email;
+    
+    @NotBlank(message = "비밀번호는 필수입니다")
+    @Size(min = 8, message = "비밀번호는 최소 8자 이상이어야 합니다")
+    private String password;
+    
+    @NotBlank(message = "이름은 필수입니다")
+    private String name;
+}
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ApiResponse<T> {
+    private boolean success;
+    private String message;
+    private T data;
+    
+    public static <T> ApiResponse<T> success(String message, T data) {
+        return ApiResponse.<T>builder()
+                .success(true)
+                .message(message)
+                .data(data)
+                .build();
+    }
+    
+    public static <T> ApiResponse<T> error(String message) {
+        return ApiResponse.<T>builder()
+                .success(false)
+                .message(message)
+                .build();
     }
 }
 ```
@@ -1616,8 +1833,10 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 ### API 접근 제어
 
 #### 1. 역할 기반 접근 제어
-- **ADMIN**: 모든 API 접근 가능, 데이터 임포트 기능
-- **USER**: 대시보드 조회, 분석 기능만 접근 가능
+- **ADMIN**: 모든 API 접근 가능, 데이터 임포트 기능, 사용자 관리
+- **MANAGER**: 투자 계획 및 예산 관리 기능 접근
+- **ANALYST**: 예측 분석 및 고급 분석 기능 접근
+- **USER**: 대시보드 조회, 기본 분석 기능만 접근 가능
 
 #### 2. API 엔드포인트 보안
 ```java
@@ -1637,6 +1856,18 @@ public class DashboardController {
     public ResponseEntity<ImportResult> importCrosswalks(@RequestParam MultipartFile file) {
         // 구현
     }
+    
+    @GetMapping("/predictions/accidents")
+    @PreAuthorize("hasRole('ANALYST')")
+    public ResponseEntity<List<AccidentPrediction>> predictAccidents() {
+        // 구현
+    }
+    
+    @PostMapping("/investments/plans")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<InvestmentPlan> createInvestmentPlan(@RequestBody CreateInvestmentPlanRequest request) {
+        // 구현
+    }
 }
 ```
 
@@ -1645,34 +1876,71 @@ public class DashboardController {
 #### application.yml
 ```yaml
 spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/pedestrian_safety?useSSL=false&serverTimezone=UTC&characterEncoding=UTF-8
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:password}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+  
+  session:
+    store-type: jdbc
+    jdbc:
+      initialize-schema: always
+    timeout: 1800 # 30분
+  
   security:
-    oauth2:
-      client:
-        registration:
-          google:
-            client-id: ${GOOGLE_CLIENT_ID}
-            client-secret: ${GOOGLE_CLIENT_SECRET}
-            scope:
-              - email
-              - profile
-          naver:
-            client-id: ${NAVER_CLIENT_ID}
-            client-secret: ${NAVER_CLIENT_SECRET}
-            scope:
-              - name
-              - email
-            authorization-grant-type: authorization_code
-            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
-          github:
-            client-id: ${GITHUB_CLIENT_ID}
-            client-secret: ${GITHUB_CLIENT_SECRET}
-            scope:
-              - user:email
-              - read:user
-        provider:
-          naver:
-            authorization-uri: https://nid.naver.com/oauth2.0/authorize
-            token-uri: https://nid.naver.com/oauth2.0/token
-            user-info-uri: https://openapi.naver.com/v1/nid/me
-            user-name-attribute: response
+    user:
+      name: admin
+      password: ${ADMIN_PASSWORD:admin123}
+      roles: ADMIN
+
+server:
+  servlet:
+    session:
+      cookie:
+        name: JSESSIONID
+        http-only: true
+        secure: false # 개발환경에서는 false, 프로덕션에서는 true
+        same-site: lax
+        max-age: 1800 # 30분
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    com.pedestriansafety: DEBUG
+```
+
+#### 세션 테이블 생성 (Spring Session JDBC)
+```sql
+CREATE TABLE SPRING_SESSION (
+    PRIMARY_ID CHAR(36) NOT NULL,
+    SESSION_ID CHAR(36) NOT NULL,
+    CREATION_TIME BIGINT NOT NULL,
+    LAST_ACCESS_TIME BIGINT NOT NULL,
+    MAX_INACTIVE_INTERVAL INT NOT NULL,
+    EXPIRY_TIME BIGINT NOT NULL,
+    PRINCIPAL_NAME VARCHAR(100),
+    CONSTRAINT SPRING_SESSION_PK PRIMARY KEY (PRIMARY_ID)
+);
+
+CREATE UNIQUE INDEX SPRING_SESSION_IX1 ON SPRING_SESSION (SESSION_ID);
+CREATE INDEX SPRING_SESSION_IX2 ON SPRING_SESSION (EXPIRY_TIME);
+CREATE INDEX SPRING_SESSION_IX3 ON SPRING_SESSION (PRINCIPAL_NAME);
+
+CREATE TABLE SPRING_SESSION_ATTRIBUTES (
+    SESSION_PRIMARY_ID CHAR(36) NOT NULL,
+    ATTRIBUTE_NAME VARCHAR(200) NOT NULL,
+    ATTRIBUTE_BYTES LONGBLOB NOT NULL,
+    CONSTRAINT SPRING_SESSION_ATTRIBUTES_PK PRIMARY KEY (SESSION_PRIMARY_ID, ATTRIBUTE_NAME),
+    CONSTRAINT SPRING_SESSION_ATTRIBUTES_FK FOREIGN KEY (SESSION_PRIMARY_ID) REFERENCES SPRING_SESSION(PRIMARY_ID) ON DELETE CASCADE
+);
 ```

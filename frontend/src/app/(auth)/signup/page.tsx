@@ -32,7 +32,7 @@ export default function Signup() {
     setIsLoading(true);
     
     try {
-      const response = await fetch("http://localhost:8080/signup", {
+      const response = await fetch("/api/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -42,7 +42,12 @@ export default function Signup() {
           email: formData.email,
           password: formData.password
         }),
+        credentials:"include",
       });
+
+      const text = await response.text();
+      let data: any = null;
+      try { data = text ? JSON.parse(text) : null; } catch {}
 
       if (response.ok) {
         const result = await response.json();
