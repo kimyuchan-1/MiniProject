@@ -31,16 +31,7 @@ export async function GET(req: Request) {
         .lte("crosswalk_lat", bound.north)
         .gte("crosswalk_lon", bound.west)
         .lte("crosswalk_lon", bound.east)
-        .range(0,4999)
-        .range(5000,9999)
-        .range(10000,14999)
-        .range(15000,19999)
-        .range(20000,24999)
-        .range(25000,29999)
-        .range(30000,34999)
-        .range(35000,39999)
-        .range(40000,44999)
-        .range(45000,49999);
+        .limit(50000);
 
     if (cwErr) return NextResponse.json({ error: cwErr.message }, { status: 500 });
     if (!crosswalks?.length) return NextResponse.json([]);
@@ -52,7 +43,7 @@ export async function GET(req: Request) {
         address: cw.address,
         sido: cw.sido,
         sigungu: cw.sigungu,
-        hasSignal: Number(cw.signal) === 1, // ✅ 0/1 → boolean
+        hasSignal: Number(cw.signal) === 1,
     }));
 
     return NextResponse.json(out);

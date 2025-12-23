@@ -2,11 +2,11 @@
 
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 
-type CW = {
+interface Crosswalk {
     cw_uid: string;
     sido: string;
     sigungu: string;
@@ -15,6 +15,39 @@ type CW = {
     crosswalk_lon: number;
     hasSignal: boolean;
 }
+
+function validateCrosswalkData(data: unknown): data is Crosswalk[] {
+    return Array.isArray(data) && data.every(item => 
+        typeof item === 'object' && 
+        item !== null &&
+        'cw_uid' in item &&
+        'hasSignal' in item &&
+        typeof item.hasSignal === 'boolean' &&
+        'crosswalk_lat' in item &&
+        'crosswalk_lon' in item &&
+        typeof item.crosswalk_lat === 'number' &&
+        typeof item.crosswalk_lon === 'number'
+    );
+}
+
+const createClusterCustomIcon = (cluster: any) => {
+    const count = cluster.getChildCount();
+    let size = 'small';
+    
+    if (count < 10) {
+        size = 'small';
+    } else if (count < 100) {
+        size = 'medium';
+    } else {
+        size = 'large';
+    }
+    
+    return L.divIcon({
+        html: `<div><span>${count}</span></div>`,
+        className: `custom-marker-cluster custom-marker-cluster-${size}`,
+        iconSize: L.point(50, 50, true),
+    });
+};
 
 const iconHas = L.divIcon({
   className: "",
@@ -36,19 +69,29 @@ const iconNone = L.divIcon({
   className: "",
   html: `
     <div style="
-      width:0;height:0;
-      border-left:10px solid transparent;
-      border-right:10px solid transparent;
-      border-top:18px solid #ef4444;
-      filter: drop-shadow(0 1px 4px rgba(0,0,0,.35));
-    "></div>
+      width:18px;height:18px;
+      border-radius:9999px;
+      background:#ef4444;
+      border:2px solid white;
+      box-shadow:0 1px 6px rgba(0,0,0,.35);
+      position:relative;
+    ">
+      <div style="
+        position:absolute;
+        top:50%;left:50%;
+        transform:translate(-50%,-50%);
+        width:8px;height:2px;
+        background:white;
+        border-radius:1px;
+      "></div>
+    </div>
   `,
-  iconSize: [20, 18],
-  iconAnchor: [10, 18],
-  popupAnchor: [0, -14],
+  iconSize: [18, 18],
+  iconAnchor: [9, 9],
+  popupAnchor: [0, -10],
 });
 
-function BoundsFetcher({ onData, onLoading }: { onData: (rows: CW[]) => void; onLoading: (v: boolean) => void }) {
+function BoundsFetcher({ onData, onLoading }: { onData: (rows: Crosswalk[]) => void; onLoading: (v: boolean) => void }) {
     useMapEvents({
         moveend: async (e) => {
             const map = e.target;
@@ -63,31 +106,19 @@ function BoundsFetcher({ onData, onLoading }: { onData: (rows: CW[]) => void; on
                     { cache: "no-store" }
                 );
 
-                let json: unknown;
-
-                try {
-                    json = await res.json();
-                } catch {
-                    console.error("[MapView] invalid JSON response");
-                    onData([]); 
-                    return;
-                }
-
                 if (!res.ok) {
-                    console.error("[MapView] API error:", json);
-                    onData([]); 
-                    return;
+                    throw new Error(`API Error: ${res.status}`);
                 }
 
-                if (!Array.isArray(json)) {
-                    console.error("[MapView] response is not array:", json);
-                    onData([]); 
-                    return;
+                const json = await res.json();
+
+                if (!validateCrosswalkData(json)) {
+                    throw new Error('Invalid data format received from API');
                 }
 
-                onData(json as CW[]);
+                onData(json);
             } catch (err) {
-                console.error("[MapView] fetch failed:", err);
+                console.error("[MapView] Error:", err);
                 onData([]); 
             } finally {
                 onLoading(false);
@@ -99,13 +130,71 @@ function BoundsFetcher({ onData, onLoading }: { onData: (rows: CW[]) => void; on
 }
 
 export default function MapView() {
-    const [rows, setRows] = useState<CW[]>([]);
+    const [rows, setRows] = useState<Crosswalk[]>([]);
     const [loading, setLoading] = useState(false);
 
     const center = useMemo<[number, number]>(() => [37.5665, 126.978], []);
 
     return (
         <section className="relative w-full">
+            <style jsx global>{`
+                .custom-marker-cluster {
+                    background-color: #3b82f6;
+                    border: 3px solid white;
+                    border-radius: 50%;
+                    text-align: center;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                
+                .custom-marker-cluster div {
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border-radius: 50%;
+                }
+                
+                .custom-marker-cluster span {
+                    color: white;
+                    font-weight: bold;
+                    font-size: 16px;
+                    line-height: 1;
+                }
+                
+                .custom-marker-cluster-small {
+                    width: 40px;
+                    height: 40px;
+                    background-color: #3b82f6;
+                }
+                
+                .custom-marker-cluster-small span {
+                    font-size: 14px;
+                }
+                
+                .custom-marker-cluster-medium {
+                    width: 50px;
+                    height: 50px;
+                    background-color: #2563eb;
+                }
+                
+                .custom-marker-cluster-medium span {
+                    font-size: 16px;
+                }
+                
+                .custom-marker-cluster-large {
+                    width: 60px;
+                    height: 60px;
+                    background-color: #1d4ed8;
+                }
+                
+                .custom-marker-cluster-large span {
+                    font-size: 18px;
+                }
+            `}</style>
             <div className="relative h-[70vh] min-h-130 w-full overflow-hidden rounded-2xl border bg-white shadow">
                 <MapContainer center={center} zoom={12} className="h-full w-full">
                     <TileLayer
@@ -115,11 +204,13 @@ export default function MapView() {
 
                     <BoundsFetcher onData={setRows} onLoading={setLoading} />
 
-                    <MarkerClusterGroup chunkedLoading
-                        // 옵션: 너무 일찍 풀리지 않게
-                        // disableClusteringAtZoom={16}
-                        // 옵션: 클러스터 반경(값 클수록 더 잘 뭉침)
-                        // maxClusterRadius={50} 
+                    <MarkerClusterGroup 
+                        chunkedLoading
+                        iconCreateFunction={createClusterCustomIcon}
+                        maxClusterRadius={60}
+                        spiderfyOnMaxZoom={true}
+                        showCoverageOnHover={false}
+                        zoomToBoundsOnClick={true}
                     >
                     {rows.map((cw) => (
                         <Marker
@@ -164,14 +255,14 @@ export default function MapView() {
                 </div>
 
                 {/* 범례 */}
-                <div className="pointer-events-none absolute left-3 bottom-3 z-999 rounded-xl border bg-white/90 p-3 text-xs shadow">
+                <div className="pointer-events-none absolute left-3 bottom-3 z-999 rounded-xl border bg-white/90 p-3 text-xs shadow" role="img" aria-label="지도 범례">
                     <div className="mb-2 font-semibold text-slate-800">범례</div>
-                    <div className="flex items-center gap-2">
-                        <span className="inline-block h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white shadow" />
+                    <div className="flex items-center gap-2" role="listitem">
+                        <span className="inline-block h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white shadow" aria-hidden="true" />
                         100m 내 신호등 있음
                     </div>
-                    <div className="mt-1 flex items-center gap-2">
-                        <span className="inline-block h-3 w-3 rounded-full bg-red-500 ring-2 ring-white shadow" />
+                    <div className="mt-1 flex items-center gap-2" role="listitem">
+                        <span className="inline-block h-3 w-3 rounded-full bg-red-500 ring-2 ring-white shadow" aria-hidden="true" />
                         100m 내 신호등 없음
                     </div>
                 </div>
