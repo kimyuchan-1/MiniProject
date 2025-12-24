@@ -26,12 +26,12 @@ export async function GET(req: Request) {
 
     const { data: crosswalks, error: cwErr } = await supabase
         .from("CW")
-        .select("cw_uid,crosswalk_lat,crosswalk_lon,signal,address,sido,sigungu")
+        .select("cw_uid,crosswalk_lat,crosswalk_lon,has_ped_signal,address,sido,sigungu")
         .gte("crosswalk_lat", bound.south)
         .lte("crosswalk_lat", bound.north)
         .gte("crosswalk_lon", bound.west)
         .lte("crosswalk_lon", bound.east)
-        .limit(50000);
+        .limit(5000);
 
     if (cwErr) return NextResponse.json({ error: cwErr.message }, { status: 500 });
     if (!crosswalks?.length) return NextResponse.json([]);
@@ -43,7 +43,7 @@ export async function GET(req: Request) {
         address: cw.address,
         sido: cw.sido,
         sigungu: cw.sigungu,
-        hasSignal: Number(cw.signal) === 1,
+        hasSignal: Number(cw.has_ped_signal) === 1,
     }));
 
     return NextResponse.json(out);
