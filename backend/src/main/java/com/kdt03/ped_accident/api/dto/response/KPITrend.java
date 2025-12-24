@@ -10,7 +10,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class KPITrend {
-    private String yearMonth; // YYYY-MM
-    private int accidentCount;
-    private int fatalityCount;
+    private int year;
+    private int month;
+    private double signalInstallationRate; // 신호등 설치율
+    private double accidentReductionRate;  // 사고 감소율
+    private double safetyIndex;            // 안전 지수
+    private double monthlyChangeRate;      // 월별 변화율
 }
+
