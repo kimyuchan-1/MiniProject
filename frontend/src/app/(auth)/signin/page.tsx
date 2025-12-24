@@ -47,12 +47,12 @@ export default function Signin() {
             <div className='w-full max-w-100 bg-white p-10 rounded-xl text-center shadow-[0_15px_35px_rgba(0,0,0,0.1)]'>
                 <h2 className='text-[28px] font-light text-[#333] mb-7.5'>로그인</h2>
                 <div className='mb-5 text-left'>
-                    <label className='block mb-2 text-[#555] font-medium text-sm'>사용자명</label>
+                    <label className='block mb-2 text-[#555] font-medium text-sm'>이메일</label>
                     <input 
                         className='w-full box-border px-4 py-3 border-2 border-[#e1e5e9] rounded-lg text-base transition-all duration-300 ease-in-out focus:outline-none focus:border-[#667eea] focus:shadow-[0_0_0_3px_rgba(102,126,234,0.1)]' 
                         type="text" 
                         id="username" 
-                        placeholder="사용자명을 입력하세요" 
+                        placeholder="이메일을 입력하세요" 
                         value={credentials.username} 
                         onChange={handleChange}
                         onKeyDown={(e) => e.key === "Enter" && SigninButton()} />
