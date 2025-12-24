@@ -827,18 +827,18 @@ CREATE TABLE crosswalks (
     sigungu VARCHAR(50) NOT NULL,                      -- 시군구
     address VARCHAR(500) NOT NULL,                     -- 주소
     crosswalk_type TINYINT NOT NULL,                   -- 횡단보도 종류 (1-4, 99)
-    highland TINYINT DEFAULT 0,                        -- 고원식 적용 여부 (0/1)
+    is_highland TINYINT DEFAULT 0,                        -- 고원식 적용 여부 (0/1)
     crosswalk_lat DECIMAL(10, 8) NOT NULL,             -- 위도
     crosswalk_lon DECIMAL(11, 8) NOT NULL,             -- 경도
-    roadnum TINYINT,                                   -- 차로수
+    lane_count TINYINT,                                   -- 차로수
     crosswalk_width DECIMAL(5, 2),                     -- 횡단보도 폭(m)
     crosswalk_length DECIMAL(5, 2),                    -- 횡단보도 길이(m)
-    signal TINYINT DEFAULT 0,                          -- 보행자신호등유무 (0/1)
-    button TINYINT DEFAULT 0,                          -- 보행자작동신호기유무 (0/1)
-    sound_signal TINYINT DEFAULT 0,                    -- 음향신호기설치유무 (0/1)
-    bump TINYINT DEFAULT 0,                            -- 보도턱낮춤여부 (0/1)
-    braille_block TINYINT DEFAULT 0,                   -- 점자블록유무 (0/1)
-    spotlight TINYINT DEFAULT 0,                       -- 집중조명시설유무 (0/1)
+    has_ped_signal TINYINT DEFAULT 0,                          -- 보행자신호등유무 (0/1)
+    has_ped_button TINYINT DEFAULT 0,                          -- 보행자작동신호기유무 (0/1)
+    has_ped_sound TINYINT DEFAULT 0,                    -- 음향신호기설치유무 (0/1)
+    has_bump TINYINT DEFAULT 0,                            -- 보도턱낮춤여부 (0/1)
+    has_braille_block TINYINT DEFAULT 0,                   -- 점자블록유무 (0/1)
+    has_spotlight TINYINT DEFAULT 0,                       -- 집중조명시설유무 (0/1)
     org_code INT,                                      -- 관리기관 코드
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -861,11 +861,11 @@ CREATE TABLE traffic_signals (
     signal_lat DECIMAL(10, 8) NOT NULL,                -- 위도
     signal_lon DECIMAL(11, 8) NOT NULL,                -- 경도
     road_shape TINYINT,                                -- 도로 형태 (1-2, 99)
-    main_road TINYINT DEFAULT 0,                       -- 주도로 여부 (0/1)
+    is_main_road TINYINT DEFAULT 0,                       -- 주도로 여부 (0/1)
     signal_type TINYINT,                               -- 신호등 종류 (1-7, 99)
-    button TINYINT DEFAULT 0,                          -- 보행자작동신호기유무 (0/1)
-    remain_time TINYINT DEFAULT 0,                     -- 잔여시간표시기유무 (0/1)
-    sound_signal TINYINT DEFAULT 0,                    -- 시각장애인용음향신호기유무 (0/1)
+    has_ped_button TINYINT DEFAULT 0,                          -- 보행자작동신호기유무 (0/1)
+    has_time_show TINYINT DEFAULT 0,                     -- 잔여시간표시기유무 (0/1)
+    has_sound_signal TINYINT DEFAULT 0,                    -- 시각장애인용음향신호기유무 (0/1)
     org_code INT,                                      -- 행정기관코드
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -874,7 +874,7 @@ CREATE TABLE traffic_signals (
     INDEX idx_region (sido, sigungu),
     INDEX idx_features (button, remain_time, sound_signal)
 );
-```
+
 
 #### monthly_accidents 테이블 (월별 사고 데이터)
 ```sql

@@ -1,4 +1,4 @@
-﻿sido,sigungu,road_type,road_direction,address,signal_lat,signal_lon,road_shape,main_road,signal_type,button,remain_time,sound_signal,org_code,sg_uid
+﻿sido,sigungu,road_type,road_direction,address,signal_lat,signal_lon,road_shape,is_main_road,signal_type,has_ped_button,has_time_show,has_sound_signal,org_code,sg_uid
 경상남도,거제시,지방도,3,경상남도 거제시 고현동 979-2,34.89026283,128.6243405,2,1,2,0,1,0,5370000,SG_000001
 경상남도,거제시,지방도,3,경상남도 거제시 고현동 979-2,34.89026283,128.6243405,2,1,2,0,1,0,5370000,SG_000002
 경상남도,거제시,지방도,3,경상남도 거제시 고현동 29-21,34.88884189,128.6253381,1,1,2,0,1,0,5370000,SG_000003
