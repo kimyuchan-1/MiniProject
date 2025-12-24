@@ -492,31 +492,12 @@ public class SuggestionService {
 }
 
 @Service
-public class PredictionService {
-    public List<AccidentPrediction> predictAccidents(String sido, String sigungu, int months);
-    public AccidentPrediction getMonthlyPrediction(String sido, String sigungu, int year, int month);
-    public PredictionAccuracy validatePredictions(String sido, String sigungu, int year, int month);
-    public List<RiskForecast> generateRiskForecast(String sido, String sigungu);
-    public SignalInstallationEffect simulateSignalInstallation(BigDecimal lat, BigDecimal lon);
-}
-
-@Service
-public class InvestmentService {
-    public InvestmentPlan createInvestmentPlan(CreateInvestmentPlanRequest request, Long userId);
-    public List<InvestmentItem> optimizeInvestmentPlan(Long planId, BigDecimal budget);
-    public InvestmentROI calculateROI(Long planId);
-    public List<InvestmentPriority> getInvestmentPriorities(String sido, String sigungu, BigDecimal budget);
-    public InvestmentReport generateInvestmentReport(Long planId);
-}
-
-@Service
 public class AlertService {
     public void createAlert(AlertType type, String title, String message, String sido, String sigungu);
     public List<AlertNotification> getUnreadAlerts(String role);
     public void markAsRead(Long alertId);
     public void checkAccidentSpikes();
     public void checkNewHotspots();
-    public void sendPredictionAlerts();
 }
 
 @Service
@@ -617,69 +598,6 @@ public class SuggestionController {
     @GetMapping("/statistics")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<SuggestionStatistics> getSuggestionStatistics();
-}
-
-@RestController
-@RequestMapping("/api/predictions")
-public class PredictionController {
-    
-    @GetMapping("/accidents")
-    @PreAuthorize("hasRole('ANALYST')")
-    public ResponseEntity<List<AccidentPrediction>> predictAccidents(
-        @RequestParam(required = false) String sido,
-        @RequestParam(required = false) String sigungu,
-        @RequestParam(defaultValue = "3") int months);
-    
-    @GetMapping("/risk-forecast")
-    @PreAuthorize("hasRole('ANALYST')")
-    public ResponseEntity<List<RiskForecast>> getRiskForecast(
-        @RequestParam(required = false) String sido,
-        @RequestParam(required = false) String sigungu);
-    
-    @PostMapping("/simulate-signal")
-    @PreAuthorize("hasRole('ANALYST')")
-    public ResponseEntity<SignalInstallationEffect> simulateSignalInstallation(
-        @RequestBody @Valid SimulateSignalRequest request);
-    
-    @GetMapping("/accuracy")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<PredictionAccuracy> getPredictionAccuracy(
-        @RequestParam String sido,
-        @RequestParam String sigungu,
-        @RequestParam int year,
-        @RequestParam int month);
-}
-
-@RestController
-@RequestMapping("/api/investments")
-public class InvestmentController {
-    
-    @PostMapping("/plans")
-    @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<InvestmentPlan> createInvestmentPlan(
-        @RequestBody @Valid CreateInvestmentPlanRequest request,
-        Authentication authentication);
-    
-    @GetMapping("/plans/{id}/optimize")
-    @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<List<InvestmentItem>> optimizeInvestmentPlan(
-        @PathVariable Long id,
-        @RequestParam BigDecimal budget);
-    
-    @GetMapping("/priorities")
-    @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<List<InvestmentPriority>> getInvestmentPriorities(
-        @RequestParam(required = false) String sido,
-        @RequestParam(required = false) String sigungu,
-        @RequestParam BigDecimal budget);
-    
-    @GetMapping("/plans/{id}/roi")
-    @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<InvestmentROI> calculateROI(@PathVariable Long id);
-    
-    @GetMapping("/plans/{id}/report")
-    @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<InvestmentReport> generateReport(@PathVariable Long id);
 }
 
 @RestController
@@ -1029,81 +947,6 @@ CREATE TABLE suggestion_comments (
     FOREIGN KEY (parent_id) REFERENCES suggestion_comments(id) ON DELETE CASCADE,
     INDEX idx_suggestion (suggestion_id),
     INDEX idx_created (created_at)
-);
-```
-
-#### accident_predictions 테이블 (사고 예측 데이터)
-```sql
-CREATE TABLE accident_predictions (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    sido VARCHAR(50) NOT NULL,                         -- 시도
-    sigungu VARCHAR(50) NOT NULL,                      -- 시군구
-    prediction_year SMALLINT NOT NULL,                 -- 예측 년도
-    prediction_month TINYINT NOT NULL,                 -- 예측 월
-    predicted_accident_count DECIMAL(8, 2),            -- 예측 사고건수
-    predicted_fatality_count DECIMAL(8, 2),            -- 예측 사망자수
-    confidence_interval_lower DECIMAL(8, 2),           -- 신뢰구간 하한
-    confidence_interval_upper DECIMAL(8, 2),           -- 신뢰구간 상한
-    model_version VARCHAR(20),                         -- 모델 버전
-    prediction_accuracy DECIMAL(5, 4),                 -- 예측 정확도
-    actual_accident_count SMALLINT,                    -- 실제 사고건수 (검증용)
-    actual_fatality_count SMALLINT,                    -- 실제 사망자수 (검증용)
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    UNIQUE KEY unique_prediction (sido, sigungu, prediction_year, prediction_month, model_version),
-    INDEX idx_region_date (sido, sigungu, prediction_year, prediction_month),
-    INDEX idx_accuracy (prediction_accuracy)
-);
-```
-
-#### investment_plans 테이블 (투자 계획)
-```sql
-CREATE TABLE investment_plans (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    plan_name VARCHAR(200) NOT NULL,                   -- 계획명
-    sido VARCHAR(50) NOT NULL,                         -- 시도
-    sigungu VARCHAR(50),                               -- 시군구 (전체 시도인 경우 NULL)
-    total_budget DECIMAL(15, 2) NOT NULL,              -- 총 예산
-    plan_year SMALLINT NOT NULL,                       -- 계획 년도
-    status ENUM('DRAFT', 'APPROVED', 'IN_PROGRESS', 'COMPLETED') DEFAULT 'DRAFT',
-    expected_accident_reduction DECIMAL(5, 2),         -- 예상 사고 감소율
-    expected_roi DECIMAL(8, 4),                        -- 예상 ROI
-    created_by BIGINT NOT NULL,                        -- 작성자 ID
-    approved_by BIGINT,                                -- 승인자 ID
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (created_by) REFERENCES users(id),
-    FOREIGN KEY (approved_by) REFERENCES users(id),
-    INDEX idx_region (sido, sigungu),
-    INDEX idx_year_status (plan_year, status)
-);
-```
-
-#### investment_items 테이블 (투자 항목)
-```sql
-CREATE TABLE investment_items (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    plan_id BIGINT NOT NULL,                           -- 투자 계획 ID
-    hotspot_id BIGINT,                                 -- 사고 다발지역 ID
-    item_type ENUM('SIGNAL_INSTALL', 'SIGNAL_UPGRADE', 'CROSSWALK_INSTALL', 'FACILITY_UPGRADE') NOT NULL,
-    location_lat DECIMAL(10, 8) NOT NULL,              -- 설치 위치 위도
-    location_lon DECIMAL(11, 8) NOT NULL,              -- 설치 위치 경도
-    estimated_cost DECIMAL(12, 2) NOT NULL,            -- 예상 비용
-    priority_score DECIMAL(8, 4) NOT NULL,             -- 우선순위 점수
-    expected_accident_reduction SMALLINT,              -- 예상 사고 감소 건수
-    implementation_order INT,                          -- 실행 순서
-    status ENUM('PLANNED', 'APPROVED', 'IN_PROGRESS', 'COMPLETED') DEFAULT 'PLANNED',
-    completion_date DATE,                              -- 완료 예정일
-    actual_cost DECIMAL(12, 2),                        -- 실제 비용
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (plan_id) REFERENCES investment_plans(id) ON DELETE CASCADE,
-    FOREIGN KEY (hotspot_id) REFERENCES accident_hotspots(id),
-    INDEX idx_plan (plan_id),
-    INDEX idx_location (location_lat, location_lon),
-    INDEX idx_priority (priority_score DESC)
 );
 ```
 
@@ -1597,8 +1440,6 @@ public class User {
 public enum Role {
     ADMIN("ROLE_ADMIN", "관리자"),
     USER("ROLE_USER", "일반사용자"),
-    ANALYST("ROLE_ANALYST", "분석가"),
-    MANAGER("ROLE_MANAGER", "매니저");
     
     private final String key;
     private final String title;

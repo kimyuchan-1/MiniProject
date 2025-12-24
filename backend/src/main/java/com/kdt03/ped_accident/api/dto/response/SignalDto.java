@@ -11,18 +11,15 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CrosswalkDto {
-    private String cwUid;
+public class SignalDto {
+    private String sgUid;
     private String sido;
     private String sigungu;
     private String address;
-    private BigDecimal crosswalkLat;
-    private BigDecimal crosswalkLon;
-    private Integer signal;
+    private BigDecimal signalLat;
+    private BigDecimal signalLon;
     private Integer button;
+    private Integer remainTime;
     private Integer soundSignal;
-    private Integer spotlight;
-    private Integer brailleBlock;
-    private Double facilityScore;
-    private Double riskScore;
+    private Integer signalType;
 }

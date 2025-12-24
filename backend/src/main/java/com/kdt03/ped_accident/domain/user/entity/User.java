@@ -31,8 +31,11 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(unique = true)
+    @Column(unique = true, nullable = false)
     private String email;
+    
+    @Column(nullable = false)
+    private String password;
     
     private String name;
     private String picture;
@@ -40,10 +43,7 @@ public class User {
     @Enumerated(EnumType.STRING)
     private Role role;
     
-    @Enumerated(EnumType.STRING)
-    private Provider provider;
-    
-    private String providerId;
+    private boolean enabled = true;
     
     @CreationTimestamp
     private LocalDateTime createdAt;
