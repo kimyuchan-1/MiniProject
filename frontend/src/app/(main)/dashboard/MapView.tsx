@@ -138,6 +138,11 @@ export default function MapView() {
     return (
         <section className="relative w-full">
             <style jsx global>{`
+                /* 지도 모노톤 스타일 */
+                .map-grayscale {
+                    filter: grayscale(100%) contrast(120%) brightness(110%);
+                }
+                
                 .custom-marker-cluster {
                     background-color: #3b82f6;
                     border: 3px solid white;
@@ -197,8 +202,9 @@ export default function MapView() {
             `}</style>
             <div className="relative h-[70vh] min-h-130 w-full overflow-hidden rounded-2xl border bg-white shadow">
                 <MapContainer center={center} zoom={12} className="h-full w-full">
+                    {/* 안정적인 OpenStreetMap 타일 + CSS 필터로 모노톤 처리 */}
                     <TileLayer
-                        attribution='&copy; OpenStreetMap contributors'
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
 
