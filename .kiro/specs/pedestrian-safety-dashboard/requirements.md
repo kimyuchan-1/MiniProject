@@ -114,15 +114,15 @@
 
 ### 요구사항 12
 
-**사용자 스토리:** 웹 애플리케이션 사용자로서, 세션 기반 인증을 통해 안전하고 편리하게 로그인하고 싶습니다. 그래야 프론트엔드와 백엔드 간 원활한 인증 상태 관리가 가능합니다.
+**사용자 스토리:** 웹 애플리케이션 사용자로서, JWT 토큰 기반 인증을 통해 안전하고 편리하게 로그인하고 싶습니다. 그래야 프론트엔드와 백엔드 간 상태 비저장(stateless) 인증이 가능하고 확장성이 향상됩니다.
 
 #### 승인 기준
 
-1. WHEN 사용자가 로그인할 때 THE Dashboard_System SHALL 사용자 정보를 서버 세션에 저장하고 세션 ID를 쿠키로 전송한다
-2. WHEN 인증이 필요한 API를 호출할 때 THE Dashboard_System SHALL 세션 쿠키를 검증하여 사용자 인증 상태를 확인한다
-3. WHEN 사용자가 로그아웃할 때 THE Dashboard_System SHALL 서버 세션을 무효화하고 클라이언트 쿠키를 삭제한다
-4. WHEN 세션이 만료될 때 THE Dashboard_System SHALL 자동으로 로그아웃 처리하고 로그인 페이지로 리다이렉트한다
-5. WHEN 프론트엔드에서 인증 상태를 확인할 때 THE Dashboard_System SHALL 현재 세션의 사용자 정보와 권한을 반환한다
+1. WHEN 사용자가 OAuth2 로그인을 완료할 때 THE Dashboard_System SHALL JWT 액세스 토큰과 리프레시 토큰을 생성하여 클라이언트에 반환한다
+2. WHEN 인증이 필요한 API를 호출할 때 THE Dashboard_System SHALL Authorization 헤더의 Bearer 토큰을 검증하여 사용자 인증 상태를 확인한다
+3. WHEN 액세스 토큰이 만료될 때 THE Dashboard_System SHALL 리프레시 토큰을 사용하여 새로운 액세스 토큰을 발급한다
+4. WHEN 사용자가 로그아웃할 때 THE Dashboard_System SHALL 리프레시 토큰을 무효화하고 클라이언트에서 토큰을 삭제하도록 지시한다
+5. WHEN JWT 토큰을 검증할 때 THE Dashboard_System SHALL 토큰의 서명, 만료 시간, 발급자를 검증하여 토큰의 유효성을 확인한다
 
 ### 요구사항 11
 

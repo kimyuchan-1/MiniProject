@@ -1118,8 +1118,8 @@ public class CorrelationData {
 *모든* 데이터 로딩 요청에 대해, API 응답에 로딩 상태 정보가 포함되어야 한다
 **검증: 요구사항 7.3**
 
-### 속성 16: 세션 인증 상태 관리
-*모든* 인증된 사용자 세션에 대해, 세션 만료 전까지 사용자 정보와 권한이 일관되게 유지되어야 한다
+### 속성 16: JWT 토큰 인증 상태 관리
+*모든* 유효한 JWT 토큰에 대해, 토큰 만료 전까지 사용자 정보와 권한이 일관되게 유지되어야 하고, 만료된 토큰은 자동으로 거부되어야 한다
 **검증: 요구사항 12.2, 12.4**
 
 ## 오류 처리
@@ -1308,9 +1308,145 @@ public class SecurityConfig {
         return source;
     }
 }
+
+#### 2. JWT 토큰 제공자
+```java
+@Component
+@RequiredArgsConstructor
+public class JwtTokenProvider {
+    
+    @Value("${jwt.secret}")
+    private String jwtSecret;
+    
+    @Value("${jwt.expiration}")
+    private int jwtExpirationInMs;
+    
+    @Value("${jwt.refresh-expiration}")
+    private int refreshExpirationInMs;
+    
+    private final CustomUserDetailsService userDetailsService;
+    
+    @PostConstruct
+    protected void init() {
+        jwtSecret = Base64.getEncoder().encodeToString(jwtSecret.getBytes());
+    }
+    
+    public String createAccessToken(String email, String role) {
+        Claims claims = Jwts.claims().setSubject(email);
+        claims.put("role", role);
+        
+        Date now = new Date();
+        Date validity = new Date(now.getTime() + jwtExpirationInMs);
+        
+        return Jwts.builder()
+                .setClaims(claims)
+                .setIssuedAt(now)
+                .setExpiration(validity)
+                .signWith(SignatureAlgorithm.HS256, jwtSecret)
+                .compact();
+    }
+    
+    public String createRefreshToken(String email) {
+        Claims claims = Jwts.claims().setSubject(email);
+        
+        Date now = new Date();
+        Date validity = new Date(now.getTime() + refreshExpirationInMs);
+        
+        return Jwts.builder()
+                .setClaims(claims)
+                .setIssuedAt(now)
+                .setExpiration(validity)
+                .signWith(SignatureAlgorithm.HS256, jwtSecret)
+                .compact();
+    }
+    
+    public Authentication getAuthentication(String token) {
+        UserDetails userDetails = userDetailsService.loadUserByUsername(getUsername(token));
+        return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
+    }
+    
+    public String getUsername(String token) {
+        return Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(token).getBody().getSubject();
+    }
+    
+    public boolean validateToken(String token) {
+        try {
+            Jws<Claims> claims = Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(token);
+            return !claims.getBody().getExpiration().before(new Date());
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+    
+    public String resolveToken(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
+        }
+        return null;
+    }
+}
+
+#### 3. JWT 인증 필터
+```java
+@RequiredArgsConstructor
+public class JwtAuthenticationFilter extends GenericFilterBean {
+    
+    private final JwtTokenProvider jwtTokenProvider;
+    
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException {
+        
+        String token = jwtTokenProvider.resolveToken((HttpServletRequest) request);
+        
+        if (token != null && jwtTokenProvider.validateToken(token)) {
+            Authentication authentication = jwtTokenProvider.getAuthentication(token);
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+        }
+        
+        chain.doFilter(request, response);
+    }
+}
+
+#### 4. JWT 예외 처리
+```java
+@Component
+public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
+    
+    @Override
+    public void commence(HttpServletRequest request, HttpServletResponse response,
+                        AuthenticationException authException) throws IOException {
+        
+        response.setContentType("application/json;charset=UTF-8");
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        
+        ObjectMapper mapper = new ObjectMapper();
+        response.getWriter().write(mapper.writeValueAsString(
+                ApiResponse.error("인증이 필요합니다: " + authException.getMessage())
+        ));
+    }
+}
+
+@Component
+public class JwtAccessDeniedHandler implements AccessDeniedHandler {
+    
+    @Override
+    public void handle(HttpServletRequest request, HttpServletResponse response,
+                      AccessDeniedException accessDeniedException) throws IOException {
+        
+        response.setContentType("application/json;charset=UTF-8");
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        
+        ObjectMapper mapper = new ObjectMapper();
+        response.getWriter().write(mapper.writeValueAsString(
+                ApiResponse.error("접근 권한이 없습니다: " + accessDeniedException.getMessage())
+        ));
+    }
+}
 ```
 
-#### 2. 사용자 엔티티 (세션 기반)
+#### 2. 사용자 엔티티 (JWT 기반)
 ```java
 @Entity
 @Table(name = "users")
@@ -1347,6 +1483,9 @@ public class User {
     
     private boolean enabled = true;
     
+    @Column(name = "refresh_token")
+    private String refreshToken;
+    
     @CreationTimestamp
     private LocalDateTime createdAt;
     
@@ -1358,7 +1497,7 @@ public class User {
 @RequiredArgsConstructor
 public enum Role {
     ADMIN("ROLE_ADMIN", "관리자"),
-    USER("ROLE_USER", "일반사용자"),
+    USER("ROLE_USER", "일반사용자");
     
     private final String key;
     private final String title;
@@ -1426,57 +1565,7 @@ public class CustomUserPrincipal implements UserDetails {
 }
 ```
 
-#### 4. 인증 핸들러
-```java
-@Component
-@RequiredArgsConstructor
-public class CustomAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
-    
-    private final ObjectMapper objectMapper;
-    
-    @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, 
-                                      Authentication authentication) throws IOException {
-        
-        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
-        User user = principal.getUser();
-        
-        UserSessionDto userSession = UserSessionDto.builder()
-                .id(user.getId())
-                .email(user.getEmail())
-                .name(user.getName())
-                .role(user.getRole().getKey())
-                .picture(user.getPicture())
-                .build();
-        
-        response.setContentType("application/json;charset=UTF-8");
-        response.setStatus(HttpServletResponse.SC_OK);
-        response.getWriter().write(objectMapper.writeValueAsString(
-                ApiResponse.success("로그인 성공", userSession)
-        ));
-    }
-}
-
-@Component
-@RequiredArgsConstructor
-public class CustomAuthenticationFailureHandler implements AuthenticationFailureHandler {
-    
-    private final ObjectMapper objectMapper;
-    
-    @Override
-    public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response, 
-                                      AuthenticationException exception) throws IOException {
-        
-        response.setContentType("application/json;charset=UTF-8");
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.getWriter().write(objectMapper.writeValueAsString(
-                ApiResponse.error("로그인 실패: " + exception.getMessage())
-        ));
-    }
-}
-```
-
-#### 5. 인증 관련 API 컨트롤러
+#### 4. JWT 기반 인증 핸들러
 ```java
 @RestController
 @RequestMapping("/api/auth")
@@ -1485,19 +1574,85 @@ public class AuthController {
     
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final AuthenticationManager authenticationManager;
+    
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<JwtTokenDto>> login(@RequestBody @Valid LoginRequest request) {
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+            );
+            
+            CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+            User user = principal.getUser();
+            
+            String accessToken = jwtTokenProvider.createAccessToken(user.getEmail(), user.getRole().getKey());
+            String refreshToken = jwtTokenProvider.createRefreshToken(user.getEmail());
+            
+            // Refresh token을 데이터베이스에 저장
+            userService.updateRefreshToken(user.getId(), refreshToken);
+            
+            JwtTokenDto tokenDto = JwtTokenDto.builder()
+                    .accessToken(accessToken)
+                    .refreshToken(refreshToken)
+                    .tokenType("Bearer")
+                    .user(UserSessionDto.from(user))
+                    .build();
+            
+            return ResponseEntity.ok(ApiResponse.success("로그인 성공", tokenDto));
+            
+        } catch (AuthenticationException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("로그인 실패: " + e.getMessage()));
+        }
+    }
     
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<UserSessionDto>> register(@RequestBody @Valid RegisterRequest request) {
         User user = userService.createUser(request);
         
-        UserSessionDto userSession = UserSessionDto.builder()
-                .id(user.getId())
-                .email(user.getEmail())
-                .name(user.getName())
-                .role(user.getRole().getKey())
-                .build();
+        UserSessionDto userSession = UserSessionDto.from(user);
         
         return ResponseEntity.ok(ApiResponse.success("회원가입 성공", userSession));
+    }
+    
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<JwtTokenDto>> refresh(@RequestBody @Valid RefreshTokenRequest request) {
+        try {
+            String refreshToken = request.getRefreshToken();
+            
+            if (!jwtTokenProvider.validateToken(refreshToken)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("유효하지 않은 리프레시 토큰"));
+            }
+            
+            String email = jwtTokenProvider.getUsername(refreshToken);
+            User user = userService.findByEmail(email);
+            
+            if (!refreshToken.equals(user.getRefreshToken())) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("리프레시 토큰이 일치하지 않습니다"));
+            }
+            
+            String newAccessToken = jwtTokenProvider.createAccessToken(user.getEmail(), user.getRole().getKey());
+            String newRefreshToken = jwtTokenProvider.createRefreshToken(user.getEmail());
+            
+            userService.updateRefreshToken(user.getId(), newRefreshToken);
+            
+            JwtTokenDto tokenDto = JwtTokenDto.builder()
+                    .accessToken(newAccessToken)
+                    .refreshToken(newRefreshToken)
+                    .tokenType("Bearer")
+                    .user(UserSessionDto.from(user))
+                    .build();
+            
+            return ResponseEntity.ok(ApiResponse.success("토큰 갱신 성공", tokenDto));
+            
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("토큰 갱신 실패: " + e.getMessage()));
+        }
     }
     
     @GetMapping("/me")
@@ -1510,19 +1665,21 @@ public class AuthController {
         CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
         User user = principal.getUser();
         
-        UserSessionDto userSession = UserSessionDto.builder()
-                .id(user.getId())
-                .email(user.getEmail())
-                .name(user.getName())
-                .role(user.getRole().getKey())
-                .picture(user.getPicture())
-                .build();
+        UserSessionDto userSession = UserSessionDto.from(user);
         
         return ResponseEntity.ok(ApiResponse.success("사용자 정보 조회 성공", userSession));
     }
     
-    @PostMapping("/logout/success")
-    public ResponseEntity<ApiResponse<Void>> logoutSuccess() {
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout(Authentication authentication) {
+        if (authentication != null && authentication.isAuthenticated()) {
+            CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+            User user = principal.getUser();
+            
+            // 리프레시 토큰 무효화
+            userService.updateRefreshToken(user.getId(), null);
+        }
+        
         return ResponseEntity.ok(ApiResponse.success("로그아웃 성공", null));
     }
     
@@ -1534,7 +1691,7 @@ public class AuthController {
 }
 ```
 
-#### 6. 데이터 전송 객체
+#### 5. 데이터 전송 객체
 ```java
 @Data
 @Builder
@@ -1546,6 +1703,47 @@ public class UserSessionDto {
     private String name;
     private String role;
     private String picture;
+    
+    public static UserSessionDto from(User user) {
+        return UserSessionDto.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .name(user.getName())
+                .role(user.getRole().getKey())
+                .picture(user.getPicture())
+                .build();
+    }
+}
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class JwtTokenDto {
+    private String accessToken;
+    private String refreshToken;
+    private String tokenType;
+    private UserSessionDto user;
+}
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class LoginRequest {
+    @NotBlank(message = "이메일은 필수입니다")
+    @Email(message = "올바른 이메일 형식이 아닙니다")
+    private String email;
+    
+    @NotBlank(message = "비밀번호는 필수입니다")
+    private String password;
+}
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class RefreshTokenRequest {
+    @NotBlank(message = "리프레시 토큰은 필수입니다")
+    private String refreshToken;
 }
 
 @Data
@@ -1611,9 +1809,10 @@ spring.jpa.show-sql=false
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
 spring.jpa.properties.hibernate.format_sql=true
 
-spring.security.user.name=admin
-spring.security.user.password=${ADMIN_PASSWORD:admin123}
-spring.security.user.roles=ADMIN
+# JWT 설정
+jwt.secret=${JWT_SECRET:mySecretKey}
+jwt.expiration=3600000
+jwt.refresh-expiration=86400000
 
 logging.level.org.springframework.security=DEBUG
 logging.level.com.pedestriansafety=DEBUG

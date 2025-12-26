@@ -1,1 +1,5 @@
 /.metadata/
+./dataset/cw.csv
+./dataset/cw_sg.csv
+./dataset/sg.csv
+./dataset/raw/seoul_cw.csv
