@@ -1,5 +1,6 @@
 package com.kdt03.ped_accident.global.config.auth;
 
+<<<<<<< HEAD
 import java.util.Collection;
 import java.util.Collections;
 
@@ -38,4 +39,8 @@ public class CustomUserPrincipal implements UserDetails {
     public boolean isEnabled() {
         return user.isEnabled();
     }
+=======
+public class CustomUserPrincipal {
+
+>>>>>>> backend
 }
