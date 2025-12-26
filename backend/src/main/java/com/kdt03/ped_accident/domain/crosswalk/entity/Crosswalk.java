@@ -28,8 +28,9 @@ public class Crosswalk {
 	@Column(name = "cw_uid")
 	private String cwUid;
 	
-	private String sido;
-	private String sigungu;
+	@Column(name = "district_code")
+    private Long districtCode;
+	
 	private String address;
 	
 	@Column(name = " crosswalk_type")
@@ -40,7 +41,7 @@ public class Crosswalk {
 	@Column(name = "crosswalk_lat", precision = 10, scale = 8)
 	private BigDecimal crosswalkLat;
 	
-	private Integer roadnum;
+	private Integer laneCount;
 	
 	@Column(name = "crosswalk_width", precision = 5, scale = 2)
 	private BigDecimal crosswalkWidth;
@@ -48,18 +49,18 @@ public class Crosswalk {
 	@Column(name = "crosswalk_length", precision = 5, scale = 2)
 	private BigDecimal crosswalkLength;
 	
-	private Integer signal;
-	private Integer button;
+	private Integer hasSignal;
+	private Integer hasButton;
 	
 	@Column(name = "sound_signal")
-	private Integer soundSignal;
+	private Integer hasSoundSignal;
 	
-	private Integer bump;
+	private Integer hasBump;
 	
 	@Column(name = "braille_block")
-	private Integer brailleBlock;
+	private Integer hasBrailleBlock;
 	
-	private Integer spotlight;
+	private Integer hasSpotlight;
 	
 	@Column(name = "org_code")
 	private Integer orgCode;

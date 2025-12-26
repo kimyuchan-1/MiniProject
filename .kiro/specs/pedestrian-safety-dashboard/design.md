@@ -32,7 +32,7 @@
 - MySQL Connector
 - Spring Web (REST API)
 - Spring Security
-- Spring Session JDBC
+- JJWT (JWT Library)
 - Lombok
 - Jackson (JSON 처리)
 
@@ -67,8 +67,9 @@ public class Crosswalk {
     @Column(name = "cw_uid")
     private String cwUid;
     
-    private String sido;
-    private String sigungu;
+    @Column(name = "district_code")
+    private Long districtCode;
+    
     private String address;
     
     @Column(name = "crosswalk_type")
@@ -82,7 +83,7 @@ public class Crosswalk {
     @Column(name = "crosswalk_lon", precision = 11, scale = 8)
     private BigDecimal crosswalkLon;
     
-    private Integer roadnum;
+    private Integer laneCount;
     
     @Column(name = "crosswalk_width", precision = 5, scale = 2)
     private BigDecimal crosswalkWidth;
@@ -90,18 +91,18 @@ public class Crosswalk {
     @Column(name = "crosswalk_length", precision = 5, scale = 2)
     private BigDecimal crosswalkLength;
     
-    private Integer signal;           // 보행자신호등유무
-    private Integer button;           // 보행자작동신호기유무
+    private Integer hasSignal;           // 보행자신호등유무
+    private Integer hasButton;           // 보행자작동신호기유무
     
     @Column(name = "sound_signal")
-    private Integer soundSignal;      // 음향신호기설치유무
+    private Integer hasSoundSignal;      // 음향신호기설치유무
     
-    private Integer bump;             // 보도턱낮춤여부
+    private Integer hasBump;             // 보도턱낮춤여부
     
     @Column(name = "braille_block")
-    private Integer brailleBlock;     // 점자블록유무
+    private Integer hasBrailleBlock;     // 점자블록유무
     
-    private Integer spotlight;        // 집중조명시설유무
+    private Integer hasSpotlight;        // 집중조명시설유무
     
     @Column(name = "org_code")
     private Integer orgCode;
@@ -127,8 +128,8 @@ public class TrafficSignal {
     @Column(name = "sg_uid")
     private String sgUid;
     
-    private String sido;
-    private String sigungu;
+    @Column(name = "district_code")
+    private Long districtCode;
     
     @Column(name = "road_type")
     private Integer roadType;
@@ -148,18 +149,18 @@ public class TrafficSignal {
     private Integer roadShape;
     
     @Column(name = "main_road")
-    private Integer mainRoad;
+    private Integer isMainRoad;
     
     @Column(name = "signal_type")
     private Integer signalType;
     
-    private Integer button;           // 보행자작동신호기유무
+    private Integer hasButton;           // 보행자작동신호기유무
     
     @Column(name = "remain_time")
     private Integer remainTime;       // 잔여시간표시기유무
     
     @Column(name = "sound_signal")
-    private Integer soundSignal;      // 시각장애인용음향신호기유무
+    private Integer hasSoundSignal;      // 시각장애인용음향신호기유무
     
     @Column(name = "org_code")
     private Integer orgCode;
@@ -248,8 +249,8 @@ public class CrosswalkSignalMapping {
     @Column(precision = 6, scale = 6)
     private BigDecimal confidence;
     
-    private String sido;
-    private String sigungu;
+    @Column(name = "district_code")
+    private Long districtCode;
     
     @CreationTimestamp
     @Column(name = "created_at")
@@ -305,8 +306,9 @@ public class Suggestion {
     private BigDecimal locationLon;
     
     private String address;
-    private String sido;
-    private String sigungu;
+    
+    @Column(name = "district_code")
+    private Long districtCode;
     
     @Enumerated(EnumType.STRING)
     @Column(name = "suggestion_type")
@@ -317,9 +319,6 @@ public class Suggestion {
     
     @Column(name = "priority_score", precision = 5, scale = 2)
     private BigDecimal priorityScore;
-    
-    @Column(name = "like_count")
-    private Integer likeCount = 0;
     
     @Column(name = "view_count")
     private Integer viewCount = 0;
@@ -349,38 +348,6 @@ public class Suggestion {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "admin_id", insertable = false, updatable = false)
     private User admin;
-}
-
-@Entity
-@Table(name = "suggestion_likes")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class SuggestionLike {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    @Column(name = "suggestion_id")
-    private Long suggestionId;
-    
-    @Column(name = "user_id")
-    private Long userId;
-    
-    @CreationTimestamp
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-    
-    // 연관관계
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "suggestion_id", insertable = false, updatable = false)
-    private Suggestion suggestion;
-    
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", insertable = false, updatable = false)
-    private User user;
 }
 
 @Entity
@@ -457,11 +424,11 @@ public enum SuggestionStatus {
 ```java
 @Service
 public class SafetyAnalysisService {
-    public DashboardStats getDashboardStats(String sido, String sigungu);
-    public List<CrosswalkWithScore> getImprovementCandidates(String sido, String sigungu, int limit);
+    public DashboardStats getDashboardStats(Long districtCode);
+    public List<CrosswalkWithScore> getImprovementCandidates(Long districtCode, int limit);
     public VulnerabilityScore calculateVulnerabilityScore(Crosswalk crosswalk);
     public RiskScore calculateRiskScore(Double lat, Double lng);
-    public SignalEffectAnalysis analyzeSignalEffect(String sido, String sigungu);
+    public SignalEffectAnalysis analyzeSignalEffect(Long districtCode);
 }
 
 @Service
@@ -473,19 +440,17 @@ public class DataImportService {
 
 @Service
 public class MapService {
-    public List<AccidentHotspot> getAccidentHeatmapData(String sido, String sigungu);
-    public List<Crosswalk> getCrosswalksByRegion(String sido, String sigungu);
-    public List<TrafficSignal> getSignalsByRegion(String sido, String sigungu);
-    public RegionalStatistics getRegionalStatistics(String sido, String sigungu);
+    public List<AccidentHotspot> getAccidentHeatmapData(Long districtCode);
+    public List<Crosswalk> getCrosswalksByRegion(Long districtCode);
+    public List<TrafficSignal> getSignalsByRegion(Long districtCode);
+    public RegionalStatistics getRegionalStatistics(Long districtCode);
 }
 
 @Service
 public class SuggestionService {
-    public Page<Suggestion> getSuggestions(Pageable pageable, SuggestionStatus status, String region);
+    public Page<Suggestion> getSuggestions(Pageable pageable, SuggestionStatus status, Long districtCode);
     public Suggestion createSuggestion(CreateSuggestionRequest request, Long userId);
     public Suggestion updateSuggestionStatus(Long suggestionId, SuggestionStatus status, String adminResponse, Long adminId);
-    public void likeSuggestion(Long suggestionId, Long userId);
-    public void unlikeSuggestion(Long suggestionId, Long userId);
     public List<SuggestionComment> getComments(Long suggestionId);
     public SuggestionComment addComment(Long suggestionId, String content, Long userId, Long parentId);
     public SuggestionStatistics getSuggestionStatistics();
@@ -493,7 +458,7 @@ public class SuggestionService {
 
 @Service
 public class AlertService {
-    public void createAlert(AlertType type, String title, String message, String sido, String sigungu);
+    public void createAlert(AlertType type, String title, String message, Long districtCode);
     public List<AlertNotification> getUnreadAlerts(String role);
     public void markAsRead(Long alertId);
     public void checkAccidentSpikes();
@@ -502,9 +467,9 @@ public class AlertService {
 
 @Service
 public class KPIService {
-    public KPIDashboard getKPIDashboard(String sido, String sigungu);
-    public List<KPITrend> getKPITrends(String sido, String sigungu, int months);
-    public SafetyIndex calculateSafetyIndex(String sido, String sigungu);
+    public KPIDashboard getKPIDashboard(Long districtCode);
+    public List<KPITrend> getKPITrends(Long districtCode, int months);
+    public SafetyIndex calculateSafetyIndex(Long districtCode);
     public List<RegionalComparison> compareRegionalKPIs();
 }
 ```
@@ -571,18 +536,6 @@ public class SuggestionController {
     public ResponseEntity<Suggestion> updateSuggestionStatus(
         @PathVariable Long id,
         @RequestBody @Valid UpdateSuggestionStatusRequest request,
-        Authentication authentication);
-    
-    @PostMapping("/{id}/like")
-    @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<Void> likeSuggestion(
-        @PathVariable Long id,
-        Authentication authentication);
-    
-    @DeleteMapping("/{id}/like")
-    @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<Void> unlikeSuggestion(
-        @PathVariable Long id,
         Authentication authentication);
     
     @GetMapping("/{id}/comments")
@@ -913,21 +866,6 @@ CREATE TABLE suggestions (
     INDEX idx_status (status),
     INDEX idx_created (created_at),
     INDEX idx_priority (priority_score DESC)
-);
-```
-
-#### suggestion_likes 테이블 (건의사항 좋아요)
-```sql
-CREATE TABLE suggestion_likes (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    suggestion_id BIGINT NOT NULL,                     -- 건의사항 ID
-    user_id BIGINT NOT NULL,                           -- 사용자 ID
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (suggestion_id) REFERENCES suggestions(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_user_suggestion (user_id, suggestion_id),
-    INDEX idx_suggestion (suggestion_id)
 );
 ```
 
@@ -1309,27 +1247,30 @@ public double calculateTotalScore(double facilityScore, double riskScore) {
 
 ## 보안 및 인증
 
-### Spring Security 세션 기반 인증 설정
+### Spring Security JWT 기반 인증 설정
 
-#### 1. 세션 기반 인증 설정
+#### 1. JWT 기반 인증 설정
 ```java
 @Configuration
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
     
-    @Autowired
-    private CustomUserDetailsService userDetailsService;
-    
-    @Autowired
-    private CustomAuthenticationSuccessHandler successHandler;
-    
-    @Autowired
-    private CustomAuthenticationFailureHandler failureHandler;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
     
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+            .csrf(AbstractHttpConfigurer::disable)
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
+            .exceptionHandling(exception -> exception
+                .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                .accessDeniedHandler(jwtAccessDeniedHandler)
+            )
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/api/public/**", "/api/auth/**").permitAll()
                 .requestMatchers("/api/dashboard/**").authenticated()
@@ -1338,29 +1279,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
-            .formLogin(form -> form
-                .loginPage("/api/auth/login")
-                .loginProcessingUrl("/api/auth/login")
-                .usernameParameter("email")
-                .passwordParameter("password")
-                .successHandler(successHandler)
-                .failureHandler(failureHandler)
-                .permitAll()
-            )
-            .logout(logout -> logout
-                .logoutUrl("/api/auth/logout")
-                .logoutSuccessUrl("/api/auth/logout/success")
-                .invalidateHttpSession(true)
-                .clearAuthentication(true)
-                .deleteCookies("JSESSIONID")
-            )
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                .maximumSessions(1)
-                .maxSessionsPreventsLogin(false)
-                .sessionRegistry(sessionRegistry())
-            )
-            .csrf(csrf -> csrf.disable())
+            .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class)
             .cors(cors -> cors.configurationSource(corsConfigurationSource()));
         
         return http.build();
@@ -1372,8 +1291,8 @@ public class SecurityConfig {
     }
     
     @Bean
-    public SessionRegistry sessionRegistry() {
-        return new SessionRegistryImpl();
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
     }
     
     @Bean
@@ -1675,113 +1594,27 @@ public class ApiResponse<T> {
 
 #### 1. 역할 기반 접근 제어
 - **ADMIN**: 모든 API 접근 가능, 데이터 임포트 기능, 사용자 관리
-- **MANAGER**: 투자 계획 및 예산 관리 기능 접근
-- **ANALYST**: 예측 분석 및 고급 분석 기능 접근
 - **USER**: 대시보드 조회, 기본 분석 기능만 접근 가능
 
-#### 2. API 엔드포인트 보안
-```java
-@RestController
-@RequestMapping("/api")
-@RequiredArgsConstructor
-public class DashboardController {
-    
-    @GetMapping("/dashboard/stats")
-    @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<DashboardStats> getDashboardStats() {
-        // 구현
-    }
-    
-    @PostMapping("/admin/import/crosswalks")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ImportResult> importCrosswalks(@RequestParam MultipartFile file) {
-        // 구현
-    }
-    
-    @GetMapping("/predictions/accidents")
-    @PreAuthorize("hasRole('ANALYST')")
-    public ResponseEntity<List<AccidentPrediction>> predictAccidents() {
-        // 구현
-    }
-    
-    @PostMapping("/investments/plans")
-    @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<InvestmentPlan> createInvestmentPlan(@RequestBody CreateInvestmentPlanRequest request) {
-        // 구현
-    }
-}
-```
 
 ### 환경 설정
 
-#### application.yml
-```yaml
-spring:
-  datasource:
-    url: jdbc:mysql://localhost:3306/pedestrian_safety?useSSL=false&serverTimezone=UTC&characterEncoding=UTF-8
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:password}
-    driver-class-name: com.mysql.cj.jdbc.Driver
-  
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    show-sql: false
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.MySQL8Dialect
-        format_sql: true
-  
-  session:
-    store-type: jdbc
-    jdbc:
-      initialize-schema: always
-    timeout: 1800 # 30분
-  
-  security:
-    user:
-      name: admin
-      password: ${ADMIN_PASSWORD:admin123}
-      roles: ADMIN
+#### application.properties
+```properties
+spring.datasource.url=jdbc:mysql://localhost:3306/pedestrian_safety?useSSL=false&serverTimezone=UTC&characterEncoding=UTF-8
+spring.datasource.username=${DB_USERNAME:root}
+spring.datasource.password=${DB_PASSWORD:password}
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
 
-server:
-  servlet:
-    session:
-      cookie:
-        name: JSESSIONID
-        http-only: true
-        secure: false # 개발환경에서는 false, 프로덕션에서는 true
-        same-site: lax
-        max-age: 1800 # 30분
+spring.jpa.hibernate.ddl-auto=validate
+spring.jpa.show-sql=false
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
+spring.jpa.properties.hibernate.format_sql=true
 
-logging:
-  level:
-    org.springframework.security: DEBUG
-    com.pedestriansafety: DEBUG
-```
+spring.security.user.name=admin
+spring.security.user.password=${ADMIN_PASSWORD:admin123}
+spring.security.user.roles=ADMIN
 
-#### 세션 테이블 생성 (Spring Session JDBC)
-```sql
-CREATE TABLE SPRING_SESSION (
-    PRIMARY_ID CHAR(36) NOT NULL,
-    SESSION_ID CHAR(36) NOT NULL,
-    CREATION_TIME BIGINT NOT NULL,
-    LAST_ACCESS_TIME BIGINT NOT NULL,
-    MAX_INACTIVE_INTERVAL INT NOT NULL,
-    EXPIRY_TIME BIGINT NOT NULL,
-    PRINCIPAL_NAME VARCHAR(100),
-    CONSTRAINT SPRING_SESSION_PK PRIMARY KEY (PRIMARY_ID)
-);
-
-CREATE UNIQUE INDEX SPRING_SESSION_IX1 ON SPRING_SESSION (SESSION_ID);
-CREATE INDEX SPRING_SESSION_IX2 ON SPRING_SESSION (EXPIRY_TIME);
-CREATE INDEX SPRING_SESSION_IX3 ON SPRING_SESSION (PRINCIPAL_NAME);
-
-CREATE TABLE SPRING_SESSION_ATTRIBUTES (
-    SESSION_PRIMARY_ID CHAR(36) NOT NULL,
-    ATTRIBUTE_NAME VARCHAR(200) NOT NULL,
-    ATTRIBUTE_BYTES LONGBLOB NOT NULL,
-    CONSTRAINT SPRING_SESSION_ATTRIBUTES_PK PRIMARY KEY (SESSION_PRIMARY_ID, ATTRIBUTE_NAME),
-    CONSTRAINT SPRING_SESSION_ATTRIBUTES_FK FOREIGN KEY (SESSION_PRIMARY_ID) REFERENCES SPRING_SESSION(PRIMARY_ID) ON DELETE CASCADE
-);
+logging.level.org.springframework.security=DEBUG
+logging.level.com.pedestriansafety=DEBUG
 ```
