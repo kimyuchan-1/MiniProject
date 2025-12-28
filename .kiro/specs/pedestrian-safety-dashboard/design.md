@@ -289,17 +289,9 @@ public class MapService {
 }
 
 @Service
-public class DataImportService {
-    public void importCrosswalkData(MultipartFile csvFile);
-    public void importAccidentData(MultipartFile csvFile);
-    public void validateCsvData(List<String[]> csvData, String dataType);
-}
-
-@Service
 public class SuggestionService {
     public Page<Suggestion> getSuggestions(Pageable pageable, SuggestionStatus status, String region);
     public Suggestion createSuggestion(CreateSuggestionRequest request, Long userId);
-    public Suggestion updateSuggestionStatus(Long suggestionId, SuggestionStatus status, String adminResponse, Long adminId);
     public List<SuggestionComment> getComments(Long suggestionId);
     public SuggestionComment addComment(Long suggestionId, String content, Long userId);
     public SuggestionStatistics getSuggestionStatistics();
@@ -352,13 +344,6 @@ public class SuggestionController {
     @GetMapping("/{id}")
     public ResponseEntity<Suggestion> getSuggestion(@PathVariable Long id);
     
-    @PutMapping("/{id}/status")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Suggestion> updateSuggestionStatus(
-        @PathVariable Long id,
-        @RequestBody @Valid UpdateSuggestionStatusRequest request,
-        Authentication authentication);
-    
     @GetMapping("/{id}/comments")
     public ResponseEntity<List<SuggestionComment>> getComments(@PathVariable Long id);
     
@@ -368,20 +353,6 @@ public class SuggestionController {
         @PathVariable Long id,
         @RequestBody @Valid AddCommentRequest request,
         Authentication authentication);
-}
-
-@RestController
-@RequestMapping("/api/data")
-@PreAuthorize("hasRole('ADMIN')")
-public class DataImportController {
-    
-    @PostMapping("/import/crosswalks")
-    public ResponseEntity<ImportResult> importCrosswalks(
-        @RequestParam("file") MultipartFile file);
-    
-    @PostMapping("/import/accidents")
-    public ResponseEntity<ImportResult> importAccidents(
-        @RequestParam("file") MultipartFile file);
 }
 
 @RestController
@@ -792,29 +763,16 @@ public class CorrelationData {
 
 ### 속성 5: 건의사항 상태 관리 정확성
 *모든* 건의사항 상태 변경에 대해, 데이터베이스에 저장된 상태와 API 응답의 상태가 일치해야 한다
-**검증: 요구사항 3.2, 8.3**
+**검증: 요구사항 7.2**
 
 ### 속성 6: JWT 토큰 인증 상태 관리
 *모든* 유효한 JWT 토큰에 대해, 토큰 만료 전까지 사용자 정보와 권한이 일관되게 유지되어야 하고, 만료된 토큰은 자동으로 거부되어야 한다
-**검증: 요구사항 12.2, 12.4**
-
-### 속성 7: CSV 파싱 라운드트립
-*모든* 유효한 횡단보도/사고 데이터에 대해, CSV로 내보낸 후 다시 파싱했을 때 원본과 동일한 데이터가 복원되어야 한다
-**검증: 요구사항 5.1, 5.2, 5.3**
-
-### 속성 8: 데이터 저장 무결성
-*모든* 입력 데이터에 대해, Supabase에 저장한 후 조회했을 때 원본 데이터와 일치해야 한다
-**검증: 요구사항 5.4**
+**검증: 요구사항 8.2, 8.4**
 
 ## 오류 처리
 
-### 데이터 검증 오류
-- CSV 파일 형식 오류 시 명확한 오류 메시지 제공
-- 필수 필드 누락 시 구체적인 필드명과 함께 오류 반환
-- 위경도 범위 초과 시 유효 범위 안내
-
 ### 데이터베이스 오류
-- MySQL 연결 실패 시 재시도 로직 구현
+- Supabase 연결 실패 시 재시도 로직 구현
 - 트랜잭션 롤백을 통한 데이터 무결성 보장
 - 쿼리 타임아웃 시 적절한 오류 응답
 

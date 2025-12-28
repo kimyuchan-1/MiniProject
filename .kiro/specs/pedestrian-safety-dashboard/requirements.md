@@ -72,18 +72,6 @@
 
 ### 요구사항 5
 
-**사용자 스토리:** 시스템 사용자로서, 횡단보도와 신호등 데이터를 정확하게 파싱하고 MySQL에 저장하고 싶습니다. 그래야 분석의 기초 데이터가 신뢰할 수 있습니다.
-
-#### 승인 기준
-
-1. WHEN CSV 파일을 업로드할 때 THE Dashboard_System SHALL 한글 인코딩을 올바르게 처리하여 데이터를 파싱한다
-2. WHEN 횡단보도 데이터를 처리할 때 THE Dashboard_System SHALL 위경도, 음향신호기 설치여부, 보행자신호등 유무 등 필수 필드를 검증한다
-3. WHEN 신호등 데이터를 처리할 때 THE Dashboard_System SHALL 잔여시간표시기, 음향신호기, 보행자작동신호기 정보를 정확히 추출한다
-4. WHEN 데이터를 저장할 때 THE Dashboard_System SHALL MySQL 데이터베이스 테이블에 정규화된 구조로 저장한다
-5. WHEN Spring Boot 애플리케이션이 시작될 때 THE Dashboard_System SHALL MySQL 연결을 설정하고 데이터 접근 계층을 초기화한다
-
-### 요구사항 6
-
 **사용자 스토리:** 분석 엔진 사용자로서, 시설 안전도와 사고 위험도를 실시간으로 계산하여 개선 우선순위를 파악하고 싶습니다. 그래야 객관적인 기준으로 개선 대상을 선정할 수 있습니다.
 
 #### 승인 기준
@@ -94,7 +82,7 @@
 4. WHEN 지표를 표시할 때 THE Dashboard_System SHALL 안전도와 위험도를 0-100 스케일로 정규화하여 일관된 사용자 경험을 제공한다
 5. THE Dashboard_System SHALL 계산된 지표를 데이터베이스에 저장하지 않고 원본 데이터(횡단보도 시설, 사고 통계)만 저장하여 데이터 일관성을 보장한다
 
-### 요구사항 7
+### 요구사항 6
 
 **사용자 스토리:** 웹 애플리케이션 사용자로서, 반응형 인터페이스를 통해 다양한 기기에서 대시보드를 사용하고 싶습니다. 그래야 현장에서도 편리하게 접근할 수 있습니다.
 
@@ -104,18 +92,19 @@
 2. WHEN 지도 인터페이스를 표시할 때 THE Dashboard_System SHALL 터치 제스처와 마우스 조작을 모두 지원한다
 3. WHEN 데이터를 로딩할 때 THE Dashboard_System SHALL 로딩 상태를 시각적으로 표시하여 사용자 경험을 향상시킨다
 
-### 요구사항 8
+### 요구사항 7
 
-**사용자 스토리:** 시스템 관리자로서, 사용자들의 건의사항을 효율적으로 관리하고 처리 상태를 추적하고 싶습니다. 그래야 시민 참여를 통한 지속적인 개선이 가능합니다.
+**사용자 스토리:** 시민으로서, 건의사항을 작성하고 다른 사용자들과 의견을 공유하고 싶습니다. 그래야 시민 참여를 통한 교통 안전 개선이 가능합니다.
 
 #### 승인 기준
 
-1. WHEN 관리자가 건의 관리 페이지에 접근할 때 THE Dashboard_System SHALL 모든 건의사항을 상태별로 분류하여 표시한다
-2. WHEN 건의사항을 검토할 때 THE Dashboard_System SHALL 해당 위치의 교통량, 사고 이력, 기존 시설 현황을 종합적으로 제공한다
-3. WHEN 건의 상태를 변경할 때 THE Dashboard_System SHALL 검토중, 승인, 반려, 완료 상태를 관리하고 사용자에게 알림을 발송한다
-4. WHEN 통계를 조회할 때 THE Dashboard_System SHALL 지역별 건의 현황, 처리율, 시민 만족도를 대시보드로 제공한다
+1. WHEN 건의 게시판에 접근할 때 THE Dashboard_System SHALL 지역별 신호등 설치 건의 목록을 표시한다
+2. WHEN 새 건의를 작성할 때 THE Dashboard_System SHALL 지도에서 위치를 선택하고 건의 사유를 입력할 수 있게 한다
+3. WHEN 건의를 제출할 때 THE Dashboard_System SHALL 해당 위치의 현재 시설 현황과 주변 사고 이력을 자동으로 첨부한다
+4. WHEN 건의를 조회할 때 THE Dashboard_System SHALL 건의 위치를 지도에 마커로 표시하고 상세 정보를 제공한다
+5. WHEN 사용자가 건의에 반응할 때 THE Dashboard_System SHALL 좋아요, 댓글 기능을 통해 시민 의견을 수집한다
 
-### 요구사항 12
+### 요구사항 8
 
 **사용자 스토리:** 웹 애플리케이션 사용자로서, JWT 토큰 기반 인증을 통해 안전하고 편리하게 로그인하고 싶습니다. 그래야 프론트엔드와 백엔드 간 상태 비저장(stateless) 인증이 가능하고 확장성이 향상됩니다.
 
@@ -150,14 +139,3 @@
 3. WHEN 지역 좌표를 매핑할 때 THE Dashboard_System SHALL district_all 데이터를 활용하여 지역 코드를 위경도 좌표로 변환한다
 4. WHEN API 응답을 반환할 때 THE Dashboard_System SHALL 사고 건수, 사망자 수, 부상자 수와 함께 추정 좌표를 포함한다
 5. WHEN 데이터 검증을 수행할 때 THE Dashboard_System SHALL 필수 필드(sido_code, sigungu_code, year, month)의 유효성을 확인한다
-
-### 요구사항 11
-
-**사용자 스토리:** 시민 안전 모니터링 담당자로서, 실시간 사고 알림과 위험 지역 모니터링을 통해 신속한 대응을 하고 싶습니다. 그래야 사고 발생 시 즉각적인 안전 조치를 취할 수 있습니다.
-
-#### 승인 기준
-
-1. WHEN 사고 데이터가 업데이트될 때 THE Dashboard_System SHALL 새로운 사고 발생 시 관련 담당자에게 실시간 알림을 발송한다
-2. WHEN 위험 임계치를 초과할 때 THE Dashboard_System SHALL 특정 지역의 월별 사고 건수가 평균 대비 일정 수준을 초과하면 경고 알림을 생성한다
-3. WHEN 모니터링 대시보드를 표시할 때 THE Dashboard_System SHALL 실시간 사고 현황, 위험 지역 순위, 대응 필요 지역을 한눈에 볼 수 있게 표시한다
-4. WHEN 대응 이력을 관리할 때 THE Dashboard_System SHALL 사고 발생 후 취해진 조치, 개선 사항, 효과 측정 결과를 기록하고 추적한다
