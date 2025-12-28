@@ -15,9 +15,9 @@ interface RegionData {
 export interface KPIData {
   totalCrosswalks: number;
   signalInstallationRate: number;
+  totalAccidents: number;
   accidentReductionRate: number;
   safetyIndex: number;
-  monthlyChange: number;
 }
 
 export default function Dashboard() {
@@ -25,12 +25,31 @@ export default function Dashboard() {
   const [selectedMonth, setSelectedMonth] = useState<string>('2024-12');
   const [mapLevel, setMapLevel] = useState<'country' | 'province' | 'district'>('country');
   const [kpiData, setKpiData] = useState<KPIData>({
-    totalCrosswalks: 125847,
-    signalInstallationRate: 78.5,
+    totalCrosswalks: 0,
+    signalInstallationRate: 0,
+    totalAccidents: 0,
     accidentReductionRate: 12.3,
-    safetyIndex: 85.2,
-    monthlyChange: 2.1
+    safetyIndex: 85.2
   });
+
+  // KPI 데이터 로드
+  useEffect(() => {
+    const fetchKPIData = async () => {
+      try {
+        const response = await fetch('/api/dashboard/kpi');
+        if (response.ok) {
+          const data = await response.json();
+          setKpiData(data);
+        } else {
+          console.error('Failed to fetch KPI data');
+        }
+      } catch (error) {
+        console.error('Error fetching KPI data:', error);
+      }
+    };
+
+    fetchKPIData();
+  }, [selectedRegion, selectedMonth]);
 
   const [regionData, setRegionData] = useState<RegionData[]>([
     { name: '서울특별시', crosswalks: 15420, signalRate: 85.2, accidents: 234, safetyIndex: 88.5 },
@@ -58,7 +77,7 @@ export default function Dashboard() {
     setSelectedRegion('전국');
   };
 
-  const MapView = dynamic(() => import("./MapView"), {
+  const EnhancedMapView = dynamic(() => import("./EnhancedMapView"), {
     ssr: false,
     loading: () => (
       <div className="h-full w-full flex items-center justify-center bg-linear-to-br from-blue-50 to-green-50">
@@ -103,15 +122,30 @@ export default function Dashboard() {
             횡단보도 신호등 설치 현황 - {selectedRegion}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <KPICard title="전체 횡단보도" content={kpiData.totalCrosswalks.toLocaleString()} caption="개소" color="gray" />
-            <KPICard title="신호등 설치율" content={kpiData.signalInstallationRate + "%"}
-              caption={kpiData.monthlyChange > 0
-                ? `↑ ${kpiData.monthlyChange}% 전월 대비`
-                : kpiData.monthlyChange < 0 ? `↓ ${kpiData.monthlyChange}% 전월 대비`
-                  : "변동 없음"}
-              color={kpiData.monthlyChange > 0 ? "green" : kpiData.monthlyChange == 0 ? "gray" : "red"} />
-            <KPICard title="사고 감소율" content={kpiData.accidentReductionRate + "%"} caption="전년 동월 대비" color={kpiData.accidentReductionRate > 0 ? "green" : kpiData.accidentReductionRate == 0 ? "gray" : "red"} />
-            <KPICard title="안전 지수" content={kpiData.safetyIndex + "%"} caption="100점 만점" color="gray" />
+            <KPICard 
+              title="전체 횡단보도" 
+              content={kpiData.totalCrosswalks.toLocaleString()} 
+              caption="개소" 
+              color="blue" 
+            />
+            <KPICard 
+              title="신호등 설치율" 
+              content={kpiData.signalInstallationRate + "%"}
+              caption="전체 횡단보도 대비"
+              color="green" 
+            />
+            <KPICard 
+              title="전체 사고 건수" 
+              content={kpiData.totalAccidents.toLocaleString()} 
+              caption="건" 
+              color="red" 
+            />
+            <KPICard 
+              title="안전 지수" 
+              content={kpiData.safetyIndex + "%"} 
+              caption="100점 만점" 
+              color="gray" 
+            />
           </div>
         </div>
 
@@ -122,37 +156,9 @@ export default function Dashboard() {
               <h2 className="text-lg font-semibold text-gray-900">
                 인터랙티브 지도 ({mapLevel === 'country' ? '전국' : mapLevel === 'province' ? '시도별' : '구별'})
               </h2>
-              <div className="flex gap-2">
-                <button className="px-3 py-1 text-xs bg-red-100 text-red-800 rounded-full">
-                  사고 다발지역
-                </button>
-                <button className="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
-                  신호등 현황
-                </button>
-                <button className="px-3 py-1 text-xs bg-green-100 text-green-800 rounded-full">
-                  안전 지역
-                </button>
-              </div>
             </div>
             <div className="bg-white rounded-lg shadow-sm border h-125 relative overflow-hidden">
-              {/* 지도 플레이스홀더 */}
-              <div className="absolute inset-0 bg-linear-to-br from-blue-50 to-green-50 flex items-center justify-center">
-
-              </div>
-              <MapView />
-
-              {/* 히트맵 오버레이 시뮬레이션 */}
-              <div className="absolute top-4 left-4 bg-white/90 p-3 rounded-lg shadow-sm">
-                <div className="text-xs font-medium text-gray-700 mb-2">사고 밀도</div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-green-400 rounded"></div>
-                  <span className="text-xs">낮음</span>
-                  <div className="w-4 h-4 bg-yellow-400 rounded"></div>
-                  <span className="text-xs">보통</span>
-                  <div className="w-4 h-4 bg-red-400 rounded"></div>
-                  <span className="text-xs">높음</span>
-                </div>
-              </div>
+              <EnhancedMapView />
             </div>
           </div>
 
@@ -253,75 +259,6 @@ export default function Dashboard() {
                   <div className="text-sm text-gray-600">월별 사고 건수 추이</div>
                   <div className="text-xs text-green-600 mt-1">↓ 12.3% 감소 (전년 대비)</div>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 하단 추가 정보 섹션 */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* 신호등 기능별 분석 */}
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              신호등 기능별 설치 현황
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm text-gray-600">음향신호기</span>
-                  <span className="text-sm font-medium">67.8%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-blue-600 h-2 rounded-full" style={{ width: '67.8%' }}></div>
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm text-gray-600">잔여시간표시기</span>
-                  <span className="text-sm font-medium">82.4%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-green-600 h-2 rounded-full" style={{ width: '82.4%' }}></div>
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm text-gray-600">보행자작동신호기</span>
-                  <span className="text-sm font-medium">45.2%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-orange-600 h-2 rounded-full" style={{ width: '45.2%' }}></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 예측 분석 */}
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              사고 위험도 예측 (향후 3개월)
-            </h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
-                <div>
-                  <div className="font-medium text-red-800">2025년 1월</div>
-                  <div className="text-sm text-red-600">고위험 예상</div>
-                </div>
-                <div className="text-2xl">⚠️</div>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
-                <div>
-                  <div className="font-medium text-yellow-800">2025년 2월</div>
-                  <div className="text-sm text-yellow-600">중위험 예상</div>
-                </div>
-                <div className="text-2xl">⚡</div>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                <div>
-                  <div className="font-medium text-green-800">2025년 3월</div>
-                  <div className="text-sm text-green-600">저위험 예상</div>
-                </div>
-                <div className="text-2xl">✅</div>
               </div>
             </div>
           </div>

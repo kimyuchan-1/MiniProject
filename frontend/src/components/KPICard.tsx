@@ -9,6 +9,7 @@ const textColor: Record<string, string> = {
     gray : 'text-gray-500',
     red : 'text-red-600',
     green : 'text-green-600',
+    blue : 'text-blue-600',
 };
 
 export default function KPICard({ title, content, caption, color}: KPICardProps) {

@@ -2,48 +2,49 @@
 
 ## 소개
 
-시도별·시군구별·월별 보행자 사고 데이터를 기반으로 한 교통 안전 분석 대시보드 시스템입니다. 전국→시도→구 단계별 확대가 가능한 인터랙티브 지도를 통해 월별 사고 트렌드를 시각화하고, 보행자 사고 다발지역의 신호등 설치 현황 및 기능을 분석하는 KPI 중심의 대시보드를 제공합니다. 데이터 기반 정책 수립을 위한 시민 참여형 건의 시스템과 예측 분석 기능을 포함합니다.
-시도별·시군구별·월별 보행자 사고 데이터를 기반으로 한 교통 안전 분석 대시보드 시스템입니다. 전국→시도→구 단계별 확대가 가능한 인터랙티브 지도를 통해 월별 사고 트렌드를 시각화하고, 보행자 사고 다발지역의 신호등 설치 현황 및 기능을 분석하는 KPI 중심의 대시보드를 제공합니다. 데이터 기반 정책 수립을 위한 시민 참여형 건의 시스템을 포함합니다.
+시도별·시군구별·월별 보행자 사고 데이터를 기반으로 한 교통 안전 분석 대시보드 시스템입니다. 인터랙티브 지도를 통해 횡단보도와 신호등 현황을 시각화하고, 사고 데이터 히트맵으로 위험 지역을 파악할 수 있습니다. 횡단보도 클릭시 개선된 팝업을 통해 안전 지표와 위험 지표를 실시간으로 확인할 수 있으며, 시민 참여형 건의 시스템을 통해 데이터 기반 정책 수립을 지원합니다.
 
 ## 용어 정의
 
-- **Dashboard_System**: 교통 안전 분석 대시보드 시스템 (Spring Boot 기반)
-- **MySQL_Database**: 횡단보도, 신호등, 월별 사고 데이터를 저장하는 MySQL 데이터베이스
-- **Interactive_Map**: 전국→시도→구 단계별 확대가 가능한 인터랙티브 지도
-- **Monthly_Accident_Data**: 시도별·시군구별·월별 보행자 사고 통계 데이터
-- **KPI_Dashboard**: 신호등 설치율, 사고 감소율, 안전 지수 등 핵심 성과 지표
+- **Dashboard_System**: 교통 안전 분석 대시보드 시스템 (Next.js + Spring Boot 기반)
+- **Supabase_Database**: 횡단보도, 신호등, 월별 사고 데이터를 저장하는 Supabase PostgreSQL 데이터베이스
+- **Interactive_Map**: Leaflet 기반 인터랙티브 지도 (횡단보도 마커, 클러스터링, 히트맵 지원)
+- **Monthly_Accident_Data**: 시도별·시군구별·월별 보행자 사고 통계 데이터 (ACC 테이블)
+- **Heatmap_Visualization**: 사고 밀도를 색상 강도로 표현하는 히트맵 레이어
 - **Crosswalk_Data**: 횡단보도 위치, 보행자신호등 유무, 음향신호기 설치여부 등의 정보
 - **Signal_Data**: 신호등 상세 정보 (잔여시간표시기, 음향신호기, 보행자작동신호기 등)
-- **Accident_Hotspot_Analysis**: 사고 다발지역의 신호등 설치 현황 및 기능 분석
-- **Trend_Analysis**: 월별 사고 트렌드 및 계절성 분석
+- **Enhanced_Popup**: 횡단보도 클릭시 표시되는 개선된 팝업 (안전/위험 지표, 시설 정보 포함)
+- **Safety_Score**: 프론트엔드에서 실시간 계산되는 안전 지표 (신호등, 안전 시설 기반)
+- **Risk_Score**: 프론트엔드에서 실시간 계산되는 위험 지표 (사고 데이터 기반)
 - **Suggestion_Board**: 사용자가 신호등 설치를 건의할 수 있는 게시판
-- **Regional_Statistics**: 선택된 지역의 월별 통계 및 KPI 데이터
-- **REST_API**: Spring Boot에서 제공하는 RESTful API 엔드포인트
+- **Regional_Statistics**: 선택된 지역의 월별 통계 및 실시간 계산 지표
+- **REST_API**: Next.js API Routes와 Spring Boot에서 제공하는 RESTful API 엔드포인트
 
 ## 요구사항
 
 ### 요구사항 1
 
-**사용자 스토리:** 정책 분석가로서, 시도별·시군구별·월별 보행자 사고 데이터를 인터랙티브 지도에서 확인하고 KPI를 통해 안전 현황을 파악하고 싶습니다. 그래야 데이터 기반의 교통 안전 정책을 수립할 수 있습니다.
+**사용자 스토리:** 정책 분석가로서, 시도별·시군구별·월별 보행자 사고 데이터를 인터랙티브 지도에서 확인하고 사고 히트맵을 통해 위험 지역을 파악하고 싶습니다. 그래야 데이터 기반의 교통 안전 정책을 수립할 수 있습니다.
 
 #### 승인 기준
 
-1. WHEN 대시보드에 접근할 때 THE Dashboard_System SHALL 전국 지도에 월별 보행자 사고 데이터를 시각화하여 표시한다
-2. WHEN 시도를 클릭할 때 THE Dashboard_System SHALL 해당 시도 지도로 확대하고 시도별 월별 사고 통계 및 KPI를 업데이트한다
-3. WHEN 구를 클릭할 때 THE Dashboard_System SHALL 해당 구 지도로 확대하고 구별 월별 상세 통계 및 KPI를 업데이트한다
-4. WHEN 월별 필터를 적용할 때 THE Dashboard_System SHALL 선택된 기간의 사고 데이터와 트렌드를 지도와 차트에 반영한다
-5. WHEN KPI 대시보드를 표시할 때 THE Dashboard_System SHALL 신호등 설치율, 사고 감소율, 안전 지수, 월별 변화율을 실시간으로 계산하여 표시한다
+1. WHEN 대시보드에 접근할 때 THE Dashboard_System SHALL 지도에 횡단보도와 신호등 정보를 마커로 표시한다
+2. WHEN 사고 히트맵을 활성화할 때 THE Dashboard_System SHALL ACC 데이터를 기반으로 사고 밀도를 색상 강도로 시각화한다
+3. WHEN 지도를 이동하거나 확대할 때 THE Dashboard_System SHALL 현재 화면 영역의 데이터만 효율적으로 로드한다
+4. WHEN 히트맵 토글을 조작할 때 THE Dashboard_System SHALL 히트맵 표시/숨김을 즉시 반영한다
+5. WHEN 마커를 클러스터링할 때 THE Dashboard_System SHALL 줌 레벨에 따라 적절한 그룹화를 제공한다
 
 ### 요구사항 2
 
-**사용자 스토리:** 교통 안전 연구자로서, 보행자 사고 다발지역의 신호등 설치 현황과 기능을 분석하여 안전 개선 효과를 측정하고 싶습니다. 그래야 신호등 설치 및 기능 개선의 우선순위를 과학적으로 결정할 수 있습니다.
+**사용자 스토리:** 교통 안전 연구자로서, 횡단보도 클릭시 상세한 안전 정보와 위험 지표를 확인하고 싶습니다. 그래야 각 지점의 안전 현황을 정확히 파악하고 개선 방안을 수립할 수 있습니다.
 
 #### 승인 기준
 
-1. WHEN 사고 다발지역 분석을 요청할 때 THE Dashboard_System SHALL 월별 사고 데이터를 기반으로 다발지역을 식별하고 해당 지역의 신호등 설치 현황을 매핑한다
-2. WHEN 신호등 기능 분석을 수행할 때 THE Dashboard_System SHALL 음향신호기, 잔여시간표시기, 보행자작동신호기 등 각 기능별 설치 현황과 사고율의 상관관계를 분석한다
-3. WHEN 월별 트렌드를 분석할 때 THE Dashboard_System SHALL 계절별, 월별 사고 패턴과 신호등 설치 효과의 변화를 시각화한다
-4. WHEN 효과성 지표를 계산할 때 THE Dashboard_System SHALL 신호등 설치 전후 사고 감소율, 기능별 안전 개선 효과를 정량화하여 제공한다
+1. WHEN 횡단보도 마커를 클릭할 때 THE Dashboard_System SHALL 개선된 팝업을 통해 주소, 지역 정보, 신호등 상태를 표시한다
+2. WHEN 팝업이 표시될 때 THE Dashboard_System SHALL 프론트엔드에서 실시간으로 계산된 안전 지표와 위험 지표를 시각적으로 제공한다
+3. WHEN 안전 시설 정보를 표시할 때 THE Dashboard_System SHALL 신호등, 음향신호기, 점자블록 등 각 시설의 설치 여부를 아이콘과 함께 표시한다
+4. WHEN 근처 사고 현황을 표시할 때 THE Dashboard_System SHALL 해당 지역의 사고 건수, 사망자 수, 부상자 수를 요약하여 제공한다
+5. WHEN 점수 바를 표시할 때 THE Dashboard_System SHALL 안전도와 위험도를 0-100 스케일의 시각적 바 차트로 표현한다
 
 ### 요구사항 3
 
@@ -59,14 +60,15 @@
 
 ### 요구사항 4
 
-**사용자 스토리:** 관리자로서, 지역별 통계와 히트맵을 통해 위험 지역을 식별하고 개선 우선순위를 파악하고 싶습니다. 그래야 효율적인 예산 배정과 정책 수립이 가능합니다.
+**사용자 스토리:** 관리자로서, 사고 히트맵과 지역별 통계를 통해 위험 지역을 식별하고 개선 우선순위를 파악하고 싶습니다. 그래야 효율적인 예산 배정과 정책 수립이 가능합니다.
 
 #### 승인 기준
 
-1. WHEN 지역을 선택할 때 THE Dashboard_System SHALL 해당 지역의 횡단보도 수, 신호등 설치율, 사고 건수, 사망자 수를 실시간으로 계산하여 표시한다
-2. WHEN 히트맵을 표시할 때 THE Dashboard_System SHALL 사고 밀도에 따라 색상 강도를 조절하여 위험 지역을 시각적으로 구분한다
-3. WHEN 개선 우선순위를 계산할 때 THE Dashboard_System SHALL 사고 빈도, 신호등 미설치 여부, 시민 건의 수를 종합하여 점수를 산정한다
-4. WHEN 우선순위 목록을 표시할 때 THE Dashboard_System SHALL 상위 위험 지역을 점수 순으로 정렬하고 개선 방안을 제안한다
+1. WHEN 히트맵을 표시할 때 THE Dashboard_System SHALL ACC 데이터의 사고 밀도에 따라 색상 강도를 조절하여 위험 지역을 시각적으로 구분한다
+2. WHEN 히트맵 모드를 선택할 때 THE Dashboard_System SHALL 위험도, 안전도, 종합 지표 중 선택하여 다른 관점의 히트맵을 제공한다
+3. WHEN 지역을 선택할 때 THE Dashboard_System SHALL 해당 지역의 횡단보도 수, 신호등 설치율, 사고 건수를 프론트엔드에서 실시간으로 계산하여 표시한다
+4. WHEN 우선순위를 계산할 때 THE Dashboard_System SHALL 사고 빈도, 신호등 미설치 여부, 안전 시설 부족도를 종합하여 개선 우선순위를 제안한다
+5. WHEN 히트맵 범례를 표시할 때 THE Dashboard_System SHALL 색상별 위험도 수준과 의미를 명확히 설명한다
 
 ### 요구사항 5
 
@@ -82,14 +84,15 @@
 
 ### 요구사항 6
 
-**사용자 스토리:** 분석 엔진 사용자로서, 시설 취약성과 사고 위험도를 결합한 개선 우선순위 점수를 계산하고 싶습니다. 그래야 객관적인 기준으로 개선 대상을 선정할 수 있습니다.
+**사용자 스토리:** 분석 엔진 사용자로서, 시설 안전도와 사고 위험도를 실시간으로 계산하여 개선 우선순위를 파악하고 싶습니다. 그래야 객관적인 기준으로 개선 대상을 선정할 수 있습니다.
 
 #### 승인 기준
 
-1. WHEN 취약성 점수를 계산할 때 THE Dashboard_System SHALL 음향신호기, 잔여시간표시기, 보행자작동신호기 미설치 여부를 가중치와 함께 합산한다
-2. WHEN 위험도 점수를 계산할 때 THE Dashboard_System SHALL 반경 100m 내 사고다발지역과의 거리를 고려하여 점수를 산정한다
-3. WHEN 최종 우선순위를 결정할 때 THE Dashboard_System SHALL 취약성 점수와 위험도 점수를 결합하여 종합 점수를 계산한다
-4. WHEN 개선 추천을 제공할 때 THE Dashboard_System SHALL 가장 부족한 시설을 우선순위로 제안한다
+1. WHEN 안전도 점수를 계산할 때 THE Dashboard_System SHALL 프론트엔드에서 신호등 유무, 음향신호기, 잔여시간표시기, 보행자작동신호기, 점자블록, 집중조명 등의 시설 정보를 가중치와 함께 실시간으로 합산한다
+2. WHEN 위험도 점수를 계산할 때 THE Dashboard_System SHALL 프론트엔드에서 사고 건수, 사망자 수, 중상자 수, 경상자 수를 가중치와 함께 실시간으로 합산한다
+3. WHEN 사용자가 가중치를 조정할 때 THE Dashboard_System SHALL 모든 지표를 즉시 재계산하여 지도와 팝업에 반영한다
+4. WHEN 지표를 표시할 때 THE Dashboard_System SHALL 안전도와 위험도를 0-100 스케일로 정규화하여 일관된 사용자 경험을 제공한다
+5. THE Dashboard_System SHALL 계산된 지표를 데이터베이스에 저장하지 않고 원본 데이터(횡단보도 시설, 사고 통계)만 저장하여 데이터 일관성을 보장한다
 
 ### 요구사항 7
 
@@ -123,6 +126,30 @@
 3. WHEN 액세스 토큰이 만료될 때 THE Dashboard_System SHALL 리프레시 토큰을 사용하여 새로운 액세스 토큰을 발급한다
 4. WHEN 사용자가 로그아웃할 때 THE Dashboard_System SHALL 리프레시 토큰을 무효화하고 클라이언트에서 토큰을 삭제하도록 지시한다
 5. WHEN JWT 토큰을 검증할 때 THE Dashboard_System SHALL 토큰의 서명, 만료 시간, 발급자를 검증하여 토큰의 유효성을 확인한다
+
+### 요구사항 9
+
+**사용자 스토리:** 지도 사용자로서, 사고 데이터를 히트맵으로 시각화하여 위험 지역을 한눈에 파악하고 싶습니다. 그래야 지역별 위험도를 직관적으로 이해할 수 있습니다.
+
+#### 승인 기준
+
+1. WHEN 히트맵 기능을 활성화할 때 THE Dashboard_System SHALL Supabase ACC 데이터를 기반으로 지역별 사고 밀도를 계산한다
+2. WHEN 히트맵을 렌더링할 때 THE Dashboard_System SHALL 사고 건수, 사망자 수, 부상자 수를 가중치로 적용하여 위험도를 산정한다
+3. WHEN 히트맵 색상을 표시할 때 THE Dashboard_System SHALL 녹색(안전) → 노란색(주의) → 주황색(경고) → 빨간색(위험) 그라디언트를 사용한다
+4. WHEN 히트맵 토글 버튼을 조작할 때 THE Dashboard_System SHALL 히트맵 레이어의 표시/숨김을 즉시 반영한다
+5. WHEN 지도 범위가 변경될 때 THE Dashboard_System SHALL 현재 화면 영역의 사고 데이터만 효율적으로 로드하여 히트맵을 업데이트한다
+
+### 요구사항 10
+
+**사용자 스토리:** API 사용자로서, 지도 범위에 따른 사고 데이터를 효율적으로 조회하고 싶습니다. 그래야 히트맵과 지역별 분석에 필요한 데이터를 빠르게 제공받을 수 있습니다.
+
+#### 승인 기준
+
+1. WHEN 사고 데이터 API를 호출할 때 THE Dashboard_System SHALL 지도 경계(bounds) 파라미터를 받아 해당 영역의 사고 데이터만 반환한다
+2. WHEN ACC 테이블을 조회할 때 THE Dashboard_System SHALL sido_code, sigungu_code를 기반으로 지역별 사고 통계를 집계한다
+3. WHEN 지역 좌표를 매핑할 때 THE Dashboard_System SHALL district_all 데이터를 활용하여 지역 코드를 위경도 좌표로 변환한다
+4. WHEN API 응답을 반환할 때 THE Dashboard_System SHALL 사고 건수, 사망자 수, 부상자 수와 함께 추정 좌표를 포함한다
+5. WHEN 데이터 검증을 수행할 때 THE Dashboard_System SHALL 필수 필드(sido_code, sigungu_code, year, month)의 유효성을 확인한다
 
 ### 요구사항 11
 

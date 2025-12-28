@@ -3,16 +3,18 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { useState, useMemo } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, useMapEvents } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
+import { CrosswalkMarkerWithPopup } from "@/components/map/CrosswalkMarkerWithPopup";
 
 interface Crosswalk {
     cw_uid: string;
+    sido: string;
+    sigungu: string;
     address: string;
     crosswalk_lat: number;
     crosswalk_lon: number;
     hasSignal: boolean;
-    signalSource?: 'direct' | 'mapped' | 'none'; // 신호등 정보 출처
 }
 
 function validateCrosswalkData(data: unknown): data is Crosswalk[] {
@@ -48,100 +50,46 @@ const createClusterCustomIcon = (cluster: any) => {
     });
 };
 
-const iconHas = L.divIcon({
-  className: "",
-  html: `
-    <div style="
-      width:18px;height:18px;
-      border-radius:9999px;
-      background:#22c55e;
-      border:2px solid white;
-      box-shadow:0 1px 6px rgba(0,0,0,.35);
-    "></div>
-  `,
-  iconSize: [18, 18],
-  iconAnchor: [9, 9],
-  popupAnchor: [0, -10],
-});
-
-const iconNone = L.divIcon({
-  className: "",
-  html: `
-    <div style="
-      width:18px;height:18px;
-      border-radius:9999px;
-      background:#ef4444;
-      border:2px solid white;
-      box-shadow:0 1px 6px rgba(0,0,0,.35);
-      position:relative;
-    ">
-      <div style="
-        position:absolute;
-        top:50%;left:50%;
-        transform:translate(-50%,-50%);
-        width:8px;height:2px;
-        background:white;
-        border-radius:1px;
-      "></div>
-    </div>
-  `,
-  iconSize: [18, 18],
-  iconAnchor: [9, 9],
-  popupAnchor: [0, -10],
-});
-
-function BoundsFetcher({ onData, onLoading }: { onData: (rows: Crosswalk[]) => void; onLoading: (v: boolean) => void }) {
+function BoundsFetcher({ onData, onLoading }: { 
+    onData: (rows: Crosswalk[]) => void; 
+    onLoading: (v: boolean) => void;
+}) {
     useMapEvents({
         moveend: async (e) => {
             const map = e.target;
-            const bound = map.getBounds();
-            const bounds = `${bound.getSouth()},${bound.getWest()},${bound.getNorth()},${bound.getEast()}`;
-
-            onLoading(true);
+            
+            // 지도가 제대로 초기화되었는지 확인
+            if (!map || !map.getBounds) {
+                console.warn('[EnhancedMapView] Map not properly initialized');
+                return;
+            }
 
             try {
-                // 임시 mock 데이터 (개발용)
-                const mockData: Crosswalk[] = [
-                    {
-                        cw_uid: "mock_1",
-                        crosswalk_lat: 37.5665 + (Math.random() - 0.5) * 0.01,
-                        crosswalk_lon: 126.978 + (Math.random() - 0.5) * 0.01,
-                        address: "서울특별시 중구 명동",
-                        hasSignal: Math.random() > 0.5,
-                        signalSource: Math.random() > 0.5 ? 'direct' as const : 'mapped' as const
-                    },
-                    {
-                        cw_uid: "mock_2", 
-                        crosswalk_lat: 37.5665 + (Math.random() - 0.5) * 0.01,
-                        crosswalk_lon: 126.978 + (Math.random() - 0.5) * 0.01,
-                        address: "서울특별시 중구 을지로",
-                        hasSignal: Math.random() > 0.5,
-                        signalSource: Math.random() > 0.5 ? 'direct' as const : 'mapped' as const
-                    }
-                ];
+                const bound = map.getBounds();
+                const bounds = `${bound.getSouth()},${bound.getWest()},${bound.getNorth()},${bound.getEast()}`;
 
-                // 실제 API 호출 시도, 실패하면 mock 데이터 사용
-                try {
-                    const res = await fetch(
-                        `/api/map/crosswalks?bounds=${encodeURIComponent(bounds)}`,
-                        { cache: "no-store" }
-                    );
+                onLoading(true);
 
-                    if (res.ok) {
-                        const json = await res.json();
-                        if (validateCrosswalkData(json)) {
-                            onData(json);
-                            return;
-                        }
-                    }
-                } catch (apiError) {
-                    console.warn("[MapView] API failed, using mock data:", apiError);
+                // 횡단보도 데이터 로드
+                const crosswalkRes = await fetch(
+                    `/api/map/crosswalks?bounds=${encodeURIComponent(bounds)}`,
+                    { cache: "no-store" }
+                );
+
+                if (!crosswalkRes.ok) {
+                    throw new Error(`Crosswalk API Error: ${crosswalkRes.status}`);
                 }
 
-                // API 실패 시 mock 데이터 사용
-                onData(mockData);
+                const crosswalkJson = await crosswalkRes.json();
+
+                if (!validateCrosswalkData(crosswalkJson)) {
+                    throw new Error('Invalid crosswalk data format received from API');
+                }
+
+                onData(crosswalkJson);
+
             } catch (err) {
-                console.error("[MapView] Error:", err);
+                console.error("[EnhancedMapView] Error:", err);
                 onData([]); 
             } finally {
                 onLoading(false);
@@ -152,14 +100,25 @@ function BoundsFetcher({ onData, onLoading }: { onData: (rows: Crosswalk[]) => v
     return null;
 }
 
-export default function MapView() {
+interface EnhancedMapViewProps {
+    className?: string;
+    onCrosswalkClick?: (crosswalk: Crosswalk) => void;
+}
+
+export default function EnhancedMapView({ className, onCrosswalkClick }: EnhancedMapViewProps) {
     const [rows, setRows] = useState<Crosswalk[]>([]);
     const [loading, setLoading] = useState(false);
+    const [mapReady, setMapReady] = useState(false);
 
     const center = useMemo<[number, number]>(() => [37.5665, 126.978], []);
 
+    const handleCrosswalkClick = (crosswalk: Crosswalk) => {
+        console.log('[EnhancedMapView] Crosswalk clicked:', crosswalk);
+        onCrosswalkClick?.(crosswalk);
+    };
+
     return (
-        <section className="relative w-full">
+        <section className={`relative w-full ${className || ''}`}>
             <style jsx global>{`
                 /* 지도 모노톤 스타일 */
                 .map-grayscale {
@@ -223,8 +182,17 @@ export default function MapView() {
                     font-size: 18px;
                 }
             `}</style>
+            
             <div className="relative h-[70vh] min-h-130 w-full overflow-hidden rounded-2xl border bg-white shadow">
-                <MapContainer center={center} zoom={12} className="h-full w-full">
+                <MapContainer 
+                    center={center} 
+                    zoom={12} 
+                    className="h-full w-full"
+                    whenReady={() => {
+                        console.log('[EnhancedMapView] MapContainer ready');
+                        setMapReady(true);
+                    }}
+                >
                     {/* 안정적인 OpenStreetMap 타일 + CSS 필터로 모노톤 처리 */}
                     <TileLayer
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -241,40 +209,13 @@ export default function MapView() {
                         showCoverageOnHover={false}
                         zoomToBoundsOnClick={true}
                     >
-                    {rows.map((cw) => (
-                        <Marker
-                            key={cw.cw_uid}
-                            position={[cw.crosswalk_lat, cw.crosswalk_lon]}
-                            icon={cw.hasSignal ? iconHas : iconNone}
-                        >
-                            <Popup>
-                                <div className="space-y-1">
-                                    <div className="text-sm font-semibold">횡단보도</div>
-                                    <div className="text-sm">{cw.address}</div>
-                                    <div className="text-xs">
-                                        신호등:{" "}
-                                        <span
-                                            className={
-                                                cw.hasSignal
-                                                    ? "font-semibold text-emerald-600"
-                                                    : "font-semibold text-red-600"
-                                            }
-                                        >
-                                            {cw.hasSignal ? "있음" : "없음"}
-                                        </span>
-                                        {cw.hasSignal && (
-                                            <span className="text-xs text-gray-500 ml-1">
-                                                ({cw.signalSource === 'direct' ? '직접 설치' : '100m 내 설치'})
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="text-xs text-gray-500">
-                                        ID: {cw.cw_uid}
-                                    </div>
-                                </div>
-                            </Popup>
-                        </Marker>
-                    ))}
+                        {rows.map((crosswalk) => (
+                            <CrosswalkMarkerWithPopup
+                                key={crosswalk.cw_uid}
+                                crosswalk={crosswalk}
+                                onMarkerClick={handleCrosswalkClick}
+                            />
+                        ))}
                     </MarkerClusterGroup>
                 </MapContainer>
 
@@ -288,23 +229,31 @@ export default function MapView() {
                     불러오는 중…
                 </div>
 
-                {/* 범례 */}
+                {/* 개선된 범례 */}
                 <div className="pointer-events-none absolute left-3 bottom-3 z-999 rounded-xl border bg-white/90 p-3 text-xs shadow" role="img" aria-label="지도 범례">
                     <div className="mb-2 font-semibold text-slate-800">범례</div>
-                    <div className="flex items-center gap-2" role="listitem">
+                    <div className="flex items-center gap-2 mb-1" role="listitem">
                         <span className="inline-block h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white shadow" aria-hidden="true" />
-                        100m 내 신호등 있음
+                        신호등 있음 (안전)
                     </div>
-                    <div className="mt-1 flex items-center gap-2" role="listitem">
+                    <div className="flex items-center gap-2 mb-2" role="listitem">
                         <span className="inline-block h-3 w-3 rounded-full bg-red-500 ring-2 ring-white shadow" aria-hidden="true" />
-                        100m 내 신호등 없음
+                        신호등 없음 (주의)
+                    </div>
+                    <div className="mt-2 pt-2 border-t border-gray-200 text-xs text-gray-600">
+                        💡 마커를 클릭하면 상세 정보를 확인할 수 있습니다
                     </div>
                 </div>
             </div>
 
             <div className="mt-3 flex items-center justify-between text-sm text-slate-700">
-                <div>표시된 횡단보도: <span className="font-semibold">{rows.length}</span></div>
-                <div className="text-xs text-slate-500">지도를 이동하면 현재 화면 영역만 불러온다</div>
+                <div className="flex items-center gap-4">
+                    <span>표시된 횡단보도: <span className="font-semibold">{rows.length}</span></span>
+                </div>
+                <div className="text-xs text-slate-500">
+                    지도를 이동하면 현재 화면 영역만 불러옵니다 | 
+                    <span className="ml-1 text-blue-600">마커 클릭시 상세 정보 확인</span>
+                </div>
             </div>
         </section>
     );

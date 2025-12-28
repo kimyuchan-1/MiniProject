@@ -2,7 +2,7 @@
 
 ## 개요
 
-시도별·시군구별·월별 보행자 사고 데이터 기반 교통 안전 분석 대시보드는 Spring Boot 백엔드와 Next.js 프론트엔드로 구성된 웹 애플리케이션입니다. 전국→시도→구 단계별 확대가 가능한 인터랙티브 지도를 통해 월별 사고 트렌드를 시각화하고, KPI 중심의 안전 현황 분석을 제공합니다. 사고 예측 모델링, 투자 우선순위 분석, 실시간 모니터링 등 고급 분석 기능과 시민 참여형 건의 시스템을 포함합니다.
+시도별·시군구별·월별 보행자 사고 데이터 기반 교통 안전 분석 대시보드는 Next.js 프론트엔드와 Spring Boot 백엔드로 구성된 웹 애플리케이션입니다. 복잡한 기능보다는 핵심 가치를 제공하는 세 가지 주요 기능에 집중합니다: 1) 횡단보도 + 신호등 시각화, 2) 개선된 팝업, 3) 사고 히트맵. 프론트엔드에서 실시간으로 안전/위험 지표를 계산하여 백엔드 복잡성을 최소화합니다.
 
 ## 아키텍처
 
@@ -10,17 +10,16 @@
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Next.js Web  │    │  Spring Boot    │    │   MySQL DB      │
+│   Next.js Web  │    │  Spring Boot    │    │  Supabase DB    │
 │   Frontend     │◄──►│   Backend       │◄──►│                 │
 │                │    │                 │    │                 │
 │ - Interactive  │    │ - REST APIs     │    │ - crosswalks    │
-│   Map (3-Level)│    │ - KPI Dashboard │    │ - signals       │
-│ - KPI Dashboard│    │ - Prediction    │    │ - monthly_      │
-│ - Trend Charts │    │   Models        │    │   accidents     │
-│ - Prediction   │    │ - Investment    │    │ - suggestions   │
-│   Analytics    │    │   Optimizer     │    │ - users         │
-│ - Real-time    │    │ - Alert System  │    │ - predictions   │
-│   Monitoring   │    │ - Notification  │    │ - investments   │
+│   Map (Leaflet)│    │ - Data Import   │    │ - signals       │
+│ - Enhanced     │    │ - CSV Processing│    │ - ACC (사고)    │
+│   Popups       │    │ - Authentication│    │ - district_all  │
+│ - Heatmap      │    │ - JWT Security  │    │ - suggestions   │
+│ - Real-time    │    │ - Suggestion    │    │ - users         │
+│   Calculations │    │   Management    │    │                 │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
@@ -29,7 +28,7 @@
 **백엔드 (Spring Boot)**
 - Spring Boot 3.x
 - Spring Data JPA
-- MySQL Connector
+- Supabase PostgreSQL Connector
 - Spring Web (REST API)
 - Spring Security
 - JJWT (JWT Library)
@@ -41,13 +40,12 @@
 - React 19
 - TypeScript
 - Leaflet (지도 라이브러리)
-- Chart.js (차트 라이브러리)
-- D3.js (고급 데이터 시각화)
+- Leaflet.heat (히트맵 플러그인)
 - Axios (HTTP 클라이언트)
 - Tailwind CSS (스타일링)
 
 **데이터베이스**
-- MySQL 8.0+
+- Supabase PostgreSQL
 
 ## 컴포넌트 및 인터페이스
 
@@ -67,15 +65,9 @@ public class Crosswalk {
     @Column(name = "cw_uid")
     private String cwUid;
     
-    @Column(name = "district_code")
-    private Long districtCode;
-    
+    private String sido;
+    private String sigungu;
     private String address;
-    
-    @Column(name = "crosswalk_type")
-    private Integer crosswalkType;
-    
-    private Integer highland;
     
     @Column(name = "crosswalk_lat", precision = 10, scale = 8)
     private BigDecimal crosswalkLat;
@@ -83,29 +75,16 @@ public class Crosswalk {
     @Column(name = "crosswalk_lon", precision = 11, scale = 8)
     private BigDecimal crosswalkLon;
     
-    private Integer laneCount;
-    
     @Column(name = "crosswalk_width", precision = 5, scale = 2)
     private BigDecimal crosswalkWidth;
     
-    @Column(name = "crosswalk_length", precision = 5, scale = 2)
-    private BigDecimal crosswalkLength;
-    
-    private Integer hasSignal;           // 보행자신호등유무
-    private Integer hasButton;           // 보행자작동신호기유무
-    
-    @Column(name = "sound_signal")
-    private Integer hasSoundSignal;      // 음향신호기설치유무
-    
-    private Integer hasBump;             // 보도턱낮춤여부
-    
-    @Column(name = "braille_block")
-    private Integer hasBrailleBlock;     // 점자블록유무
-    
-    private Integer hasSpotlight;        // 집중조명시설유무
-    
-    @Column(name = "org_code")
-    private Integer orgCode;
+    private Boolean hasSignal;           // 보행자신호등유무
+    private Boolean button;              // 보행자작동신호기유무
+    private Boolean soundSignal;         // 음향신호기설치유무
+    private Boolean highland;            // 고원식 적용 여부
+    private Boolean bump;                // 보도턱낮춤여부
+    private Boolean brailleBlock;        // 점자블록유무
+    private Boolean spotlight;           // 집중조명시설유무
     
     @CreationTimestamp
     @Column(name = "created_at")
@@ -117,81 +96,25 @@ public class Crosswalk {
 }
 
 @Entity
-@Table(name = "traffic_signals")
+@Table(name = "acc")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class TrafficSignal {
+public class AccidentData {
     @Id
-    @Column(name = "sg_uid")
-    private String sgUid;
+    @Column(name = "acc_uid")
+    private String accUid;
     
-    @Column(name = "district_code")
-    private Long districtCode;
+    @Column(name = "sido_code")
+    private String sidoCode;
     
-    @Column(name = "road_type")
-    private Integer roadType;
-    
-    @Column(name = "road_direction")
-    private Integer roadDirection;
-    
-    private String address;
-    
-    @Column(name = "signal_lat", precision = 10, scale = 8)
-    private BigDecimal signalLat;
-    
-    @Column(name = "signal_lon", precision = 11, scale = 8)
-    private BigDecimal signalLon;
-    
-    @Column(name = "road_shape")
-    private Integer roadShape;
-    
-    @Column(name = "main_road")
-    private Integer isMainRoad;
-    
-    @Column(name = "signal_type")
-    private Integer signalType;
-    
-    private Integer hasButton;           // 보행자작동신호기유무
-    
-    @Column(name = "remain_time")
-    private Integer remainTime;       // 잔여시간표시기유무
-    
-    @Column(name = "sound_signal")
-    private Integer hasSoundSignal;      // 시각장애인용음향신호기유무
-    
-    @Column(name = "org_code")
-    private Integer orgCode;
-    
-    @CreationTimestamp
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-    
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-}
-
-@Entity
-@Table(name = "accident_hotspots")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class AccidentHotspot {
-    @Id
-    @Column(name = "accident_id")
-    private Long accidentId;
+    @Column(name = "sigungu_code")
+    private String sigunguCode;
     
     private Integer year;
-    
-    @Column(name = "district_code")
-    private Long districtCode;
-    
-    private String detail;
+    private Integer month;
     
     @Column(name = "accident_count")
     private Integer accidentCount;
@@ -211,68 +134,15 @@ public class AccidentHotspot {
     @Column(name = "reported_injury_count")
     private Integer reportedInjuryCount;
     
-    @Column(name = "accident_lon", precision = 11, scale = 8)
-    private BigDecimal accidentLon;
-    
-    @Column(name = "accident_lat", precision = 10, scale = 8)
-    private BigDecimal accidentLat;
-    
-    @Column(name = "hotspot_polygon", columnDefinition = "JSON")
-    private String hotspotPolygon;
-    
-    @CreationTimestamp
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-}
-
-@Entity
-@Table(name = "crosswalk_signal_mapping")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class CrosswalkSignalMapping {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    @Column(name = "cw_uid")
-    private String cwUid;
-    
-    @Column(name = "sg_uid")
-    private String sgUid;
-    
-    @Column(name = "distance_m", precision = 8, scale = 3)
-    private BigDecimal distanceM;
-    
-    @Column(precision = 6, scale = 6)
-    private BigDecimal confidence;
-    
-    @Column(name = "district_code")
-    private Long districtCode;
-    
-    @CreationTimestamp
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-}
-
-@Entity
-@Table(name = "districts")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class District {
-    @Id
-    @Column(name = "district_code")
-    private Long districtCode;
-    
     @Column(name = "district_name")
     private String districtName;
     
-    private Integer available;
+    // 히트맵을 위한 추정 좌표 (지역 중심점)
+    @Column(name = "estimated_lat", precision = 10, scale = 8)
+    private BigDecimal estimatedLat;
+    
+    @Column(name = "estimated_lon", precision = 11, scale = 8)
+    private BigDecimal estimatedLon;
     
     @CreationTimestamp
     @Column(name = "created_at")
@@ -306,9 +176,8 @@ public class Suggestion {
     private BigDecimal locationLon;
     
     private String address;
-    
-    @Column(name = "district_code")
-    private Long districtCode;
+    private String sido;
+    private String sigungu;
     
     @Enumerated(EnumType.STRING)
     @Column(name = "suggestion_type")
@@ -317,8 +186,8 @@ public class Suggestion {
     @Enumerated(EnumType.STRING)
     private SuggestionStatus status;
     
-    @Column(name = "priority_score", precision = 5, scale = 2)
-    private BigDecimal priorityScore;
+    @Column(name = "like_count")
+    private Integer likeCount = 0;
     
     @Column(name = "view_count")
     private Integer viewCount = 0;
@@ -339,61 +208,40 @@ public class Suggestion {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-    
-    // 연관관계
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", insertable = false, updatable = false)
-    private User user;
-    
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "admin_id", insertable = false, updatable = false)
-    private User admin;
 }
 
 @Entity
-@Table(name = "suggestion_comments")
+@Table(name = "users")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SuggestionComment {
+public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(name = "suggestion_id")
-    private Long suggestionId;
+    @Column(unique = true, nullable = false)
+    private String email;
     
-    @Column(name = "user_id")
-    private Long userId;
+    @Column(nullable = false)
+    private String password;
     
-    @Column(columnDefinition = "TEXT")
-    private String content;
+    private String name;
+    private String picture;
     
-    @Column(name = "parent_id")
-    private Long parentId;
+    @Enumerated(EnumType.STRING)
+    private Role role;
+    
+    @Column(name = "refresh_token")
+    private String refreshToken;
     
     @CreationTimestamp
-    @Column(name = "created_at")
     private LocalDateTime createdAt;
     
     @UpdateTimestamp
-    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-    
-    // 연관관계
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "suggestion_id", insertable = false, updatable = false)
-    private Suggestion suggestion;
-    
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", insertable = false, updatable = false)
-    private User user;
-    
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_id", insertable = false, updatable = false)
-    private SuggestionComment parent;
 }
 
 // Enum 클래스들
@@ -418,98 +266,71 @@ public enum SuggestionStatus {
     
     private final String description;
 }
+
+@Getter
+@RequiredArgsConstructor
+public enum Role {
+    ADMIN("ROLE_ADMIN", "관리자"),
+    USER("ROLE_USER", "일반사용자");
+    
+    private final String key;
+    private final String title;
+}
 ```
 
 #### 2. 서비스 계층
 ```java
 @Service
-public class SafetyAnalysisService {
-    public DashboardStats getDashboardStats(Long districtCode);
-    public List<CrosswalkWithScore> getImprovementCandidates(Long districtCode, int limit);
-    public VulnerabilityScore calculateVulnerabilityScore(Crosswalk crosswalk);
-    public RiskScore calculateRiskScore(Double lat, Double lng);
-    public SignalEffectAnalysis analyzeSignalEffect(Long districtCode);
+public class MapService {
+    public List<Crosswalk> getCrosswalksByBounds(String bounds);
+    public List<AccidentData> getAccidentsByBounds(String bounds);
+    public List<AccidentData> getAccidentsByRegion(String sido, String sigungu);
+    public CrosswalkDetails getCrosswalkDetails(String cwUid);
 }
 
 @Service
 public class DataImportService {
     public void importCrosswalkData(MultipartFile csvFile);
-    public void importSignalData(MultipartFile csvFile);
     public void importAccidentData(MultipartFile csvFile);
-}
-
-@Service
-public class MapService {
-    public List<AccidentHotspot> getAccidentHeatmapData(Long districtCode);
-    public List<Crosswalk> getCrosswalksByRegion(Long districtCode);
-    public List<TrafficSignal> getSignalsByRegion(Long districtCode);
-    public RegionalStatistics getRegionalStatistics(Long districtCode);
+    public void validateCsvData(List<String[]> csvData, String dataType);
 }
 
 @Service
 public class SuggestionService {
-    public Page<Suggestion> getSuggestions(Pageable pageable, SuggestionStatus status, Long districtCode);
+    public Page<Suggestion> getSuggestions(Pageable pageable, SuggestionStatus status, String region);
     public Suggestion createSuggestion(CreateSuggestionRequest request, Long userId);
     public Suggestion updateSuggestionStatus(Long suggestionId, SuggestionStatus status, String adminResponse, Long adminId);
     public List<SuggestionComment> getComments(Long suggestionId);
-    public SuggestionComment addComment(Long suggestionId, String content, Long userId, Long parentId);
+    public SuggestionComment addComment(Long suggestionId, String content, Long userId);
     public SuggestionStatistics getSuggestionStatistics();
 }
 
 @Service
-public class AlertService {
-    public void createAlert(AlertType type, String title, String message, Long districtCode);
-    public List<AlertNotification> getUnreadAlerts(String role);
-    public void markAsRead(Long alertId);
-    public void checkAccidentSpikes();
-    public void checkNewHotspots();
-}
-
-@Service
-public class KPIService {
-    public KPIDashboard getKPIDashboard(Long districtCode);
-    public List<KPITrend> getKPITrends(Long districtCode, int months);
-    public SafetyIndex calculateSafetyIndex(Long districtCode);
-    public List<RegionalComparison> compareRegionalKPIs();
+public class UserService {
+    public User createUser(RegisterRequest request);
+    public User findByEmail(String email);
+    public void updateRefreshToken(Long userId, String refreshToken);
+    public boolean existsByEmail(String email);
 }
 ```
 
 #### 3. REST API 컨트롤러
 ```java
 @RestController
-@RequestMapping("/api")
-public class DashboardController {
+@RequestMapping("/api/map")
+public class MapController {
     
-    @GetMapping("/dashboard/stats")
-    public ResponseEntity<DashboardStats> getDashboardStats(
-        @RequestParam(required = false) String sido,
-        @RequestParam(required = false) String sigungu);
-    
-    @GetMapping("/map/heatmap")
-    public ResponseEntity<List<AccidentHotspot>> getAccidentHeatmap(
-        @RequestParam(required = false) String sido,
-        @RequestParam(required = false) String sigungu);
-    
-    @GetMapping("/map/crosswalks")
+    @GetMapping("/crosswalks")
     public ResponseEntity<List<Crosswalk>> getCrosswalks(
-        @RequestParam(required = false) String sido,
-        @RequestParam(required = false) String sigungu);
+        @RequestParam String bounds);
     
-    @GetMapping("/map/signals") 
-    public ResponseEntity<List<TrafficSignal>> getSignals(
-        @RequestParam(required = false) String sido,
-        @RequestParam(required = false) String sigungu);
+    @GetMapping("/crosswalks/{cwUid}")
+    public ResponseEntity<CrosswalkDetails> getCrosswalkDetails(
+        @PathVariable String cwUid);
     
-    @GetMapping("/analysis/signal-effect")
-    public ResponseEntity<SignalEffectAnalysis> getSignalEffectAnalysis(
-        @RequestParam(required = false) String sido,
-        @RequestParam(required = false) String sigungu);
-    
-    @GetMapping("/analysis/improvement-candidates")
-    public ResponseEntity<List<ImprovementCandidate>> getImprovementCandidates(
-        @RequestParam(required = false) String sido,
-        @RequestParam(required = false) String sigungu,
-        @RequestParam(defaultValue = "20") int limit);
+    @GetMapping("/accidents")
+    public ResponseEntity<List<AccidentData>> getAccidents(
+        @RequestParam String bounds);
 }
 
 @RestController
@@ -547,52 +368,44 @@ public class SuggestionController {
         @PathVariable Long id,
         @RequestBody @Valid AddCommentRequest request,
         Authentication authentication);
-    
-    @GetMapping("/statistics")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<SuggestionStatistics> getSuggestionStatistics();
 }
 
 @RestController
-@RequestMapping("/api/kpi")
-public class KPIController {
+@RequestMapping("/api/data")
+@PreAuthorize("hasRole('ADMIN')")
+public class DataImportController {
     
-    @GetMapping("/dashboard")
-    public ResponseEntity<KPIDashboard> getKPIDashboard(
-        @RequestParam(required = false) String sido,
-        @RequestParam(required = false) String sigungu);
+    @PostMapping("/import/crosswalks")
+    public ResponseEntity<ImportResult> importCrosswalks(
+        @RequestParam("file") MultipartFile file);
     
-    @GetMapping("/trends")
-    public ResponseEntity<List<KPITrend>> getKPITrends(
-        @RequestParam(required = false) String sido,
-        @RequestParam(required = false) String sigungu,
-        @RequestParam(defaultValue = "12") int months);
-    
-    @GetMapping("/safety-index")
-    public ResponseEntity<SafetyIndex> getSafetyIndex(
-        @RequestParam(required = false) String sido,
-        @RequestParam(required = false) String sigungu);
-    
-    @GetMapping("/regional-comparison")
-    public ResponseEntity<List<RegionalComparison>> getRegionalComparison();
+    @PostMapping("/import/accidents")
+    public ResponseEntity<ImportResult> importAccidents(
+        @RequestParam("file") MultipartFile file);
 }
 
 @RestController
-@RequestMapping("/api/alerts")
-public class AlertController {
+@RequestMapping("/api/auth")
+public class AuthController {
     
-    @GetMapping("/unread")
-    @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<List<AlertNotification>> getUnreadAlerts(Authentication authentication);
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<JwtTokenDto>> login(
+        @RequestBody @Valid LoginRequest request);
     
-    @PutMapping("/{id}/read")
-    @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<Void> markAsRead(@PathVariable Long id);
+    @PostMapping("/register")
+    public ResponseEntity<ApiResponse<UserSessionDto>> register(
+        @RequestBody @Valid RegisterRequest request);
     
-    @PostMapping("/manual")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<AlertNotification> createManualAlert(
-        @RequestBody @Valid CreateAlertRequest request);
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<JwtTokenDto>> refresh(
+        @RequestBody @Valid RefreshTokenRequest request);
+    
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<UserSessionDto>> getCurrentUser(
+        Authentication authentication);
+    
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout(Authentication authentication);
 }
 ```
 
@@ -604,29 +417,27 @@ public class AlertController {
 export default function Dashboard() {
   return (
     <div className="dashboard">
-      <KPIDashboard />
-      <InteractiveMap />
-      <MonthlyTrendChart />
+      <EnhancedMapView />
     </div>
   );
 }
 
-// app/predictions/page.tsx - 예측 분석 페이지
-export default function PredictionsPage() {
+// app/suggestions/page.tsx - 건의사항 페이지
+export default function SuggestionsPage() {
   return (
-    <div className="predictions">
-      <AccidentPredictionChart />
-      <SignalEffectSimulation />
+    <div className="suggestions">
+      <SuggestionList />
+      <SuggestionForm />
     </div>
   );
 }
 
-// app/investments/page.tsx - 투자 최적화 페이지
-export default function InvestmentsPage() {
+// app/admin/page.tsx - 관리자 페이지
+export default function AdminPage() {
   return (
-    <div className="investments">
-      <InvestmentPlanDashboard />
-      <ROIAnalysis />
+    <div className="admin">
+      <DataImportPanel />
+      <SuggestionManagement />
     </div>
   );
 }
@@ -636,28 +447,24 @@ export default function InvestmentsPage() {
 ```typescript
 'use client';
 
-interface LayerState {
-  crosswalks: boolean;
-  signals: boolean;
-  accidents: boolean;
+interface EnhancedMapViewProps {
+  className?: string;
+  onCrosswalkClick?: (crosswalk: Crosswalk) => void;
 }
 
-const MapView: React.FC = () => {
-  const [layers, setLayers] = useState<LayerState>({
-    crosswalks: true,
-    signals: true,
-    accidents: true
-  });
+const EnhancedMapView: React.FC<EnhancedMapViewProps> = ({ className, onCrosswalkClick }) => {
+  const [rows, setRows] = useState<Crosswalk[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [heatmapVisible, setHeatmapVisible] = useState(false);
   
   return (
     <div className="map-container">
-      <LayerToggle layers={layers} onToggle={setLayers} />
+      <HeatmapToggle visible={heatmapVisible} onToggle={setHeatmapVisible} />
       <LeafletMap>
-        {layers.crosswalks && <CrosswalkLayer />}
-        {layers.signals && <SignalLayer />}
-        {layers.accidents && <AccidentLayer />}
+        <CrosswalkLayer crosswalks={rows} onCrosswalkClick={onCrosswalkClick} />
+        {heatmapVisible && <HeatmapLayer />}
       </LeafletMap>
-      <DetailPanel />
+      <EnhancedLegend />
     </div>
   );
 };
@@ -665,13 +472,6 @@ const MapView: React.FC = () => {
 
 #### 3. API 라우트 (Next.js API Routes)
 ```typescript
-// app/api/dashboard/stats/route.ts
-export async function GET() {
-  const response = await fetch(`${process.env.BACKEND_URL}/api/dashboard/stats`);
-  const data = await response.json();
-  return Response.json(data);
-}
-
 // app/api/map/crosswalks/route.ts
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -683,12 +483,24 @@ export async function GET(request: Request) {
   const data = await response.json();
   return Response.json(data);
 }
+
+// app/api/map/accidents/route.ts
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const bounds = searchParams.get('bounds');
+  
+  const response = await fetch(
+    `${process.env.BACKEND_URL}/api/map/accidents?bounds=${bounds}`
+  );
+  const data = await response.json();
+  return Response.json(data);
+}
 ```
 ```
 
 ## 데이터 모델
 
-### MySQL 테이블 구조
+### Supabase 테이블 구조
 
 #### crosswalks 테이블
 ```sql
@@ -697,149 +509,55 @@ CREATE TABLE crosswalks (
     sido VARCHAR(50) NOT NULL,                         -- 시도
     sigungu VARCHAR(50) NOT NULL,                      -- 시군구
     address VARCHAR(500) NOT NULL,                     -- 주소
-    crosswalk_type TINYINT NOT NULL,                   -- 횡단보도 종류 (1-4, 99)
-    is_highland TINYINT DEFAULT 0,                        -- 고원식 적용 여부 (0/1)
     crosswalk_lat DECIMAL(10, 8) NOT NULL,             -- 위도
     crosswalk_lon DECIMAL(11, 8) NOT NULL,             -- 경도
-    lane_count TINYINT,                                   -- 차로수
     crosswalk_width DECIMAL(5, 2),                     -- 횡단보도 폭(m)
-    crosswalk_length DECIMAL(5, 2),                    -- 횡단보도 길이(m)
-    has_ped_signal TINYINT DEFAULT 0,                          -- 보행자신호등유무 (0/1)
-    has_ped_button TINYINT DEFAULT 0,                          -- 보행자작동신호기유무 (0/1)
-    has_ped_sound TINYINT DEFAULT 0,                    -- 음향신호기설치유무 (0/1)
-    has_bump TINYINT DEFAULT 0,                            -- 보도턱낮춤여부 (0/1)
-    has_braille_block TINYINT DEFAULT 0,                   -- 점자블록유무 (0/1)
-    has_spotlight TINYINT DEFAULT 0,                       -- 집중조명시설유무 (0/1)
-    org_code INT,                                      -- 관리기관 코드
+    has_signal BOOLEAN DEFAULT FALSE,                  -- 보행자신호등유무
+    button BOOLEAN DEFAULT FALSE,                      -- 보행자작동신호기유무
+    sound_signal BOOLEAN DEFAULT FALSE,                -- 음향신호기설치유무
+    highland BOOLEAN DEFAULT FALSE,                    -- 고원식 적용 여부
+    bump BOOLEAN DEFAULT FALSE,                        -- 보도턱낮춤여부
+    braille_block BOOLEAN DEFAULT FALSE,               -- 점자블록유무
+    spotlight BOOLEAN DEFAULT FALSE,                   -- 집중조명시설유무
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     INDEX idx_location (crosswalk_lat, crosswalk_lon),
     INDEX idx_region (sido, sigungu),
-    INDEX idx_facilities (signal, sound_signal, button, spotlight)
+    INDEX idx_facilities (has_signal, sound_signal, button, spotlight)
 );
 ```
 
-#### traffic_signals 테이블
+#### acc 테이블 (사고 데이터)
 ```sql
-CREATE TABLE traffic_signals (
-    sg_uid VARCHAR(20) PRIMARY KEY,                    -- 신호등 고유 ID
-    sido VARCHAR(50) NOT NULL,                         -- 시도
-    sigungu VARCHAR(50) NOT NULL,                      -- 시군구
-    road_type TINYINT,                                 -- 도로 종류 (1-7, 99)
-    road_direction TINYINT,                            -- 도로 방향 (1-3)
-    address VARCHAR(500) NOT NULL,                     -- 주소
-    signal_lat DECIMAL(10, 8) NOT NULL,                -- 위도
-    signal_lon DECIMAL(11, 8) NOT NULL,                -- 경도
-    road_shape TINYINT,                                -- 도로 형태 (1-2, 99)
-    is_main_road TINYINT DEFAULT 0,                       -- 주도로 여부 (0/1)
-    signal_type TINYINT,                               -- 신호등 종류 (1-7, 99)
-    has_ped_button TINYINT DEFAULT 0,                          -- 보행자작동신호기유무 (0/1)
-    has_time_show TINYINT DEFAULT 0,                     -- 잔여시간표시기유무 (0/1)
-    has_sound_signal TINYINT DEFAULT 0,                    -- 시각장애인용음향신호기유무 (0/1)
-    org_code INT,                                      -- 행정기관코드
+CREATE TABLE acc (
+    acc_uid VARCHAR(20) PRIMARY KEY,                   -- 사고 고유 ID
+    sido_code VARCHAR(10) NOT NULL,                    -- 시도 코드
+    sigungu_code VARCHAR(10) NOT NULL,                 -- 시군구 코드
+    year INTEGER NOT NULL,                             -- 년도
+    month INTEGER NOT NULL,                            -- 월 (1-12)
+    accident_count INTEGER DEFAULT 0,                  -- 사고건수
+    casualty_count INTEGER DEFAULT 0,                  -- 사상자수
+    fatality_count INTEGER DEFAULT 0,                  -- 사망자수
+    serious_injury_count INTEGER DEFAULT 0,            -- 중상자수
+    minor_injury_count INTEGER DEFAULT 0,              -- 경상자수
+    reported_injury_count INTEGER DEFAULT 0,           -- 신고부상자수
+    district_name VARCHAR(100),                        -- 지역명
+    estimated_lat DECIMAL(10, 8),                      -- 추정 위도 (히트맵용)
+    estimated_lon DECIMAL(11, 8),                      -- 추정 경도 (히트맵용)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
-    INDEX idx_location (signal_lat, signal_lon),
-    INDEX idx_region (sido, sigungu),
-    INDEX idx_features (button, remain_time, sound_signal)
-);
-
-
-#### monthly_accidents 테이블 (월별 사고 데이터)
-```sql
-CREATE TABLE monthly_accidents (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    sido VARCHAR(50) NOT NULL,                         -- 시도
-    sigungu VARCHAR(50) NOT NULL,                      -- 시군구
-    year SMALLINT NOT NULL,                            -- 년도
-    month TINYINT NOT NULL,                            -- 월 (1-12)
-    accident_count SMALLINT DEFAULT 0,                 -- 사고건수
-    casualty_count SMALLINT DEFAULT 0,                 -- 사상자수
-    fatality_count SMALLINT DEFAULT 0,                 -- 사망자수
-    serious_injury_count SMALLINT DEFAULT 0,           -- 중상자수
-    minor_injury_count SMALLINT DEFAULT 0,             -- 경상자수
-    pedestrian_accident_count SMALLINT DEFAULT 0,      -- 보행자 사고건수
-    pedestrian_fatality_count SMALLINT DEFAULT 0,      -- 보행자 사망자수
-    weather_condition VARCHAR(20),                     -- 날씨 조건
-    road_condition VARCHAR(20),                        -- 도로 조건
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    UNIQUE KEY unique_region_month (sido, sigungu, year, month),
-    INDEX idx_region (sido, sigungu),
+    UNIQUE KEY unique_region_month (sido_code, sigungu_code, year, month),
+    INDEX idx_region (sido_code, sigungu_code),
     INDEX idx_date (year, month),
-    INDEX idx_pedestrian (pedestrian_accident_count, pedestrian_fatality_count)
-);
-```
-
-#### accident_hotspots 테이블 (사고 다발지역)
-```sql
-CREATE TABLE accident_hotspots (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    sido VARCHAR(50) NOT NULL,                         -- 시도
-    sigungu VARCHAR(50) NOT NULL,                      -- 시군구
-    hotspot_name VARCHAR(200),                         -- 다발지역명
-    center_lat DECIMAL(10, 8) NOT NULL,                -- 중심 위도
-    center_lon DECIMAL(11, 8) NOT NULL,                -- 중심 경도
-    radius_m INT DEFAULT 100,                          -- 반경(미터)
-    accident_count SMALLINT NOT NULL,                  -- 총 사고건수
-    pedestrian_accident_count SMALLINT DEFAULT 0,      -- 보행자 사고건수
-    fatality_count SMALLINT DEFAULT 0,                 -- 사망자수
-    analysis_period_start DATE,                        -- 분석 기간 시작
-    analysis_period_end DATE,                          -- 분석 기간 종료
-    risk_level ENUM('LOW', 'MEDIUM', 'HIGH', 'CRITICAL') DEFAULT 'MEDIUM', -- 위험도
-    has_crosswalk TINYINT DEFAULT 0,                   -- 횡단보도 존재 여부
-    has_signal TINYINT DEFAULT 0,                      -- 신호등 존재 여부
-    signal_functionality_score DECIMAL(3, 2),          -- 신호등 기능 점수 (0-1)
-    improvement_priority DECIMAL(5, 2),                -- 개선 우선순위 점수
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    INDEX idx_location (center_lat, center_lon),
-    INDEX idx_region (sido, sigungu),
-    INDEX idx_risk (risk_level, improvement_priority),
-    INDEX idx_signal_status (has_signal, signal_functionality_score)
-);
-```
-
-#### crosswalk_signal_mapping 테이블 (연결 관계)
-```sql
-CREATE TABLE crosswalk_signal_mapping (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    cw_uid VARCHAR(20) NOT NULL,                       -- 횡단보도 ID
-    sg_uid VARCHAR(20) NOT NULL,                       -- 신호등 ID
-    distance_m DECIMAL(8, 3),                          -- 거리(m)
-    confidence DECIMAL(6, 6),                          -- 가중치
-    sido VARCHAR(50),                                  -- 시도
-    sigungu VARCHAR(50),                               -- 시군구
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (cw_uid) REFERENCES crosswalks(cw_uid),
-    FOREIGN KEY (sg_uid) REFERENCES traffic_signals(sg_uid),
-    INDEX idx_crosswalk (cw_uid),
-    INDEX idx_signal (sg_uid),
-    INDEX idx_distance (distance_m)
-);
-```
-
-#### districts 테이블 (참조용)
-```sql
-CREATE TABLE districts (
-    district_code BIGINT PRIMARY KEY,                  -- 지역 구분 코드
-    district_name VARCHAR(200) NOT NULL,               -- 지역명
-    available TINYINT DEFAULT 1,                       -- 유효여부 (0/1)
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    INDEX idx_name (district_name)
+    INDEX idx_location (estimated_lat, estimated_lon)
 );
 ```
 
 #### suggestions 테이블 (건의사항)
 ```sql
 CREATE TABLE suggestions (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL,                           -- 작성자 ID
     title VARCHAR(200) NOT NULL,                       -- 건의 제목
     content TEXT NOT NULL,                             -- 건의 내용
@@ -848,59 +566,57 @@ CREATE TABLE suggestions (
     address VARCHAR(500),                              -- 건의 위치 주소
     sido VARCHAR(50),                                  -- 시도
     sigungu VARCHAR(50),                               -- 시군구
-    suggestion_type ENUM('SIGNAL', 'CROSSWALK', 'FACILITY') DEFAULT 'SIGNAL', -- 건의 유형
-    status ENUM('PENDING', 'REVIEWING', 'APPROVED', 'REJECTED', 'COMPLETED') DEFAULT 'PENDING', -- 처리 상태
-    priority_score DECIMAL(5, 2) DEFAULT 0,           -- 우선순위 점수
-    like_count INT DEFAULT 0,                          -- 좋아요 수
-    view_count INT DEFAULT 0,                          -- 조회수
+    suggestion_type VARCHAR(20) DEFAULT 'SIGNAL',      -- 건의 유형
+    status VARCHAR(20) DEFAULT 'PENDING',              -- 처리 상태
+    like_count INTEGER DEFAULT 0,                      -- 좋아요 수
+    view_count INTEGER DEFAULT 0,                      -- 조회수
     admin_response TEXT,                               -- 관리자 답변
     admin_id BIGINT,                                   -- 처리 관리자 ID
     processed_at TIMESTAMP NULL,                       -- 처리 완료 시간
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (admin_id) REFERENCES users(id),
     INDEX idx_location (location_lat, location_lon),
     INDEX idx_region (sido, sigungu),
     INDEX idx_status (status),
-    INDEX idx_created (created_at),
-    INDEX idx_priority (priority_score DESC)
-);
-```
-
-#### suggestion_comments 테이블 (건의사항 댓글)
-```sql
-CREATE TABLE suggestion_comments (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    suggestion_id BIGINT NOT NULL,                     -- 건의사항 ID
-    user_id BIGINT NOT NULL,                           -- 작성자 ID
-    content TEXT NOT NULL,                             -- 댓글 내용
-    parent_id BIGINT NULL,                             -- 대댓글인 경우 부모 댓글 ID
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (suggestion_id) REFERENCES suggestions(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (parent_id) REFERENCES suggestion_comments(id) ON DELETE CASCADE,
-    INDEX idx_suggestion (suggestion_id),
     INDEX idx_created (created_at)
 );
 ```
 
-#### alert_notifications 테이블 (알림 관리)
+#### users 테이블 (사용자)
 ```sql
-CREATE TABLE alert_notifications (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    alert_type ENUM('ACCIDENT_SPIKE', 'NEW_HOTSPOT', 'PREDICTION_ALERT', 'SYSTEM_ALERT') NOT NULL,
-    title VARCHAR(200) NOT NULL,                       -- 알림 제목
-    message TEXT NOT NULL,                             -- 알림 내용
-    severity ENUM('LOW', 'MEDIUM', 'HIGH', 'CRITICAL') DEFAULT 'MEDIUM',
-    sido VARCHAR(50),                                  -- 관련 시도
-    sigungu VARCHAR(50),                               -- 관련 시군구
-    related_data JSON,                                 -- 관련 데이터 (JSON)
-    is_read TINYINT DEFAULT 0,                         -- 읽음 여부
-    recipient_role ENUM('ADMIN', 'ANALYST', 'MANAGER', 'ALL') DEFAULT 'ALL',
+CREATE TABLE users (
+    id BIGSERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,                -- 이메일 (로그인 ID)
+    password VARCHAR(255) NOT NULL,                    -- 암호화된 비밀번호
+    name VARCHAR(100),                                 -- 사용자 이름
+    picture VARCHAR(500),                              -- 프로필 이미지 URL
+    role VARCHAR(20) DEFAULT 'USER',                   -- 사용자 역할 (USER, ADMIN)
+    refresh_token TEXT,                                -- JWT 리프레시 토큰
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    INDEX idx_email (email),
+    INDEX idx_role (role)
+);
+```
+
+#### district_all 테이블 (지역 정보 - 참조용)
+```sql
+CREATE TABLE district_all (
+    district_code VARCHAR(10) PRIMARY KEY,             -- 지역 구분 코드
+    sido VARCHAR(50) NOT NULL,                         -- 시도명
+    sigungu VARCHAR(50),                               -- 시군구명
+    center_lat DECIMAL(10, 8),                         -- 중심 위도
+    center_lon DECIMAL(11, 8),                         -- 중심 경도
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    INDEX idx_region (sido, sigungu),
+    INDEX idx_location (center_lat, center_lon)
+);
+```LYST', 'MANAGER', 'ALL') DEFAULT 'ALL',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     read_at TIMESTAMP NULL,                            -- 읽은 시간
     
@@ -1058,69 +774,37 @@ public class CorrelationData {
 
 *속성은 시스템의 모든 유효한 실행에서 참이어야 하는 특성이나 동작입니다. 본질적으로 시스템이 무엇을 해야 하는지에 대한 공식적인 명세입니다. 속성은 사람이 읽을 수 있는 명세와 기계가 검증할 수 있는 정확성 보장 사이의 다리 역할을 합니다.*
 
-### 속성 1: 대시보드 통계 정확성
-*모든* 데이터베이스 상태에 대해, 대시보드 통계 API를 호출했을 때 반환되는 횡단보도 수, 신호등 비율, 미설치 비율이 실제 데이터베이스 내용과 일치해야 한다
-**검증: 요구사항 1.1, 1.2, 1.3**
+### 속성 1: 지도 범위 데이터 로딩 정확성
+*모든* 지도 범위 요청에 대해, API가 반환하는 횡단보도와 사고 데이터는 지정된 지리적 경계 내에만 포함되어야 한다
+**검증: 요구사항 1.1, 1.3**
 
-### 속성 2: 데이터 일관성
-*모든* 데이터베이스 업데이트 후, 즉시 조회한 통계가 변경된 데이터를 반영해야 한다
-**검증: 요구사항 1.3**
+### 속성 2: 팝업 정보 정확성
+*모든* 횡단보도 마커 클릭에 대해, 표시되는 팝업의 안전 지표와 위험 지표는 해당 횡단보도의 시설 정보와 근처 사고 데이터를 정확히 반영해야 한다
+**검증: 요구사항 2.2, 2.3**
 
-### 속성 3: 레이어 토글 동작
-*모든* 레이어 토글 조합에 대해, 선택된 레이어만 지도 API 응답에 포함되고 선택되지 않은 레이어는 제외되어야 한다
-**검증: 요구사항 2.2**
+### 속성 3: 실시간 계산 일관성
+*모든* 동일한 입력 데이터에 대해, 안전 지표와 위험 지표 계산 결과는 항상 동일해야 한다
+**검증: 요구사항 6.1, 6.2**
 
-### 속성 4: 지도 요소 상세 정보
-*모든* 지도 요소 클릭에 대해, 해당 요소의 상세 정보와 주변 위험지표, 개선 후보 점수가 응답에 포함되어야 한다
-**검증: 요구사항 2.3, 2.4**
+### 속성 4: 히트맵 데이터 정확성
+*모든* 사고 데이터 세트에 대해, 생성된 히트맵 포인트는 사고 건수, 사망자 수, 부상자 수를 가중치로 적용한 위험도를 정확히 반영해야 한다
+**검증: 요구사항 9.1, 9.2**
 
-### 속성 5: 산점도 축 배치
-*모든* 구/동별 데이터에 대해, 산점도 생성 시 X축은 취약시설 비율, Y축은 사고다발지 밀도로 올바르게 배치되어야 한다
-**검증: 요구사항 3.2**
+### 속성 5: 건의사항 상태 관리 정확성
+*모든* 건의사항 상태 변경에 대해, 데이터베이스에 저장된 상태와 API 응답의 상태가 일치해야 한다
+**검증: 요구사항 3.2, 8.3**
 
-### 속성 6: 개선 후보 정렬 및 제한
-*모든* 개선 후보 데이터에 대해, 상위 20곳을 요청했을 때 점수 순으로 정렬된 최대 20개의 결과가 반환되어야 한다
-**검증: 요구사항 4.1**
-
-### 속성 7: 테이블 필터링
-*모든* 필터 조건에 대해, 적용된 필터 기준(점수, 구, 취약항목)을 만족하는 결과만 반환되어야 한다
-**검증: 요구사항 4.2**
-
-### 속성 8: 테이블 정렬
-*모든* 정렬 기준에 대해, 선택된 기준에 따라 올바른 순서로 정렬된 결과가 반환되어야 한다
-**검증: 요구사항 4.3**
-
-### 속성 9: CSV 파싱 라운드트립
-*모든* 유효한 횡단보도/신호등 데이터에 대해, CSV로 내보낸 후 다시 파싱했을 때 원본과 동일한 데이터가 복원되어야 한다
-**검증: 요구사항 5.1, 5.2, 5.3**
-
-### 속성 10: 데이터 저장 무결성
-*모든* 입력 데이터에 대해, MySQL에 저장한 후 조회했을 때 원본 데이터와 일치해야 한다
-**검증: 요구사항 5.4**
-
-### 속성 11: 취약성 점수 계산
-*모든* 시설 데이터에 대해, 취약성 점수는 다음 가중치로 계산되어야 한다: 음향신호기 없음 +2, 잔여시간표시기 없음 +1, 보행자작동신호기 없음 +1, 집중조명 없음 +1
-**검증: 요구사항 6.1**
-
-### 속성 12: 위험도 점수 거리 기반 계산
-*모든* 위치와 사고다발지역 데이터에 대해, 위험도 점수는 거리별 가중치로 계산되어야 한다: 0-100m +3, 100-300m +2, 300-500m +1
-**검증: 요구사항 6.2**
-
-### 속성 13: 종합 점수 결합
-*모든* 취약성 점수와 위험도 점수에 대해, 종합 점수는 (시설취약점수 × 0.4) + (위험점수 × 0.6) 공식으로 계산되어야 한다
-**검증: 요구사항 6.3**
-
-### 속성 14: 개선 추천 우선순위
-*모든* 시설 상태에 대해, 개선 추천은 가장 부족한 시설을 우선순위로 제안해야 한다
-**검증: 요구사항 6.4**
-
-### 속성 15: 로딩 상태 표시
-*모든* 데이터 로딩 요청에 대해, API 응답에 로딩 상태 정보가 포함되어야 한다
-**검증: 요구사항 7.3**
-
-### 속성 16: JWT 토큰 인증 상태 관리
+### 속성 6: JWT 토큰 인증 상태 관리
 *모든* 유효한 JWT 토큰에 대해, 토큰 만료 전까지 사용자 정보와 권한이 일관되게 유지되어야 하고, 만료된 토큰은 자동으로 거부되어야 한다
 **검증: 요구사항 12.2, 12.4**
+
+### 속성 7: CSV 파싱 라운드트립
+*모든* 유효한 횡단보도/사고 데이터에 대해, CSV로 내보낸 후 다시 파싱했을 때 원본과 동일한 데이터가 복원되어야 한다
+**검증: 요구사항 5.1, 5.2, 5.3**
+
+### 속성 8: 데이터 저장 무결성
+*모든* 입력 데이터에 대해, Supabase에 저장한 후 조회했을 때 원본 데이터와 일치해야 한다
+**검증: 요구사항 5.4**
 
 ## 오류 처리
 
@@ -1799,20 +1483,23 @@ public class ApiResponse<T> {
 
 #### application.properties
 ```properties
-spring.datasource.url=jdbc:mysql://localhost:3306/pedestrian_safety?useSSL=false&serverTimezone=UTC&characterEncoding=UTF-8
-spring.datasource.username=${DB_USERNAME:root}
-spring.datasource.password=${DB_PASSWORD:password}
-spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.datasource.url=jdbc:postgresql://${SUPABASE_HOST}:5432/${SUPABASE_DB}?sslmode=require
+spring.datasource.username=${SUPABASE_USER}
+spring.datasource.password=${SUPABASE_PASSWORD}
+spring.datasource.driver-class-name=org.postgresql.Driver
 
 spring.jpa.hibernate.ddl-auto=validate
 spring.jpa.show-sql=false
-spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 spring.jpa.properties.hibernate.format_sql=true
 
 # JWT 설정
 jwt.secret=${JWT_SECRET:mySecretKey}
 jwt.expiration=3600000
 jwt.refresh-expiration=86400000
+
+# CORS 설정
+cors.allowed-origins=${CORS_ORIGINS:http://localhost:3000}
 
 logging.level.org.springframework.security=DEBUG
 logging.level.com.pedestriansafety=DEBUG

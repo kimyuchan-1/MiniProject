@@ -17,34 +17,69 @@ function parseBounds(str: string | null): Bounds | null {
 }
 
 export async function GET(req: Request) {
-    const { searchParams } = new URL(req.url);
-    const bound = parseBounds(searchParams.get("bounds"));
+    try {
+        const { searchParams } = new URL(req.url);
+        const bound = parseBounds(searchParams.get("bounds"));
 
-    if (!bound) {
-        return NextResponse.json({ error: "Invalid bounds" }, { status: 400 });
+        if (!bound) {
+            return NextResponse.json({ error: "Invalid bounds" }, { status: 400 });
+        }
+
+        // Supabase 연결 확인
+        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY) {
+            console.error("Supabase environment variables not configured");
+            return NextResponse.json({ error: "Database configuration error" }, { status: 500 });
+        }
+
+        const { data: crosswalks, error: cwErr } = await supabase
+            .from("CW")
+            .select(`
+                cw_uid,
+                crosswalk_lat,
+                crosswalk_lon,
+                address,
+                has_ped_signal,
+                CW_SG!left(cw_uid)
+            `)
+            .gte("crosswalk_lat", bound.south)
+            .lte("crosswalk_lat", bound.north)
+            .gte("crosswalk_lon", bound.west)
+            .lte("crosswalk_lon", bound.east)
+            .limit(5000);
+
+        if (cwErr) {
+            console.error("Supabase query error:", cwErr);
+            return NextResponse.json({ error: cwErr.message }, { status: 500 });
+        }
+        
+        if (!crosswalks?.length) return NextResponse.json([]);
+
+        const out = crosswalks.map((cw) => {
+            // 신호등 유무 판단 로직
+            let hasSignal = false;
+            
+            // 1. has_ped_signal이 1이면 신호등 있음
+            if (cw.has_ped_signal === 1) {
+                hasSignal = true;
+            }
+            // 2. has_ped_signal이 null 또는 0이면 CW_SG 테이블 확인
+            else if ((cw.has_ped_signal === null || cw.has_ped_signal === 0) && cw.CW_SG && cw.CW_SG.length > 0) {
+                hasSignal = true;
+            }
+
+            return {
+                cw_uid: cw.cw_uid,
+                crosswalk_lat: Number(cw.crosswalk_lat),
+                crosswalk_lon: Number(cw.crosswalk_lon),
+                address: cw.address,
+                hasSignal: hasSignal,
+                signalSource: cw.has_ped_signal === 1 ? 'direct' : hasSignal ? 'mapped' : 'none' // 디버깅용
+            };
+        });
+
+        return NextResponse.json(out);
+    } catch (error) {
+        console.error("API Error:", error);
+        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
-
-    const { data: crosswalks, error: cwErr } = await supabase
-        .from("CW")
-        .select("cw_uid,crosswalk_lat,crosswalk_lon,has_ped_signal,address,sido,sigungu")
-        .gte("crosswalk_lat", bound.south)
-        .lte("crosswalk_lat", bound.north)
-        .gte("crosswalk_lon", bound.west)
-        .lte("crosswalk_lon", bound.east)
-        .limit(5000);
-
-    if (cwErr) return NextResponse.json({ error: cwErr.message }, { status: 500 });
-    if (!crosswalks?.length) return NextResponse.json([]);
-
-    const out = crosswalks.map((cw) => ({
-        cw_uid: cw.cw_uid,
-        crosswalk_lat: Number(cw.crosswalk_lat),
-        crosswalk_lon: Number(cw.crosswalk_lon),
-        address: cw.address,
-        sido: cw.sido,
-        sigungu: cw.sigungu,
-        hasSignal: Number(cw.has_ped_signal) === 1,
-    }));
-
-    return NextResponse.json(out);
 }
