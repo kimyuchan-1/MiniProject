@@ -1,0 +1,96 @@
+import Image from "next/image";
+import { Crosswalk } from "@/types/accident";
+
+type FeatureItem = {
+    key: string;
+    name: string;
+    enabled: boolean;
+    src: string;
+    desc: string;
+};
+
+function getCrosswalkFeatures(crosswalk: Crosswalk): FeatureItem[] {
+    return [
+        {
+            key: "signal",
+            name: "신호등",
+            enabled: !!crosswalk.hasSignal,
+            src: "/signal.svg",
+            desc: "보행자 신호등이 설치되어 있어 보행 신호에 따라 안전하게 횡단할 수 있어요.",
+        },
+        {
+            key: "button",
+            name: "보행자 버튼",
+            enabled: !!crosswalk.pedButton,
+            src: "/button.svg",
+            desc: "보행자가 버튼을 눌러 신호를 요청할 수 있어요.",
+        },
+        {
+            key: "sound",
+            name: "음향신호기",
+            enabled: !!crosswalk.pedSound,
+            src: "/sound.svg",
+            desc: "시각장애인 등을 위해 소리로 보행 신호를 안내해요.",
+        },
+        {
+            key: "highland",
+            name: "고원식",
+            enabled: !!crosswalk.highland,
+            src: "/highland.svg",
+            desc: "횡단보도 구간이 높아 차량 감속을 유도해요.",
+        },
+        {
+            key: "bump",
+            name: "보도턱 낮춤",
+            enabled: !!crosswalk.bump,
+            src: "/curb.svg",
+            desc: "휠체어/유모차가 턱 없이 이동하기 쉬워요.",
+        },
+        {
+            key: "braille",
+            name: "점자블록",
+            enabled: !!crosswalk.brailleBlock,
+            src: "/braille.svg",
+            desc: "시각장애인 보행 안내를 위한 점자 유도 블록이에요.",
+        },
+        {
+            key: "spotlight",
+            name: "집중조명",
+            enabled: !!crosswalk.spotlight,
+            src: "/spotlight.svg",
+            desc: "야간에 횡단보도 시인성을 높여요.",
+        },
+    ];
+}
+
+export function CrosswalkFeatureIcons({ crosswalk }: { crosswalk: Crosswalk }) {
+    const features = getCrosswalkFeatures(crosswalk);
+
+    return (
+        <div className="grid grid-cols-4 gap-2">
+            {features.map((f) => (
+                <div
+                    key={f.key}
+                    title={f.desc}
+                    aria-label={`${f.name} - ${f.enabled ? "있음" : "없음"}. ${f.desc}`}
+                    className={[
+                        "flex justify-center items-center gap-2 px-1 py-1 rounded-lg border text-xs",
+                        "transition-colors",
+                        f.enabled
+                            ? "bg-green-50 border-green-200 text-green-800"
+                            : "bg-gray-50 border-gray-200 text-gray-500",
+                    ].join(" ")}
+
+                >
+                    <Image
+                        src={f.src}
+                        alt={f.name}
+                        width={20}
+                        height={20}
+                        className={f.enabled ? "opacity-90" : "opacity-40 grayscale"}
+                    />
+                </div>
+            ))}
+        </div>
+    );
+}

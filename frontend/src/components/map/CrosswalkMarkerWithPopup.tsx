@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
-import { EnhancedCrosswalkPopup } from './EnhancedCrosswalkPopup';
+import { CrosswalkPopup } from './CrosswalkPopup';
 import { useCrosswalkDetails, convertToEnhancedCrosswalk } from '@/hooks/useCrosswalkDetails';
 
 interface CrosswalkMarkerWithPopupProps {
   crosswalk: any; // 기존 Crosswalk 타입
   onMarkerClick?: (crosswalk: any) => void;
+  icon?: L.DivIcon;
 }
 
 // 기존 아이콘 (MapView에서 가져옴)
@@ -52,7 +53,7 @@ const iconNone = L.divIcon({
   popupAnchor: [0, -10],
 });
 
-export function CrosswalkMarkerWithPopup({ crosswalk, onMarkerClick }: CrosswalkMarkerWithPopupProps) {
+export function CrosswalkMarkerWithPopup({ crosswalk, onMarkerClick, icon }: CrosswalkMarkerWithPopupProps) {
   const [popupOpen, setPopupOpen] = useState(false);
   const enhancedCrosswalk = convertToEnhancedCrosswalk(crosswalk);
   
@@ -73,13 +74,17 @@ export function CrosswalkMarkerWithPopup({ crosswalk, onMarkerClick }: Crosswalk
   return (
     <Marker
       position={[crosswalk.crosswalk_lat, crosswalk.crosswalk_lon]}
-      icon={crosswalk.hasSignal ? iconHas : iconNone}
+      icon={icon ?? (crosswalk.hasSignal ? iconHas : iconNone)}
       eventHandlers={{
         click: handleMarkerClick
       }}
     >
       <Popup
         maxWidth={400}
+        autoPan={false}
+        autoPanPaddingTopLeft={[16, 80]}    
+        autoPanPaddingBottomRight={[16, 16]}
+        keepInView={true}
         className="enhanced-crosswalk-popup-container"
         eventHandlers={{
           remove: handlePopupClose
@@ -108,7 +113,7 @@ export function CrosswalkMarkerWithPopup({ crosswalk, onMarkerClick }: Crosswalk
               </div>
             </div>
           ) : (
-            <EnhancedCrosswalkPopup 
+            <CrosswalkPopup 
               crosswalk={enhancedCrosswalk}
               nearbyAccidents={nearbyAccidents}
             />

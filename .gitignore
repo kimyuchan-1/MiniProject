@@ -3,3 +3,5 @@
 ./dataset/cw_sg.csv
 ./dataset/sg.csv
 ./dataset/raw/seoul_cw.csv
+./dataset/cw_sg_map.csv
+./dataset/district_all.csv
