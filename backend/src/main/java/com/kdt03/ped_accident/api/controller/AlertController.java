@@ -5,7 +5,6 @@ import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,8 +13,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.kdt03.ped_accident.domain.alert.dto.CreateAlertRequest;
+import com.kdt03.ped_accident.api.dto.request.CreateAlertRequest;
 import com.kdt03.ped_accident.domain.alert.entity.AlertNotification;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/alerts")
@@ -36,7 +37,7 @@ public class AlertController {
     @PostMapping("/manual")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<AlertNotification> createManualAlert(
-        @RequestBody @Validated CreateAlertRequest request) {
+        @RequestBody @Valid CreateAlertRequest request) {
 		return null;
 	}
 }

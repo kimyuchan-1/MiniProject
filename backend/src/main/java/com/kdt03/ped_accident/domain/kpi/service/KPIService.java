@@ -11,15 +11,15 @@ import com.kdt03.ped_accident.api.dto.response.SafetyIndex;
 
 @Service
 public class KPIService {
-	public KPIDashboard getKPIDashboard(String sido, String sigungu) {
+	public KPIDashboard getKPIDashboard(Long districtCode) {
 		return null;
 	}
 
-	public List<KPITrend> getKPITrends(String sido, String sigungu, int months) {
+	public List<KPITrend> getKPITrends(Long districtCode, int months) {
 		return null;
 	}
 
-	public SafetyIndex calculateSafetyIndex(String sido, String sigungu) {
+	public SafetyIndex calculateSafetyIndex(Long districtCode) {
 		return null;
 	}
 

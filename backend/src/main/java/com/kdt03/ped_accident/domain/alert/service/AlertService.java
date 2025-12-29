@@ -9,7 +9,7 @@ import com.kdt03.ped_accident.domain.alert.entity.AlertType;
 
 @Service
 public class AlertService {
-	public void createAlert(AlertType type, String title, String message, String sido, String sigungu) {
+	public void createAlert(AlertType type, String title, String message, Long districtCode) {
 	}
 
 	public List<AlertNotification> getUnreadAlerts(String role) {
@@ -23,8 +23,5 @@ public class AlertService {
 	}
 
 	public void checkNewHotspots() {
-	}
-
-	public void sendPredictionAlerts() {
 	}
 }

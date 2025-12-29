@@ -42,8 +42,8 @@ public class CrosswalkSignalMapping {
 	    @Column(precision = 6, scale = 6)
 	    private BigDecimal confidence;
 	    
-	    private String sido;
-	    private String sigungu;
+	    @Column(name = "district_code")
+	    private Long districtCode;
 	    
 	    @CreationTimestamp
 	    @Column(name = "created_at")

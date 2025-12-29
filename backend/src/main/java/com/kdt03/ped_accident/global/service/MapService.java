@@ -11,24 +11,16 @@ import com.kdt03.ped_accident.domain.signal.entity.TrafficSignal;
 
 @Service
 public class MapService {
-	public List<AccidentHotspot> getAccidentHeatmapData(String sido, String sigungu) {
-		// TODO: 사고 히트맵 데이터 조회 로직을 구현해야 합니다.
+    public List<AccidentHotspot> getAccidentHeatmapData(Long districtCode) {
 		return null;
 	}
-
-	public List<Crosswalk> getCrosswalksByRegion(String sido, String sigungu) {
-		// TODO: 지역별 횡단보도 목록 조회 로직을 구현해야 합니다.
+    public List<Crosswalk> getCrosswalksByRegion(Long districtCode) {
 		return null;
 	}
-
-	public List<TrafficSignal> getSignalsByRegion(String sido, String sigungu) {
-		// TODO: 지역별 신호등 목록 조회 로직을 구현해야 합니다.
+    public List<TrafficSignal> getSignalsByRegion(Long districtCode) {
 		return null;
 	}
-
-	public RegionalStatistics getRegionalStatistics(String sido, String sigungu) {
-		// TODO: 지역별 통계 조회 로직을 구현해야 합니다.
+    public RegionalStatistics getRegionalStatistics(Long districtCode) {
 		return null;
 	}
 }
-

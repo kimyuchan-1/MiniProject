@@ -51,9 +51,10 @@ public class Suggestion {
 	private BigDecimal locationLon;
 
 	private String address;
-	private String sido;
-	private String sigungu;
-
+	
+	@Column(name = "district_code")
+    private Long districtCode;
+	
 	@Enumerated(EnumType.STRING)
 	@Column(name = "suggestion_type")
 	private SuggestionType suggestionType;
@@ -63,12 +64,9 @@ public class Suggestion {
 
 	@Column(name = "priority_score", precision = 5, scale = 2)
 	private BigDecimal priorityScore;
-
-	@Column(name = "like_count")
-	private Integer likeCount = 0;
-
+	
 	@Column(name = "view_count")
-	private Integer viewCount = 0;
+    private Integer viewCount = 0;
 
 	@Column(name = "admin_response", columnDefinition = "TEXT")
 	private String adminResponse;

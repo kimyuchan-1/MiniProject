@@ -31,4 +31,3 @@ public class ImprovementCandidate {
     private boolean hasSpotlight;      // 집중조명
     private boolean hasBrailleBlock;   // 점자블록
 }
-

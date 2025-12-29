@@ -28,8 +28,11 @@ public class TrafficSignal {
 	@Column(name = "sg_uid")
 	private String sgUid;
 	
-	private String sido;
-	private String sigungu;
+	@Column(name = "district_code")
+    private Long districtCode;
+	
+	@Column(name = "road_type")
+    private Integer roadType;
 	
 	@Column(name = "road_direction")
 	private Integer roadDirection;
@@ -39,25 +42,25 @@ public class TrafficSignal {
 	@Column(name =" signal_lat", precision = 10, scale = 8)
 	private BigDecimal signalLat;
 	
-	@Column(name =" signal_lon", precision = 10, scale = 8)
-	private BigDecimal sognalLon;
+	@Column(name = "signal_lon", precision = 11, scale = 8)
+	private BigDecimal signalLon;
 	
 	@Column(name =" road_shape")
 	private Integer roadShape;
 	
 	@Column(name = "main_road")
-	private Integer mainRoad;
+	private Integer isMainRoad;
 	
 	@Column(name = "signal_type")
 	private Integer signalType;
 	
-	private Integer button;
+	private Integer hasButton;
 	
 	@Column(name = "remain_time")
 	private Integer remainTime;
 	
 	@Column(name = "sound_signal")
-	private Integer soundSignal;
+	private Integer hasSoundSignal;
 	
 	@Column(name = "org_code")
 	private Integer orgCode;
