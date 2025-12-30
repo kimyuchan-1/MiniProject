@@ -94,20 +94,18 @@ export interface HeatmapPoint {
 // 확장된 횡단보도 데이터 (안전 지표 계산용)
 export interface Crosswalk {
   cw_uid: string;
-  sido: string;
-  sigungu: string;
   address: string;
   crosswalk_lat: number;
   crosswalk_lon: number;
   hasSignal: boolean;
   // 추가 안전 기능들 (metadata에서 확인된 필드들)
   crosswalk_width?: number;
-  highland?: boolean;           // 고원식 적용 여부
-  pedButton?: boolean;             // 보행자작동신호기유무
-  pedSound?: boolean;       // 음향신호기설치유무
-  bump?: boolean;               // 보도턱낮춤여부
-  brailleBlock?: boolean;      // 점자블록유무
-  spotlight?: boolean;          // 집중조명시설유무
+  isHighland?: boolean;           // 고원식 적용 여부
+  hasPedButton?: boolean;             // 보행자작동신호기유무
+  hasPedSound?: boolean;       // 음향신호기설치유무
+  hasBump?: boolean;               // 보도턱낮춤여부
+  hasBrailleBlock?: boolean;      // 점자블록유무
+  hasSpotlight?: boolean;          // 집중조명시설유무
 }
 
 // API 응답 타입
@@ -136,7 +134,7 @@ export function calculateRiskScore(accident: AccidentData, weights: RiskWeights 
     accident.accident_count * weights.accident +
     accident.reported_injury_count * weights.reported;
 
-  const wDist = distanceWeightPiecewise(accident.distance_m);
+  const wDist = distanceWeightPiecewise(accident.distance);
 
   // P95 기준으로 0-100 매핑 (상한 컷이 아니라 "기준 대비")
   const scaled = (severity / Math.max(DEFAULT_SEVERITY_P95, 1e-6)) * 100;
@@ -148,12 +146,12 @@ export function calculateSafetyScore(crosswalk: Crosswalk, weights: SafetyWeight
   let score = 0;
   
   if (crosswalk.hasSignal) score += weights.hasSignal;
-  if (crosswalk.pedButton) score += weights.hasButton;
-  if (crosswalk.pedSound) score += weights.hasSound;
-  if (crosswalk.highland) score += weights.isHighland;
-  if (crosswalk.bump) score += weights.hasBump;
-  if (crosswalk.brailleBlock) score += weights.hasBraille;
-  if (crosswalk.spotlight) score += weights.hasSpotlight;
+  if (crosswalk.hasPedButton) score += weights.hasButton;
+  if (crosswalk.hasPedSound) score += weights.hasSound;
+  if (crosswalk.isHighland) score += weights.isHighland;
+  if (crosswalk.hasBump) score += weights.hasBump;
+  if (crosswalk.hasBrailleBlock) score += weights.hasBraille;
+  if (crosswalk.hasSpotlight) score += weights.hasSpotlight;
   
   // 0-100 스케일로 정규화
   return Math.min(score, 100);

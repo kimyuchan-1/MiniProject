@@ -3,9 +3,10 @@ import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { CrosswalkPopup } from './CrosswalkPopup';
 import { useCrosswalkDetails, convertToEnhancedCrosswalk } from '@/hooks/useCrosswalkDetails';
+import { Crosswalk } from '@/types/accident';
 
 interface CrosswalkMarkerWithPopupProps {
-  crosswalk: any; // 기존 Crosswalk 타입
+  crosswalk: Crosswalk; // 기존 Crosswalk 타입
   onMarkerClick?: (crosswalk: any) => void;
   icon?: L.DivIcon;
 }
@@ -104,7 +105,6 @@ export function CrosswalkMarkerWithPopup({ crosswalk, onMarkerClick, icon }: Cro
               <div className="mt-3 pt-3 border-t border-gray-200">
                 <h3 className="font-semibold text-gray-800">횡단보도</h3>
                 <p className="text-sm text-gray-600">{crosswalk.address}</p>
-                <p className="text-xs text-gray-500">{crosswalk.sido} {crosswalk.sigungu}</p>
                 <div className="mt-2">
                   <span className={`text-sm font-medium ${crosswalk.hasSignal ? 'text-green-600' : 'text-red-600'}`}>
                     신호등: {crosswalk.hasSignal ? '있음' : '없음'}
@@ -138,8 +138,7 @@ export function CrosswalkMarkerWithPopup({ crosswalk, onMarkerClick, icon }: Cro
           }
           
           .popup-content {
-            max-height: 250px;
-            overflow-y: auto;
+            
           }
           
           .loading-state, .error-state {

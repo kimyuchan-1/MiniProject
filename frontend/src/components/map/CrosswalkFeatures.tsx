@@ -21,42 +21,42 @@ function getCrosswalkFeatures(crosswalk: Crosswalk): FeatureItem[] {
         {
             key: "button",
             name: "보행자 버튼",
-            enabled: !!crosswalk.pedButton,
+            enabled: !!crosswalk.hasPedButton,
             src: "/button.svg",
             desc: "보행자가 버튼을 눌러 신호를 요청할 수 있어요.",
         },
         {
             key: "sound",
             name: "음향신호기",
-            enabled: !!crosswalk.pedSound,
+            enabled: !!crosswalk.hasPedSound,
             src: "/sound.svg",
             desc: "시각장애인 등을 위해 소리로 보행 신호를 안내해요.",
         },
         {
             key: "highland",
             name: "고원식",
-            enabled: !!crosswalk.highland,
+            enabled: !!crosswalk.isHighland,
             src: "/highland.svg",
             desc: "횡단보도 구간이 높아 차량 감속을 유도해요.",
         },
         {
             key: "bump",
             name: "보도턱 낮춤",
-            enabled: !!crosswalk.bump,
+            enabled: !!crosswalk.hasBump,
             src: "/curb.svg",
             desc: "휠체어/유모차가 턱 없이 이동하기 쉬워요.",
         },
         {
             key: "braille",
             name: "점자블록",
-            enabled: !!crosswalk.brailleBlock,
+            enabled: !!crosswalk.hasBrailleBlock,
             src: "/braille.svg",
             desc: "시각장애인 보행 안내를 위한 점자 유도 블록이에요.",
         },
         {
             key: "spotlight",
             name: "집중조명",
-            enabled: !!crosswalk.spotlight,
+            enabled: !!crosswalk.hasSpotlight,
             src: "/spotlight.svg",
             desc: "야간에 횡단보도 시인성을 높여요.",
         },
@@ -67,20 +67,19 @@ export function CrosswalkFeatureIcons({ crosswalk }: { crosswalk: Crosswalk }) {
     const features = getCrosswalkFeatures(crosswalk);
 
     return (
-        <div className="grid grid-cols-4 gap-2">
+        <div className="flex flex-wrap justify-center gap-2">
             {features.map((f) => (
                 <div
                     key={f.key}
-                    title={f.desc}
+                    title={`${f.name} - ${f.enabled ? "있음" : "없음"}\n${f.desc}`}
                     aria-label={`${f.name} - ${f.enabled ? "있음" : "없음"}. ${f.desc}`}
                     className={[
-                        "flex justify-center items-center gap-2 px-1 py-1 rounded-lg border text-xs",
+                        "flex justify-center items-center p-1.5 rounded-md border",
                         "transition-colors",
                         f.enabled
-                            ? "bg-green-50 border-green-200 text-green-800"
-                            : "bg-gray-50 border-gray-200 text-gray-500",
+                            ? "bg-green-50 border-green-200"
+                            : "bg-gray-50 border-gray-200",
                     ].join(" ")}
-
                 >
                     <Image
                         src={f.src}

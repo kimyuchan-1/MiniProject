@@ -83,18 +83,15 @@ export function useCrosswalkDetails({ crosswalk, enabled = true }: UseCrosswalkD
 export function convertToEnhancedCrosswalk(basicCrosswalk: any): Crosswalk {
   return {
     cw_uid: basicCrosswalk.cw_uid,
-    sido: basicCrosswalk.sido,
-    sigungu: basicCrosswalk.sigungu,
     address: basicCrosswalk.address,
     crosswalk_lat: basicCrosswalk.crosswalk_lat,
     crosswalk_lon: basicCrosswalk.crosswalk_lon,
     hasSignal: basicCrosswalk.hasSignal,
-    highland: basicCrosswalk.highland, 
-    pedButton: basicCrosswalk.pedButton,
-    pedSound: basicCrosswalk.pedSound, 
-    bump: basicCrosswalk.bump, 
-    brailleBlock: basicCrosswalk.brailleBlock, 
-    spotlight: basicCrosswalk.spotlight 
-  
+    isHighland: basicCrosswalk.isHighland, 
+    hasPedButton: basicCrosswalk.hasPedButton,
+    hasPedSound: basicCrosswalk.hasPedSound, 
+    hasBump: basicCrosswalk.hasBump, 
+    hasBrailleBlock: basicCrosswalk.hasBrailleBlock, 
+    hasSpotlight: basicCrosswalk.hasSpotlight,
   };
 }

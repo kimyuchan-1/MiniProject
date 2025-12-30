@@ -21,16 +21,16 @@ export function CrosswalkPopup({ crosswalk, nearbyAccidents = [] }: CrosswalkPop
   // 안전 기능 목록 생성
   const safetyFeatures = [
     { name: '신호등', value: crosswalk.hasSignal, icon: '🚦' },
-    { name: '보행자 버튼', value: crosswalk.pedButton, icon: '🔘' },
-    { name: '음향신호기', value: crosswalk.pedSound, icon: '🔊' },
-    { name: '고원식', value: crosswalk.highland, icon: '⬆️' },
-    { name: '보도턱 낮춤', value: crosswalk.bump, icon: '♿' },
-    { name: '점자블록', value: crosswalk.brailleBlock, icon: '⚫' },
-    { name: '집중조명', value: crosswalk.spotlight, icon: '💡' }
+    { name: '보행자 버튼', value: crosswalk.hasPedButton, icon: '🔘' },
+    { name: '음향신호기', value: crosswalk.hasPedSound, icon: '🔊' },
+    { name: '고원식', value: crosswalk.isHighland, icon: '⬆️' },
+    { name: '보도턱 낮춤', value: crosswalk.hasBump, icon: '♿' },
+    { name: '점자블록', value: crosswalk.hasBrailleBlock, icon: '⚫' },
+    { name: '집중조명', value: crosswalk.hasSpotlight, icon: '💡' }
   ].filter(feature => feature.value !== false);
 
   return (
-    <div className="enhanced-crosswalk-popup bg-white rounded-xl p-3 w-[320px] max-w-[92vw]">
+    <div className="enhanced-crosswalk-popup bg-white rounded-lg p-2 w-64 max-w-[90vw]">
       {/* 헤더 - 상단 중앙 */}
       <div className="text-center mb-4">
         <p className="text-xs text-gray-600 leading-relaxed"><span className='text-black'>주소: </span>{crosswalk.address}</p>
@@ -51,15 +51,6 @@ export function CrosswalkPopup({ crosswalk, nearbyAccidents = [] }: CrosswalkPop
           </span>
         )}
       </div>
-      <details className="mx-1 mb-3">
-        <summary className="cursor-pointer text-xs text-gray-600 text-center select-none">
-          상세 보기
-        </summary>
-        <div className="mt-2 text-xs text-gray-700 space-y-1">
-          <div>안전도: {safetyDescription}</div>
-          <div>위험도: {riskDescription}</div>
-        </div>
-      </details>
 
       <div className="mx-1 mb-2">
         <h4 className="text-xs font-medium text-gray-700 mb-2 text-center">주요 시설</h4>

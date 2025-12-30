@@ -18,9 +18,14 @@ function parseBounds(str: string | null): MapBounds | null {
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const bound = parseBounds(searchParams.get("bounds"));
+    const yearParam = searchParams.get("year");
+    const year = yearParam ? Number(yearParam) : undefined;
 
     if (!bound) {
         return NextResponse.json({ error: "Invalid bounds" }, { status: 400 });
+    }
+    if (yearParam && Number.isNaN(year)) {
+        return NextResponse.json({ error: "Invalid year" }, { status: 400 });
     }
 
     try {

@@ -267,21 +267,7 @@ export default function MapView() {
                             <CrosswalkMarkerWithPopup
                                 key={cw.cw_uid}
                                 icon={cw.hasSignal ? iconHas : iconNone}
-                                crosswalk={{
-                                    cw_uid: cw.cw_uid,
-                                    address: cw.address,
-                                    crosswalk_lat: cw.crosswalk_lat,
-                                    crosswalk_lon: cw.crosswalk_lon,
-                                    signal: cw.hasSignal ? 1 : 0,
-                                    signalSource: cw.signalSource ?? "none",
-                                    highland: cw.isHighland,
-                                    pedButton: cw.hasPedButton,
-                                    pedSound: cw.hasPedSound,
-                                    bump: cw.hasBump,
-                                    brailleBlock: cw.hasBrailleBlock,
-                                    spotlight: cw.hasSpotlight
-                                    
-                                } as any}
+                                crosswalk={cw}
                             />
                         ))}
                     </MarkerClusterGroup>

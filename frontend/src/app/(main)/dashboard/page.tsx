@@ -117,7 +117,7 @@ export default function Dashboard() {
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
             횡단보도 신호등 설치 현황 - {selectedRegion}
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-4 md:grid-cols-4 gap-4">
             <KPICard 
               title="전체 횡단보도" 
               content={kpiData.totalCrosswalks.toLocaleString()} 
