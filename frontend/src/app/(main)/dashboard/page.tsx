@@ -33,8 +33,8 @@ export default function Dashboard() {
     totalCrosswalks: 0,
     signalInstallationRate: 0,
     totalAccidents: 0,
-    accidentReductionRate: 12.3,
-    safetyIndex: 85.2
+    accidentReductionRate: 0,
+    safetyIndex: 0
   });
 
   // KPI 데이터 로드
@@ -56,32 +56,6 @@ export default function Dashboard() {
     fetchKPIData();
   }, [selectedRegion, selectedMonth]);
 
-  const [regionData, setRegionData] = useState<RegionData[]>([
-    { name: '서울특별시', crosswalks: 15420, signalRate: 85.2, accidents: 234, safetyIndex: 88.5 },
-    { name: '부산광역시', crosswalks: 8930, signalRate: 79.8, accidents: 156, safetyIndex: 82.1 },
-    { name: '대구광역시', crosswalks: 6540, signalRate: 76.3, accidents: 98, safetyIndex: 79.8 },
-    { name: '인천광역시', crosswalks: 7820, signalRate: 81.4, accidents: 142, safetyIndex: 84.2 },
-    { name: '광주광역시', crosswalks: 4230, signalRate: 74.6, accidents: 67, safetyIndex: 77.9 }
-  ]);
-
-  const months = [
-    '2024-12', '2024-11', '2024-10', '2024-09', '2024-08', '2024-07'
-  ];
-
-  const handleRegionClick = (regionName: string) => {
-    setSelectedRegion(regionName);
-    if (mapLevel === 'country') {
-      setMapLevel('province');
-    } else if (mapLevel === 'province') {
-      setMapLevel('district');
-    }
-  };
-
-  const resetMapLevel = () => {
-    setMapLevel('country');
-    setSelectedRegion('전국');
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -89,26 +63,10 @@ export default function Dashboard() {
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">보행자 안전 분석 대시보드</h1>
+              <h1 className="text-2xl font-bold text-gray-900">보행자 교통안전 대시보드</h1>
               <p className="text-gray-600 mt-1">보행자 사고 데이터 기반 안전 현황 분석</p>
             </div>
-            <div className="flex gap-4">
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                {months.map(month => (
-                  <option key={month} value={month}>{month}</option>
-                ))}
-              </select>
-              <button
-                onClick={resetMapLevel}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                전국 보기
-              </button>
-            </div>
+            
           </div>
         </div>
 
@@ -138,8 +96,8 @@ export default function Dashboard() {
             />
             <KPICard 
               title="안전 지수" 
-              content={kpiData.safetyIndex + "%"} 
-              caption="100점 만점" 
+              content={Math.round(kpiData.safetyIndex*100)/100 + "점"} 
+              caption="110점 만점" 
               color="gray" 
             />
           </div>
