@@ -42,7 +42,7 @@ export default function LocationViewer({
   lon, 
   address, 
   showRadius = true, 
-  radiusMeters = 100 
+  radiusMeters = 30
 }: LocationViewerProps) {
   return (
     <div className="relative">

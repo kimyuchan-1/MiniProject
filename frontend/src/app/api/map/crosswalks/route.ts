@@ -39,6 +39,12 @@ export async function GET(req: Request) {
                 crosswalk_lon,
                 address,
                 has_ped_signal,
+                is_highland,
+                has_ped_button,
+                has_ped_sound,
+                has_bump,
+                has_braille_block,
+                has_spotlight,
                 CW_SG!left(cw_uid)
             `)
             .gte("crosswalk_lat", bound.south)
@@ -73,6 +79,12 @@ export async function GET(req: Request) {
                 crosswalk_lon: Number(cw.crosswalk_lon),
                 address: cw.address,
                 hasSignal: hasSignal,
+                isHighland : cw.is_highland,
+                hasPedButton : cw.has_ped_button,
+                hasPedSound : cw.has_ped_sound,
+                hasBump : cw.has_bump,
+                hasBrailleBlock : cw.has_braille_block,
+                hasSpotlight : cw.has_spotlight,
                 signalSource: cw.has_ped_signal === 1 ? 'direct' : hasSignal ? 'mapped' : 'none' // 디버깅용
             };
         });

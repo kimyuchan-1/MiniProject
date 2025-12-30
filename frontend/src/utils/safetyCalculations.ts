@@ -2,7 +2,7 @@
 
 import { 
   AccidentData, 
-  EnhancedCrosswalk, 
+  Crosswalk, 
   HeatmapPoint, 
   RiskWeights, 
   SafetyWeights,
@@ -15,7 +15,7 @@ import {
 // 지역별 데이터를 종합하여 히트맵 포인트 생성
 export function generateHeatmapPoints(
   accidents: AccidentData[],
-  crosswalks: EnhancedCrosswalk[],
+  crosswalks: Crosswalk[],
   riskWeights: RiskWeights = DEFAULT_RISK_WEIGHTS,
   safetyWeights: SafetyWeights = DEFAULT_SAFETY_WEIGHTS
 ): HeatmapPoint[] {
@@ -24,21 +24,21 @@ export function generateHeatmapPoints(
   // 지역별로 데이터 그룹화
   const regionData = new Map<string, {
     accidents: AccidentData[];
-    crosswalks: EnhancedCrosswalk[];
+    crosswalks: Crosswalk[];
     lat: number;
     lon: number;
   }>();
 
   // 사고 데이터 그룹화
   accidents.forEach(accident => {
-    if (accident.estimated_lat && accident.estimated_lon) {
-      const key = `${accident.sido_code}_${accident.sigungu_code}`;
+    if (accident.accident_lat && accident.accident_lon) {
+      const key = `${accident.district_code}`;
       if (!regionData.has(key)) {
         regionData.set(key, {
           accidents: [],
           crosswalks: [],
-          lat: accident.estimated_lat,
-          lon: accident.estimated_lon
+          lat: accident.accident_lat,
+          lon: accident.accident_lon
         });
       }
       regionData.get(key)!.accidents.push(accident);

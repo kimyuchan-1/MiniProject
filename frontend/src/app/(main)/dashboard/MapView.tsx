@@ -5,6 +5,7 @@ import L from "leaflet";
 import { useState, useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
+import { CrosswalkMarkerWithPopup } from "@/components/map/CrosswalkMarkerWithPopup";
 
 interface Crosswalk {
     cw_uid: string;
@@ -12,12 +13,18 @@ interface Crosswalk {
     crosswalk_lat: number;
     crosswalk_lon: number;
     hasSignal: boolean;
+    isHighland : boolean;
+    hasPedButton : boolean;
+    hasPedSound : boolean;
+    hasBump : boolean;
+    hasBrailleBlock : boolean;
+    hasSpotlight : boolean;
     signalSource?: 'direct' | 'mapped' | 'none'; // 신호등 정보 출처
 }
 
 function validateCrosswalkData(data: unknown): data is Crosswalk[] {
-    return Array.isArray(data) && data.every(item => 
-        typeof item === 'object' && 
+    return Array.isArray(data) && data.every(item =>
+        typeof item === 'object' &&
         item !== null &&
         'cw_uid' in item &&
         'hasSignal' in item &&
@@ -32,7 +39,7 @@ function validateCrosswalkData(data: unknown): data is Crosswalk[] {
 const createClusterCustomIcon = (cluster: any) => {
     const count = cluster.getChildCount();
     let size = 'small';
-    
+
     if (count < 10) {
         size = 'small';
     } else if (count < 100) {
@@ -40,7 +47,7 @@ const createClusterCustomIcon = (cluster: any) => {
     } else {
         size = 'large';
     }
-    
+
     return L.divIcon({
         html: `<div><span>${count}</span></div>`,
         className: `custom-marker-cluster custom-marker-cluster-${size}`,
@@ -49,8 +56,8 @@ const createClusterCustomIcon = (cluster: any) => {
 };
 
 const iconHas = L.divIcon({
-  className: "",
-  html: `
+    className: "",
+    html: `
     <div style="
       width:18px;height:18px;
       border-radius:9999px;
@@ -59,14 +66,14 @@ const iconHas = L.divIcon({
       box-shadow:0 1px 6px rgba(0,0,0,.35);
     "></div>
   `,
-  iconSize: [18, 18],
-  iconAnchor: [9, 9],
-  popupAnchor: [0, -10],
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
+    popupAnchor: [0, -10],
 });
 
 const iconNone = L.divIcon({
-  className: "",
-  html: `
+    className: "",
+    html: `
     <div style="
       width:18px;height:18px;
       border-radius:9999px;
@@ -85,9 +92,9 @@ const iconNone = L.divIcon({
       "></div>
     </div>
   `,
-  iconSize: [18, 18],
-  iconAnchor: [9, 9],
-  popupAnchor: [0, -10],
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
+    popupAnchor: [0, -10],
 });
 
 function BoundsFetcher({ onData, onLoading }: { onData: (rows: Crosswalk[]) => void; onLoading: (v: boolean) => void }) {
@@ -108,14 +115,26 @@ function BoundsFetcher({ onData, onLoading }: { onData: (rows: Crosswalk[]) => v
                         crosswalk_lon: 126.978 + (Math.random() - 0.5) * 0.01,
                         address: "서울특별시 중구 명동",
                         hasSignal: Math.random() > 0.5,
+                        isHighland: true,
+                        hasPedButton: true,
+                        hasPedSound: true,
+                        hasBump: true,
+                        hasBrailleBlock: true,
+                        hasSpotlight: true,
                         signalSource: Math.random() > 0.5 ? 'direct' as const : 'mapped' as const
                     },
                     {
-                        cw_uid: "mock_2", 
+                        cw_uid: "mock_2",
                         crosswalk_lat: 37.5665 + (Math.random() - 0.5) * 0.01,
                         crosswalk_lon: 126.978 + (Math.random() - 0.5) * 0.01,
                         address: "서울특별시 중구 을지로",
-                        hasSignal: Math.random() > 0.5,
+                        hasSignal: false,
+                        isHighland: false,
+                        hasPedButton: false,
+                        hasPedSound: false,
+                        hasBump: false,
+                        hasBrailleBlock: false,
+                        hasSpotlight: false,
                         signalSource: Math.random() > 0.5 ? 'direct' as const : 'mapped' as const
                     }
                 ];
@@ -142,7 +161,7 @@ function BoundsFetcher({ onData, onLoading }: { onData: (rows: Crosswalk[]) => v
                 onData(mockData);
             } catch (err) {
                 console.error("[MapView] Error:", err);
-                onData([]); 
+                onData([]);
             } finally {
                 onLoading(false);
             }
@@ -156,7 +175,7 @@ export default function MapView() {
     const [rows, setRows] = useState<Crosswalk[]>([]);
     const [loading, setLoading] = useState(false);
 
-    const center = useMemo<[number, number]>(() => [37.5665, 126.978], []);
+    const center = useMemo<[number, number]>(() => [37.531, 127.0066], []);
 
     return (
         <section className="relative w-full">
@@ -224,7 +243,7 @@ export default function MapView() {
                 }
             `}</style>
             <div className="relative h-[70vh] min-h-130 w-full overflow-hidden rounded-2xl border bg-white shadow">
-                <MapContainer center={center} zoom={12} className="h-full w-full">
+                <MapContainer center={center} zoom={20} className="h-full w-full">
                     {/* 안정적인 OpenStreetMap 타일 + CSS 필터로 모노톤 처리 */}
                     <TileLayer
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -233,48 +252,38 @@ export default function MapView() {
 
                     <BoundsFetcher onData={setRows} onLoading={setLoading} />
 
-                    <MarkerClusterGroup 
+                    <MarkerClusterGroup
                         chunkedLoading
                         iconCreateFunction={createClusterCustomIcon}
-                        maxClusterRadius={60}
-                        spiderfyOnMaxZoom={true}
+                        maxClusterRadius={30}
+                        disableClusteringAtZoom={15}
+                        removeOutsideVisibleBounds
+                        spiderfyOnMaxZoom
                         showCoverageOnHover={false}
-                        zoomToBoundsOnClick={true}
+                        zoomToBoundsOnClick
                     >
-                    {rows.map((cw) => (
-                        <Marker
-                            key={cw.cw_uid}
-                            position={[cw.crosswalk_lat, cw.crosswalk_lon]}
-                            icon={cw.hasSignal ? iconHas : iconNone}
-                        >
-                            <Popup>
-                                <div className="space-y-1">
-                                    <div className="text-sm font-semibold">횡단보도</div>
-                                    <div className="text-sm">{cw.address}</div>
-                                    <div className="text-xs">
-                                        신호등:{" "}
-                                        <span
-                                            className={
-                                                cw.hasSignal
-                                                    ? "font-semibold text-emerald-600"
-                                                    : "font-semibold text-red-600"
-                                            }
-                                        >
-                                            {cw.hasSignal ? "있음" : "없음"}
-                                        </span>
-                                        {cw.hasSignal && (
-                                            <span className="text-xs text-gray-500 ml-1">
-                                                ({cw.signalSource === 'direct' ? '직접 설치' : '100m 내 설치'})
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="text-xs text-gray-500">
-                                        ID: {cw.cw_uid}
-                                    </div>
-                                </div>
-                            </Popup>
-                        </Marker>
-                    ))}
+
+                        {rows.map((cw) => (
+                            <CrosswalkMarkerWithPopup
+                                key={cw.cw_uid}
+                                icon={cw.hasSignal ? iconHas : iconNone}
+                                crosswalk={{
+                                    cw_uid: cw.cw_uid,
+                                    address: cw.address,
+                                    crosswalk_lat: cw.crosswalk_lat,
+                                    crosswalk_lon: cw.crosswalk_lon,
+                                    signal: cw.hasSignal ? 1 : 0,
+                                    signalSource: cw.signalSource ?? "none",
+                                    highland: cw.isHighland,
+                                    pedButton: cw.hasPedButton,
+                                    pedSound: cw.hasPedSound,
+                                    bump: cw.hasBump,
+                                    brailleBlock: cw.hasBrailleBlock,
+                                    spotlight: cw.hasSpotlight
+                                    
+                                } as any}
+                            />
+                        ))}
                     </MarkerClusterGroup>
                 </MapContainer>
 
@@ -286,25 +295,7 @@ export default function MapView() {
                     ].join(" ")}
                 >
                     불러오는 중…
-                </div>
-
-                {/* 범례 */}
-                <div className="pointer-events-none absolute left-3 bottom-3 z-999 rounded-xl border bg-white/90 p-3 text-xs shadow" role="img" aria-label="지도 범례">
-                    <div className="mb-2 font-semibold text-slate-800">범례</div>
-                    <div className="flex items-center gap-2" role="listitem">
-                        <span className="inline-block h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white shadow" aria-hidden="true" />
-                        100m 내 신호등 있음
-                    </div>
-                    <div className="mt-1 flex items-center gap-2" role="listitem">
-                        <span className="inline-block h-3 w-3 rounded-full bg-red-500 ring-2 ring-white shadow" aria-hidden="true" />
-                        100m 내 신호등 없음
-                    </div>
-                </div>
-            </div>
-
-            <div className="mt-3 flex items-center justify-between text-sm text-slate-700">
-                <div>표시된 횡단보도: <span className="font-semibold">{rows.length}</span></div>
-                <div className="text-xs text-slate-500">지도를 이동하면 현재 화면 영역만 불러온다</div>
+                </div>                
             </div>
         </section>
     );

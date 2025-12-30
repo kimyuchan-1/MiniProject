@@ -4,6 +4,11 @@ import KPICard from '@/components/KPICard';
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 
+const MapView = dynamic(() => import('./MapView'), {
+  ssr: false,
+});
+
+
 interface RegionData {
   name: string;
   crosswalks: number;
@@ -77,15 +82,6 @@ export default function Dashboard() {
     setSelectedRegion('전국');
   };
 
-  const EnhancedMapView = dynamic(() => import("./EnhancedMapView"), {
-    ssr: false,
-    loading: () => (
-      <div className="h-full w-full flex items-center justify-center bg-linear-to-br from-blue-50 to-green-50">
-        <div className="text-sm text-gray-600">지도를 불러오는 중…</div>
-      </div>
-    ),
-  });
-
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -151,115 +147,14 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* 인터랙티브 지도 섹션 */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-4">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold text-gray-900">
                 인터랙티브 지도 ({mapLevel === 'country' ? '전국' : mapLevel === 'province' ? '시도별' : '구별'})
               </h2>
             </div>
             <div className="bg-white rounded-lg shadow-sm border h-125 relative overflow-hidden">
-              <EnhancedMapView />
-            </div>
-          </div>
-
-          {/* 지역별 통계 및 상세 정보 */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* 선택된 지역 상세 정보 */}
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                지역별 상세 통계
-              </h2>
-              <div className="bg-white rounded-lg shadow-sm border p-6">
-                <h3 className="font-medium text-gray-900 mb-4">{selectedRegion}</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">횡단보도 수</span>
-                    <span className="font-medium">15,420개</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">신호등 설치율</span>
-                    <span className="font-medium text-blue-600">85.2%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">월별 사고 건수</span>
-                    <span className="font-medium text-red-600">234건</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">사망자 수</span>
-                    <span className="font-medium text-red-800">12명</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">안전 지수</span>
-                    <span className="font-medium text-green-600">88.5점</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 사고 다발지역 순위 */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                위험 지역 순위
-              </h3>
-              <div className="bg-white rounded-lg shadow-sm border">
-                <div className="p-4 border-b">
-                  <div className="text-sm font-medium text-gray-700">개선 우선순위</div>
-                </div>
-                <div className="divide-y">
-                  {regionData.slice(0, 5).map((region, index) => (
-                    <div
-                      key={region.name}
-                      className="p-4 hover:bg-gray-50 cursor-pointer"
-                      onClick={() => handleRegionClick(region.name)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white ${index === 0 ? 'bg-red-500' :
-                              index === 1 ? 'bg-orange-500' :
-                                index === 2 ? 'bg-yellow-500' : 'bg-gray-400'
-                            }`}>
-                            {index + 1}
-                          </div>
-                          <div>
-                            <div className="font-medium text-sm">{region.name}</div>
-                            <div className="text-xs text-gray-500">사고 {region.accidents}건</div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-medium">{region.safetyIndex}점</div>
-                          <div className="text-xs text-gray-500">안전지수</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* 월별 트렌드 차트 */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                월별 사고 트렌드
-              </h3>
-              <div className="bg-white rounded-lg shadow-sm border p-6">
-                <div className="h-32 flex items-end justify-between gap-2">
-                  {[45, 38, 52, 41, 35, 29].map((height, index) => (
-                    <div key={index} className="flex-1 flex flex-col items-center">
-                      <div
-                        className="w-full bg-blue-500 rounded-t"
-                        style={{ height: `${height}%` }}
-                      ></div>
-                      <div className="text-xs text-gray-500 mt-2">
-                        {months[index].split('-')[1]}월
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="text-center mt-4">
-                  <div className="text-sm text-gray-600">월별 사고 건수 추이</div>
-                  <div className="text-xs text-green-600 mt-1">↓ 12.3% 감소 (전년 대비)</div>
-                </div>
-              </div>
+              <MapView />
             </div>
           </div>
         </div>

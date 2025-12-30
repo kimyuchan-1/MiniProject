@@ -10,7 +10,7 @@ export default function Header() {
     const isLogin = useAtomValue(isLoginAtom);
 
     return (
-        <header className="sticky top-0 z-30 w-full border-b border-gray-200 bg-gray-50/80 backdrop-blur">
+        <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-gray-50/80 backdrop-blur">
             <nav className="w-full flex h-16 items-center justify-between px-6">
                 <Link
                     href="/"
