@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "traffic_signals")
+@Table(name = "signals")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -28,14 +28,17 @@ public class TrafficSignal {
 	@Column(name = "sg_uid")
 	private String sgUid;
 	
-	@Column(name = "district_code")
-    private Long districtCode;
+	@Column(name = "sido_code")
+    private String sideCode;
+	
+	@Column(name = "sigungu_code")
+    private String sigunguCode;
 	
 	@Column(name = "road_type")
-    private Integer roadType;
+	private String roadType;
 	
-	@Column(name = "road_direction")
-	private Integer roadDirection;
+	@Column(name =" road_shape")
+	private String roadShape;
 	
 	private String address;
 	
@@ -45,25 +48,20 @@ public class TrafficSignal {
 	@Column(name = "signal_lon", precision = 11, scale = 8)
 	private BigDecimal signalLon;
 	
-	@Column(name =" road_shape")
-	private Integer roadShape;
-	
-	@Column(name = "main_road")
-	private Integer isMainRoad;
+	@Column(name = "is_main_road")
+	private Boolean isMainRoad;
 	
 	@Column(name = "signal_type")
-	private Integer signalType;
+	private String signalType;
 	
-	private Integer hasButton;
+	@Column(name = "has_ped_button")
+	private Boolean hasPedButton;
 	
-	@Column(name = "remain_time")
-	private Integer remainTime;
+	@Column(name = "has_time_show")
+	private Boolean hasTimeShow;
 	
-	@Column(name = "sound_signal")
-	private Integer hasSoundSignal;
-	
-	@Column(name = "org_code")
-	private Integer orgCode;
+	@Column(name = "has_sound_signal")
+	private Boolean hasSoundSignal;
 	
 	@CreationTimestamp
 	@Column(name = "created_at")

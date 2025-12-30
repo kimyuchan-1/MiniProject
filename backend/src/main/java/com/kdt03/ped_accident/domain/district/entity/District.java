@@ -1,8 +1,5 @@
 package com.kdt03.ped_accident.domain.district.entity;
 
-import java.time.LocalDateTime;
-
-import org.hibernate.annotations.CreationTimestamp;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -24,14 +21,11 @@ import lombok.Setter;
 public class District {
 	@Id
 	@Column(name = "district_code")
-	private Long districtCode;
+	private String districtCode;
 
 	@Column(name = "district_name")
 	private String districtName;
 
-	private Integer available;
+	private Boolean available;
 
-	@CreationTimestamp
-	@Column(name = "created_at")
-	private LocalDateTime createdAt;
 }

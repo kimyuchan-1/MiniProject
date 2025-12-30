@@ -18,7 +18,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "crosswalk_signal_mapping")
+@Table(name = "crosswalk_signal_map")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -26,8 +26,9 @@ import lombok.Setter;
 @Builder
 
 public class CrosswalkSignalMapping {
-	 @Id
+	 	@Id
 	    @GeneratedValue(strategy = GenerationType.IDENTITY)
+	 	@Column(name = "map_id")
 	    private Long id;
 	    
 	    @Column(name = "cw_uid")
@@ -41,9 +42,6 @@ public class CrosswalkSignalMapping {
 	    
 	    @Column(precision = 6, scale = 6)
 	    private BigDecimal confidence;
-	    
-	    @Column(name = "district_code")
-	    private Long districtCode;
 	    
 	    @CreationTimestamp
 	    @Column(name = "created_at")

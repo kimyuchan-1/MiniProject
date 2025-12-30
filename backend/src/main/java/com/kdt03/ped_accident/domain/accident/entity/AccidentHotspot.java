@@ -23,6 +23,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 
+
 public class AccidentHotspot {
 	@Id
 	@Column(name = "accident_id")
@@ -31,7 +32,7 @@ public class AccidentHotspot {
 	private Integer year;
 
 	@Column(name = "district_code")
-	private Long districtCode;
+	private String districtCode;
 
 	private String detail;
 
@@ -55,9 +56,6 @@ public class AccidentHotspot {
 
 	@Column(name = "accident_lat", precision = 10, scale = 8)
 	private BigDecimal accidentLat;
-
-	@Column(name = "hotspot_polygon", columnDefinition = "JSON")
-	private String hotspotPolygon;
 
 	@CreationTimestamp
 	@Column(name = "created_at")

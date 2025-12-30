@@ -5,7 +5,8 @@ import java.time.LocalDateTime;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.springframework.boot.autoconfigure.security.SecurityProperties.User;
+
+import com.kdt03.ped_accident.domain.user.entity.User;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -53,7 +54,7 @@ public class Suggestion {
 	private String address;
 	
 	@Column(name = "district_code")
-    private Long districtCode;
+    private String districtCode;
 	
 	@Enumerated(EnumType.STRING)
 	@Column(name = "suggestion_type")
@@ -61,9 +62,6 @@ public class Suggestion {
 
 	@Enumerated(EnumType.STRING)
 	private SuggestionStatus status;
-
-	@Column(name = "priority_score", precision = 5, scale = 2)
-	private BigDecimal priorityScore;
 	
 	@Column(name = "view_count")
     private Integer viewCount = 0;

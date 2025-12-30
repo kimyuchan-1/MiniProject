@@ -2,13 +2,13 @@ package com.kdt03.ped_accident.domain.user.repository;
 
 import com.kdt03.ped_accident.domain.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
+@Repository
 public interface UserRepository extends JpaRepository<User, Long> {
-
-    static Optional<User> findByEmail(String email) {
-		return null;
-	}
-
+    Optional<User> findByEmail(String email);
+    boolean existsByEmail(String email);
 }
+

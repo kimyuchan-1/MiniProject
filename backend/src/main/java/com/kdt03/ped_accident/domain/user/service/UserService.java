@@ -1,5 +1,6 @@
 package com.kdt03.ped_accident.domain.user.service;
 
+import com.kdt03.ped_accident.global.exception.custom.DataNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class UserService {
 
     private final UserRepository userRepository;
@@ -21,7 +23,7 @@ public class UserService {
 
     @Transactional
     public User createUser(@Valid RegisterRequest request) {
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+        if (existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("이미 가입된 이메일입니다.");
         }
 
@@ -29,10 +31,26 @@ public class UserService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .name(request.getName())
-                .role(Role.USER) // 기본 역할을 USER로 설정
-                .enabled(true)
+                .role(Role.USER)
                 .build();
 
         return userRepository.save(user);
     }
+
+    public User findByEmail(String email) throw {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new DataNotFoundException("가입되지 않은 이메일입니다."));
+    }
+
+    @Transactional
+    public void updateRefreshToken(Long userId, String refreshToken) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new DataNotFoundException("사용자를 찾을 수 없습니다."));
+        user.setRefreshToken(refreshToken);
+    }
+
+    public boolean existsByEmail(String email) {
+        return userRepository.existsByEmail(email);
+    }
 }
+
