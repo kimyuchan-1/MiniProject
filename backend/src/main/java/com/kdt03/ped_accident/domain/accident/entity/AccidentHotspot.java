@@ -56,8 +56,4 @@ public class AccidentHotspot {
 
 	@Column(name = "accident_lat", precision = 10, scale = 8)
 	private BigDecimal accidentLat;
-
-	@CreationTimestamp
-	@Column(name = "created_at")
-	private LocalDateTime createdAt;
 }

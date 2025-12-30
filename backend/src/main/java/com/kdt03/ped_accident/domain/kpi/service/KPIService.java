@@ -26,4 +26,8 @@ public class KPIService {
 	public List<RegionalComparison> compareRegionalKPIs() {
 		return null;
 	}
+
+	public String getKPIJson() {
+		return null;
+	}
 }
