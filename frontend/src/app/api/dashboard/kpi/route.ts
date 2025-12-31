@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 
 export async function GET() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY; 
+  const serviceKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !serviceKey) {
     return NextResponse.json(
@@ -16,7 +16,10 @@ export async function GET() {
     auth: { persistSession: false },
   });
 
-  const { data, error } = await supabase.rpc("get_kpi_summary"); 
+  const { data, error } = await supabase
+    .from("v_kpi_summary_json")
+    .select("data")
+    .single();
 
   if (error) {
     console.error("RPC error:", {
@@ -31,5 +34,5 @@ export async function GET() {
     );
   }
 
-  return NextResponse.json(data ?? {}, { status: 200 });
+  return NextResponse.json(data?.data ?? {}, { status: 200 });
 }

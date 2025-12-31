@@ -28,13 +28,12 @@ function coerceNumber(v: unknown, fallback = 0) {
 }
 
 function normalizeKpiPayload(payload: any): KPIData {
-  // API가 { ... }로 주든 { data: { ... } }로 주든 다 받기
-  const src = payload?.data ?? payload ?? {};
+  const src = payload;
 
   return {
     totalCrosswalks: coerceNumber(src.totalCrosswalks),
     signalInstallationRate: coerceNumber(src.signalInstallationRate),
-    riskIndex: coerceNumber(src.totalAccidents),
+    riskIndex: coerceNumber(src.riskIndex),
     accidentReductionRate: coerceNumber(src.accidentReductionRate),
     safetyIndex: coerceNumber(src.safetyIndex),
   };
@@ -111,7 +110,7 @@ export default function Dashboard() {
               title="전체 횡단보도"
               content={kpiData.totalCrosswalks.toLocaleString()}
               caption="개소"
-              color="blue"
+              color="gray"
             />
             <KPICard
               title="신호등 설치율"
@@ -123,13 +122,13 @@ export default function Dashboard() {
               title="안전 지수"
               content={`${Math.round(kpiData.safetyIndex * 100) / 100}점`}
               caption="100점 만점"
-              color="gray"
+              color="blue"
             />
             <KPICard
               title="위험 지수"
               content={`${Math.round(kpiData.riskIndex * 100) / 100}점`}
               caption="100점 만점"
-              color="gray"
+              color="red"
             />
           </div>
         </div>
