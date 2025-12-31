@@ -1,4 +1,4 @@
-package com.kdt03.ped_accident.global.config.auth;
+  package com.kdt03.ped_accident.global.config.auth;
 
 import java.util.Arrays;
 

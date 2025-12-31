@@ -27,6 +27,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class User {
+	
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -43,16 +44,14 @@ public class User {
     @Enumerated(EnumType.STRING)
     private Role role;
     
-    private boolean enabled = true;
-    
     private String refreshToken;
+    
+    @Builder.Default
+    private Boolean enabled = true;
     
     @CreationTimestamp
     private LocalDateTime createdAt;
     
     @UpdateTimestamp
     private LocalDateTime updatedAt;
-
-    
-
 }

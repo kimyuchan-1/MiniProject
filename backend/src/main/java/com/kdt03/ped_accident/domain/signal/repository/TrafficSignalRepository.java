@@ -21,7 +21,7 @@ public interface TrafficSignalRepository extends JpaRepository<TrafficSignal, St
      * @param maxLon 최대 경도
      * @return 경계 내 신호등 데이터 목록
      */
-    @Query("SELECT s FROM TrafficSignal s WHERE s.latitude BETWEEN :minLat AND :maxLat AND s.longitude BETWEEN :minLon AND :maxLon")
+    @Query("SELECT ts FROM TrafficSignal ts WHERE ts.signalLat BETWEEN :minLat AND :maxLat AND ts.signalLon BETWEEN :minLon AND :maxLon")
     List<TrafficSignal> findByBounds(@Param("minLat") BigDecimal minLat, @Param("maxLat") BigDecimal maxLat, @Param("minLon") BigDecimal minLon, @Param("maxLon") BigDecimal maxLon);
 }
 

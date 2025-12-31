@@ -16,5 +16,5 @@ public interface CwAccMapRepository extends JpaRepository<CwAccMap, CwAccMapId> 
      * @param cwUid 횡단보도 ID
      * @return 매핑 정보 목록
      */
-    List<CwAccMap> findByCwUid(String cwUid);
+    List<CwAccMap> findByIdCwUid(String cwUid);
 }
