@@ -42,6 +42,9 @@ public class Crosswalk {
 	@Column(name = "crosswalk_lat", precision = 10, scale = 8)
 	private BigDecimal crosswalkLat;
 	
+	@Column(name = "crosswalk_lon", precision = 10, scale = 8)
+	private BigDecimal crosswalkLon;
+	
 	private Integer laneCount;
 	
 	@Column(name = "crosswalk_width", precision = 5, scale = 2)

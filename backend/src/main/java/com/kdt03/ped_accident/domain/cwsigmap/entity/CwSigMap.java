@@ -1,4 +1,4 @@
-package com.kdt03.ped_accident.domain.cwsigmapping.entity;
+package com.kdt03.ped_accident.domain.cwsigmap.entity;
 
 import java.math.BigDecimal;
 

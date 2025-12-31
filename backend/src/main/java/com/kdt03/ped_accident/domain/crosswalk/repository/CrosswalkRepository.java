@@ -21,7 +21,7 @@ public interface CrosswalkRepository extends JpaRepository<Crosswalk, String> {
      * @param maxLon 최대 경도
      * @return 경계 내 횡단보도 데이터 목록
      */
-    @Query("SELECT c FROM Crosswalk c WHERE c.latitude BETWEEN :minLat AND :maxLat AND c.longitude BETWEEN :minLon AND :maxLon")
+    @Query("SELECT cw FROM Crosswalk cw WHERE cw.crosswalkLat BETWEEN :minLat AND :maxLat AND cw.crosswalkLon BETWEEN :minLon AND :maxLon")
     List<Crosswalk> findByBounds(@Param("minLat") BigDecimal minLat, @Param("maxLat") BigDecimal maxLat, @Param("minLon") BigDecimal minLon, @Param("maxLon") BigDecimal maxLon);
 }
 

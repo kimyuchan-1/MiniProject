@@ -1,4 +1,4 @@
-package com.kdt03.ped_accident.domain.cwsigmapping.entity;
+package com.kdt03.ped_accident.domain.cwaccmap.entity;
 
 import java.io.Serializable;
 
@@ -10,15 +10,16 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Embeddable
-@Getter
-@Setter
+@Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class CwSigMapId implements Serializable {
+public class CwAccMapId implements Serializable {
 
-    @Column(name = "cw_uid", length = 30)
+	private static final long serialVersionUID = 1L;
+
+	@Column(name = "cw_uid", length = 30)
     private String cwUid;
 
-    @Column(name = "sg_uid", length = 30)
-    private String sgUid;
+    @Column(name = "accident_id")
+    private Long accidentId;
 }

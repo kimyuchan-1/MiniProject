@@ -1,4 +1,4 @@
-package com.kdt03.ped_accident.domain.cwaccmapping.entity;
+package com.kdt03.ped_accident.domain.cwaccmap.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;

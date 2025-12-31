@@ -7,7 +7,7 @@ import com.kdt03.ped_accident.api.dto.response.VulnerabilityScore;
 import com.kdt03.ped_accident.domain.accident.repository.AccidentHotspotRepository;
 import com.kdt03.ped_accident.domain.crosswalk.entity.Crosswalk;
 import com.kdt03.ped_accident.domain.crosswalk.repository.CrosswalkRepository;
-import com.kdt03.ped_accident.domain.cwaccmapping.repository.CrosswalkSignalMappingRepository;
+import com.kdt03.ped_accident.domain.cwsigmap.repository.CwSigMapRepository;
 import com.kdt03.ped_accident.domain.district.repository.DistrictRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ public class SafetyAnalysisService {
     private final AccidentHotspotRepository accidentHotspotRepository;
     private final CrosswalkRepository crosswalkRepository;
     private final DistrictRepository districtRepository;
-    private final CrosswalkSignalMappingRepository crosswalkSignalMappingRepository;
+    private final CwSigMapRepository cwSigMapRepository;
 
     /**
      * 특정 지역의 대시보드 통계를 조회합니다.
