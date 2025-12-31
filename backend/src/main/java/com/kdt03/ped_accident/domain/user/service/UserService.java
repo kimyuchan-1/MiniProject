@@ -37,7 +37,7 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public User findByEmail(String email) throw {
+    public User findByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new DataNotFoundException("가입되지 않은 이메일입니다."));
     }
@@ -48,9 +48,11 @@ public class UserService {
                 .orElseThrow(() -> new DataNotFoundException("사용자를 찾을 수 없습니다."));
         user.setRefreshToken(refreshToken);
     }
+    
 
     public boolean existsByEmail(String email) {
         return userRepository.existsByEmail(email);
     }
 }
+
 

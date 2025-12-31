@@ -62,13 +62,4 @@ public class TrafficSignal {
 	
 	@Column(name = "has_sound_signal")
 	private Boolean hasSoundSignal;
-	
-	@CreationTimestamp
-	@Column(name = "created_at")
-	private LocalDateTime createdAt;
-	
-	@UpdateTimestamp
-	@Column(name = "updated_at")
-	private LocalDateTime updatedAt;
-	
 }

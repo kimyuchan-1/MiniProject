@@ -24,7 +24,7 @@ public interface AccidentHotspotRepository extends JpaRepository<AccidentHotspot
      * @param maxLon 최대 경도
      * @return 경계 내 사고 데이터 목록
      */
-    @Query("SELECT a FROM AccidentData a WHERE a.estimatedLat BETWEEN :minLat AND :maxLat AND a.estimatedLon BETWEEN :minLon AND :maxLon")
+    @Query("SELECT a FROM AccidentHotspot a WHERE a.estimatedLat BETWEEN :minLat AND :maxLat AND a.estimatedLon BETWEEN :minLon AND :maxLon")
     List<AccidentHotspot> findByBounds(@Param("minLat") BigDecimal minLat, @Param("maxLat") BigDecimal maxLat, @Param("minLon") BigDecimal minLon, @Param("maxLon") BigDecimal maxLon);
 
     /**

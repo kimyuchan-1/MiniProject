@@ -45,10 +45,14 @@ public class User {
     
     private boolean enabled = true;
     
+    private String refreshToken;
+    
     @CreationTimestamp
     private LocalDateTime createdAt;
     
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    
 
 }
