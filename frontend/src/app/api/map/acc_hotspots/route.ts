@@ -18,14 +18,9 @@ function parseBounds(str: string | null): MapBounds | null {
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const bound = parseBounds(searchParams.get("bounds"));
-    const yearParam = searchParams.get("year");
-    const year = yearParam ? Number(yearParam) : undefined;
 
     if (!bound) {
         return NextResponse.json({ error: "Invalid bounds" }, { status: 400 });
-    }
-    if (yearParam && Number.isNaN(year)) {
-        return NextResponse.json({ error: "Invalid year" }, { status: 400 });
     }
 
     try {
@@ -45,6 +40,10 @@ export async function GET(req: Request) {
                 accident_lon,
                 accident_lat
             `)
+            .gte("accident_lat", bound.south)
+            .lte("accident_lat", bound.north)
+            .gte("accident_lon", bound.west)
+            .lte("accident_lon", bound.east)
             .limit(1000); // 일단 전체 데이터 가져오기 (나중에 최적화)
 
         if (accErr) {
@@ -62,7 +61,10 @@ export async function GET(req: Request) {
         // 데이터 형식 변환 및 좌표 추정
         const formattedAccidents = accidents
             .map((acc) => {
-
+                const lat = Number(acc.accident_lat);
+                const lon = Number(acc.accident_lon);
+                if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+                
                 return {
                     accident_id: acc.accident_id,
                     district_code: acc.district_code,
@@ -73,8 +75,8 @@ export async function GET(req: Request) {
                     serious_injury_count: Number(acc.serious_injury_count) || 0,
                     minor_injury_count: Number(acc.minor_injury_count) || 0,
                     reported_injury_count: Number(acc.reported_injury_count) || 0,
-                    accident_lat: Number(acc.accident_lat),
-                    accident_lon: Number(acc.accident_lon)
+                    accident_lat: lat,
+                    accident_lon: lon
                 };
             })
             .filter((acc): acc is NonNullable<typeof acc> => acc !== null)

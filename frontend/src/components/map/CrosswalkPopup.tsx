@@ -1,5 +1,4 @@
-import { Crosswalk, AccidentData, calculateSafetyScore, calculateRiskScore } from '@/types/accident';
-import { getScoreDescription } from '@/utils/safetyCalculations';
+import { Crosswalk, AccidentData, calculateSafetyScore, calculateAggregatedRiskScore } from '@/types/accident';
 import { CrosswalkFeatureIcons } from './CrosswalkFeatures';
 
 interface CrosswalkPopupProps {
@@ -10,24 +9,16 @@ interface CrosswalkPopupProps {
 export function CrosswalkPopup({ crosswalk, nearbyAccidents = [] }: CrosswalkPopupProps) {
   // 안전 지표 계산
   const safetyScore = calculateSafetyScore(crosswalk);
-  const safetyDescription = getScoreDescription(safetyScore, 'safety');
+
+  // 사고 다발 지역 개수(500m 이내)
+  const hotspotCount = new Set(nearbyAccidents.map(h => String(h.accident_id))).size; // ✅ 개수
 
   // 위험 지표 계산 (해당 지역 사고 데이터 합산)
-  const totalRiskScore = nearbyAccidents.reduce((sum, accident) => {
-    return sum + calculateRiskScore(accident);
-  }, 0);
-  const riskDescription = getScoreDescription(totalRiskScore, 'risk');
-
-  // 안전 기능 목록 생성
-  const safetyFeatures = [
-    { name: '신호등', value: crosswalk.hasSignal, icon: '🚦' },
-    { name: '보행자 버튼', value: crosswalk.hasPedButton, icon: '🔘' },
-    { name: '음향신호기', value: crosswalk.hasPedSound, icon: '🔊' },
-    { name: '고원식', value: crosswalk.isHighland, icon: '⬆️' },
-    { name: '보도턱 낮춤', value: crosswalk.hasBump, icon: '♿' },
-    { name: '점자블록', value: crosswalk.hasBrailleBlock, icon: '⚫' },
-    { name: '집중조명', value: crosswalk.hasSpotlight, icon: '💡' }
-  ].filter(feature => feature.value !== false);
+  const totalRiskScore = calculateAggregatedRiskScore(
+    nearbyAccidents,
+    crosswalk.crosswalk_lat,
+    crosswalk.crosswalk_lon
+  );
 
   return (
     <div className="enhanced-crosswalk-popup bg-white rounded-lg p-2 w-64 max-w-[90vw]">
@@ -45,9 +36,9 @@ export function CrosswalkPopup({ crosswalk, nearbyAccidents = [] }: CrosswalkPop
           ⚠️ 위험 <b className="text-red-700">{totalRiskScore}</b>
         </span>
 
-        {nearbyAccidents.length > 0 && (
+        {hotspotCount > 0 && (
           <span className="px-2.5 py-1 rounded-full text-xs bg-orange-50 border border-orange-200 text-orange-800">
-            📊 사고 <b className="text-orange-700">{nearbyAccidents.reduce((s, a) => s + a.accident_count, 0)}</b>
+            📊 사고 <b className="text-orange-700">{hotspotCount}</b>
           </span>
         )}
       </div>

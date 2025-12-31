@@ -1,7 +1,7 @@
 // 사고 데이터 타입 정의 (실제 ACC 테이블 구조 기반)
 
 export interface AccidentData {
-  acc_uid: string;
+  accident_id: string;
   district_code: string;
   year: number;
   detail: string;
@@ -14,6 +14,8 @@ export interface AccidentData {
   accident_lon: number;
   accident_lat: number;
 }
+
+export type AccidentDataWithDistance = AccidentData & { distance: number };
 
 type DistanceBandWeights = {
   d50: number;   // <=50m
@@ -109,7 +111,7 @@ export interface Crosswalk {
 }
 
 // API 응답 타입
-export interface AccidentsApiResponse extends Array<AccidentData> {}
+export interface AccidentsApiResponse extends Array<AccidentData> { }
 
 // 지도 범위 타입 (기존 crosswalks API와 동일)
 export interface MapBounds {
@@ -125,8 +127,23 @@ export interface DistrictCoordinate {
   lon: number;
 }
 
-// 지표 계산 함수들
-export function calculateRiskScore(accident: AccidentData, weights: RiskWeights = DEFAULT_RISK_WEIGHTS): number {
+// 거리 계산 함수(m)
+export function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371000;
+  const toRad = (v: number) => (v * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+
+// 거리 미적용, 위험 지표 원점수
+export function calcSeverityRaw(accident: AccidentData, weights: RiskWeights = DEFAULT_RISK_WEIGHTS): number {
   const severity =
     accident.fatality_count * weights.fatality +
     accident.serious_injury_count * weights.serious +
@@ -134,17 +151,46 @@ export function calculateRiskScore(accident: AccidentData, weights: RiskWeights 
     accident.accident_count * weights.accident +
     accident.reported_injury_count * weights.reported;
 
-  const wDist = distanceWeightPiecewise(accident.distance);
-
-  // P95 기준으로 0-100 매핑 (상한 컷이 아니라 "기준 대비")
-  const scaled = (severity / Math.max(DEFAULT_SEVERITY_P95, 1e-6)) * 100;
-
-  return Math.max(0, Math.min(100, scaled * wDist));
+  return severity;
 }
 
-export function calculateSafetyScore(crosswalk: Crosswalk, weights: SafetyWeights = DEFAULT_SAFETY_WEIGHTS): number {
+// 위험 지표 점수 계산
+export function calculateAggregatedRiskScore(
+  hotspots: AccidentData[],
+  cwLat: number,
+  cwLon: number,
+  weights: RiskWeights = DEFAULT_RISK_WEIGHTS
+) {
+  let sumWeighted = 0;
+  let sumW = 0;
+
+  for (const h of hotspots) {
+    const d = haversineMeters(cwLat, cwLon, h.accident_lat, h.accident_lon);
+    const wDist = distanceWeightPiecewise(d);
+    if (wDist <= 0) continue;
+
+    const raw = calcSeverityRaw(h, weights);
+    sumWeighted += raw * wDist;
+    sumW += wDist;
+  }
+
+  const avgWeighted = sumW > 0 ? (sumWeighted / sumW) : 0;
+
+  // 지수 압축 파라미터
+  const K = 80;
+
+  const risk = 100 * (1 - Math.exp(-avgWeighted / Math.max(K, 1e-6)));
+  return Math.round(Math.max(0, Math.min(100, risk))*100)/100;
+
+}
+
+
+export function calculateSafetyScore(
+  crosswalk: Crosswalk,
+  weights: SafetyWeights = DEFAULT_SAFETY_WEIGHTS
+): number {
   let score = 0;
-  
+
   if (crosswalk.hasSignal) score += weights.hasSignal;
   if (crosswalk.hasPedButton) score += weights.hasButton;
   if (crosswalk.hasPedSound) score += weights.hasSound;
@@ -152,7 +198,16 @@ export function calculateSafetyScore(crosswalk: Crosswalk, weights: SafetyWeight
   if (crosswalk.hasBump) score += weights.hasBump;
   if (crosswalk.hasBrailleBlock) score += weights.hasBraille;
   if (crosswalk.hasSpotlight) score += weights.hasSpotlight;
-  
-  // 0-100 스케일로 정규화
-  return Math.min(score, 100);
+
+  const maxScore =
+    weights.hasSignal +
+    weights.hasButton +
+    weights.hasSound +
+    weights.isHighland +
+    weights.hasBump +
+    weights.hasBraille +
+    weights.hasSpotlight;
+
+  const normalized = maxScore > 0 ? (score / maxScore) * 100 : 0;
+  return Math.round(Math.max(0, Math.min(100, normalized))*100)/100;
 }

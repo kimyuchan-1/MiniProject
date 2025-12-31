@@ -4,117 +4,140 @@ import KPICard from '@/components/KPICard';
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 
-const MapView = dynamic(() => import('./MapView'), {
-  ssr: false,
-});
-
-
-interface RegionData {
-  name: string;
-  crosswalks: number;
-  signalRate: number;
-  accidents: number;
-  safetyIndex: number;
-}
+const MapView = dynamic(() => import('./MapView'), { ssr: false });
 
 export interface KPIData {
   totalCrosswalks: number;
   signalInstallationRate: number;
-  totalAccidents: number;
+  riskIndex: number;
   accidentReductionRate: number;
   safetyIndex: number;
 }
 
-export default function Dashboard() {
-  const [selectedRegion, setSelectedRegion] = useState<string>('전국');
-  const [selectedMonth, setSelectedMonth] = useState<string>('2024-12');
-  const [mapLevel, setMapLevel] = useState<'country' | 'province' | 'district'>('country');
-  const [kpiData, setKpiData] = useState<KPIData>({
-    totalCrosswalks: 0,
-    signalInstallationRate: 0,
-    totalAccidents: 0,
-    accidentReductionRate: 0,
-    safetyIndex: 0
-  });
+const EMPTY_KPI: KPIData = {
+  totalCrosswalks: 0,
+  signalInstallationRate: 0,
+  riskIndex: 0,
+  accidentReductionRate: 0,
+  safetyIndex: 0,
+};
 
-  // KPI 데이터 로드
+function coerceNumber(v: unknown, fallback = 0) {
+  const n = typeof v === 'number' ? v : Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function normalizeKpiPayload(payload: any): KPIData {
+  // API가 { ... }로 주든 { data: { ... } }로 주든 다 받기
+  const src = payload?.data ?? payload ?? {};
+
+  return {
+    totalCrosswalks: coerceNumber(src.totalCrosswalks),
+    signalInstallationRate: coerceNumber(src.signalInstallationRate),
+    riskIndex: coerceNumber(src.totalAccidents),
+    accidentReductionRate: coerceNumber(src.accidentReductionRate),
+    safetyIndex: coerceNumber(src.safetyIndex),
+  };
+}
+
+export default function Dashboard() {
+  const [kpiData, setKpiData] = useState<KPIData>(EMPTY_KPI);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
   useEffect(() => {
-    const fetchKPIData = async () => {
+    let alive = true;
+
+    const fetchData = async () => {
+      setLoading(true);
+      setErrorMsg(null);
+
       try {
-        const response = await fetch('/api/dashboard/kpi');
-        if (response.ok) {
-          const data = await response.json();
-          setKpiData(data);
-        } else {
-          console.error('Failed to fetch KPI data');
+        const resp = await fetch('/api/dashboard/kpi', {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' },
+          cache: 'no-store',
+        });
+
+        const payload = await resp.json().catch(() => ({}));
+
+        if (!resp.ok) {
+          const msg = payload?.error ?? payload?.message ?? `HTTP ${resp.status}`;
+          throw new Error(msg);
         }
-      } catch (error) {
-        console.error('Error fetching KPI data:', error);
+
+        const normalized = normalizeKpiPayload(payload);
+
+        if (alive) setKpiData(normalized);
+      } catch (err: any) {
+        console.error('KPI fetch failed:', err);
+        if (alive) {
+          setKpiData(EMPTY_KPI);
+          setErrorMsg(err?.message ?? 'Failed to load KPI');
+        }
+      } finally {
+        if (alive) setLoading(false);
       }
     };
 
-    fetchKPIData();
-  }, [selectedRegion, selectedMonth]);
+    fetchData();
+
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* 헤더 및 필터 */}
+    <div className="h-screen overflow-hidden bg-gray-50">
+      <main className="max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8 py-8">
+        {/* 헤더 */}
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">보행자 교통안전 대시보드</h1>
               <p className="text-gray-600 mt-1">보행자 사고 데이터 기반 안전 현황 분석</p>
             </div>
-            
           </div>
         </div>
 
         {/* KPI 대시보드 */}
         <div className="mb-8">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            횡단보도 신호등 설치 현황 - {selectedRegion}
+            횡단보도 신호등 설치 현황
           </h2>
+
           <div className="grid grid-cols-4 md:grid-cols-4 gap-4">
-            <KPICard 
-              title="전체 횡단보도" 
-              content={kpiData.totalCrosswalks.toLocaleString()} 
-              caption="개소" 
-              color="blue" 
+            <KPICard
+              title="전체 횡단보도"
+              content={kpiData.totalCrosswalks.toLocaleString()}
+              caption="개소"
+              color="blue"
             />
-            <KPICard 
-              title="신호등 설치율" 
-              content={kpiData.signalInstallationRate + "%"}
+            <KPICard
+              title="신호등 설치율"
+              content={`${kpiData.signalInstallationRate}%`}
               caption="전체 횡단보도 대비"
-              color="green" 
+              color="green"
             />
-            <KPICard 
-              title="전체 사고 건수" 
-              content={kpiData.totalAccidents.toLocaleString()} 
-              caption="건" 
-              color="red" 
+            <KPICard
+              title="안전 지수"
+              content={`${Math.round(kpiData.safetyIndex * 100) / 100}점`}
+              caption="100점 만점"
+              color="gray"
             />
-            <KPICard 
-              title="안전 지수" 
-              content={Math.round(kpiData.safetyIndex*100)/100 + "점"} 
-              caption="110점 만점" 
-              color="gray" 
+            <KPICard
+              title="위험 지수"
+              content={`${Math.round(kpiData.riskIndex * 100) / 100}점`}
+              caption="100점 만점"
+              color="gray"
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* 인터랙티브 지도 섹션 */}
-          <div className="lg:col-span-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">
-                인터랙티브 지도 ({mapLevel === 'country' ? '전국' : mapLevel === 'province' ? '시도별' : '구별'})
-              </h2>
-            </div>
+        <div className="flex-1 min-h-0">
             <div className="bg-white rounded-lg shadow-sm border h-125 relative overflow-hidden">
               <MapView />
             </div>
-          </div>
         </div>
       </main>
     </div>

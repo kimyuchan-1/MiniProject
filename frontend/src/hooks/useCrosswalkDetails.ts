@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Crosswalk, AccidentData } from '@/types/accident';
+import { Crosswalk, AccidentData, haversineMeters } from '@/types/accident';
 
 interface UseCrosswalkDetailsProps {
   crosswalk: Crosswalk | null;
@@ -13,56 +13,51 @@ interface CrosswalkDetailsData {
   error: string | null;
 }
 
+function bboxAround(lat: number, lon: number, km: number) {
+  const dLat = km / 111;
+  const dLon = km / (111 * Math.cos((lat * Math.PI) / 180));
+  return `${lat - dLat},${lon - dLon},${lat + dLat},${lon + dLon}`;
+}
+
 export function useCrosswalkDetails({ crosswalk, enabled = true }: UseCrosswalkDetailsProps) {
   const [data, setData] = useState<CrosswalkDetailsData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!crosswalk || !enabled) {
-      setData(null);
-      return;
-    }
+    if (!crosswalk || !enabled) { setData(null); return; }
 
     const fetchCrosswalkDetails = async () => {
       setLoading(true);
       setError(null);
 
       try {
-        // 횡단보도 주변 사고 데이터 조회 (반경 약 1km)
-        const radius = 0.01; // 대략 1km
-        const bounds = `${crosswalk.crosswalk_lat - radius},${crosswalk.crosswalk_lon - radius},${crosswalk.crosswalk_lat + radius},${crosswalk.crosswalk_lon + radius}`;
-        
-        let accidents: AccidentData[] = [];
-        
-        try {
-          const response = await fetch(`/api/map/acc_hotspots?bounds=${bounds}`);
-          
-          if (response.ok) {
-            accidents = await response.json();
-          } 
-        } catch (apiError) {
-          console.warn('[useCrosswalkDetails] Acc_Hotspots API error, using mock data:', apiError);
-          // API 오류 시 임시 mock 데이터 생성
-          accidents = [];
-        }
+        const lat = crosswalk.crosswalk_lat;
+        const lon = crosswalk.crosswalk_lon;
+
+        const bounds = bboxAround(lat, lon, 1.0);
+
+        let hotspots: any[] = [];
+        const resp = await fetch(`/api/map/acc_hotspots?bounds=${bounds}`);
+        if (resp.ok) hotspots = await resp.json();
+
+        const within500m = hotspots.filter((h) => {
+          const hLat = h.accident_lat;
+          const hLon = h.accident_lon;
+          if (typeof hLat !== 'number' || typeof hLon !== 'number') return false;
+          return haversineMeters(lat, lon, hLat, hLon) <= 500;
+        });
 
         setData({
           crosswalk,
-          nearbyAccidents: accidents,
+          nearbyAccidents: within500m,
           loading: false,
           error: null
         });
-
       } catch (err) {
-        console.error('[useCrosswalkDetails] Error:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error');
-        setData({
-          crosswalk,
-          nearbyAccidents: [],
-          loading: false,
-          error: err instanceof Error ? err.message : 'Unknown error'
-        });
+        const msg = err instanceof Error ? err.message : 'Unknown error';
+        setError(msg);
+        setData({ crosswalk, nearbyAccidents: [], loading: false, error: msg });
       } finally {
         setLoading(false);
       }
@@ -87,11 +82,11 @@ export function convertToEnhancedCrosswalk(basicCrosswalk: any): Crosswalk {
     crosswalk_lat: basicCrosswalk.crosswalk_lat,
     crosswalk_lon: basicCrosswalk.crosswalk_lon,
     hasSignal: basicCrosswalk.hasSignal,
-    isHighland: basicCrosswalk.isHighland, 
+    isHighland: basicCrosswalk.isHighland,
     hasPedButton: basicCrosswalk.hasPedButton,
-    hasPedSound: basicCrosswalk.hasPedSound, 
-    hasBump: basicCrosswalk.hasBump, 
-    hasBrailleBlock: basicCrosswalk.hasBrailleBlock, 
+    hasPedSound: basicCrosswalk.hasPedSound,
+    hasBump: basicCrosswalk.hasBump,
+    hasBrailleBlock: basicCrosswalk.hasBrailleBlock,
     hasSpotlight: basicCrosswalk.hasSpotlight,
   };
 }

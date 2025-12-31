@@ -2,7 +2,7 @@
 
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { useState, useMemo } from "react";
+import { useState, useMemo, use } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import { CrosswalkMarkerWithPopup } from "@/components/map/CrosswalkMarkerWithPopup";
@@ -13,13 +13,27 @@ interface Crosswalk {
     crosswalk_lat: number;
     crosswalk_lon: number;
     hasSignal: boolean;
-    isHighland : boolean;
-    hasPedButton : boolean;
-    hasPedSound : boolean;
-    hasBump : boolean;
-    hasBrailleBlock : boolean;
-    hasSpotlight : boolean;
+    isHighland: boolean;
+    hasPedButton: boolean;
+    hasPedSound: boolean;
+    hasBump: boolean;
+    hasBrailleBlock: boolean;
+    hasSpotlight: boolean;
     signalSource?: 'direct' | 'mapped' | 'none'; // 신호등 정보 출처
+}
+
+interface Acc {
+    accident_id: string,
+    district_code: string,
+    year: string,
+    accident_count: number,
+    casualty_count: number,
+    fatality_count: number,
+    serious_injury_count: number,
+    minor_injury_count: number,
+    reported_injury_count: number,
+    accident_lat: number,
+    accident_lon: number,
 }
 
 function validateCrosswalkData(data: unknown): data is Crosswalk[] {
@@ -33,6 +47,18 @@ function validateCrosswalkData(data: unknown): data is Crosswalk[] {
         'crosswalk_lon' in item &&
         typeof item.crosswalk_lat === 'number' &&
         typeof item.crosswalk_lon === 'number'
+    );
+}
+
+function validateAccHotspotData(data: unknown): data is Acc[] {
+    return Array.isArray(data) && data.every(item =>
+        typeof item === 'object' &&
+        item !== null &&
+        'accident_id' in item &&
+        'accident_lat' in item &&
+        'accident_lon' in item &&
+        typeof item.accident_lat === 'number' &&
+        typeof item.accident_lon === 'number'
     );
 }
 
@@ -81,21 +107,88 @@ const iconNone = L.divIcon({
       border:2px solid white;
       box-shadow:0 1px 6px rgba(0,0,0,.35);
       position:relative;
-    ">
-      <div style="
-        position:absolute;
-        top:50%;left:50%;
-        transform:translate(-50%,-50%);
-        width:8px;height:2px;
-        background:white;
-        border-radius:1px;
-      "></div>
-    </div>
+    "></div>
   `,
     iconSize: [18, 18],
     iconAnchor: [9, 9],
     popupAnchor: [0, -10],
 });
+
+const iconAccTriangle = L.divIcon({
+    className: "",
+    html: `
+    <div style="position: relative; width: 24px; height: 24px;">
+      <!-- 흰색 외곽(큰 삼각형) -->
+      <div style="
+        position:absolute; left:50%; top:50%;
+        transform: translate(-50%,-50%);
+        width:0;height:0;
+        border-left: 12px solid transparent;
+        border-right: 12px solid transparent;
+        border-bottom: 22px solid white;
+        filter: drop-shadow(0 1px 6px rgba(0,0,0,.35));
+      "></div>
+
+      <!-- 빨간 내부(작은 삼각형) -->
+      <div style="
+        position:absolute; left:50%; top:50%;
+        transform: translate(-50%,-50%) translateY(2px);
+        width:0;height:0;
+        border-left: 10px solid transparent;
+        border-right: 10px solid transparent;
+        border-bottom: 18px solid #ef4444;
+      "></div>
+
+      <!-- 가운데 마이너스(—) -->
+      <div style="
+        position:absolute;
+        left:50%; top:50%;
+        transform: translate(-50%,-50%) translateY(4px);
+        width:10px; height:2px;
+        background:white;
+        border-radius:1px;
+      "></div>
+    </div>
+  `,
+    iconSize: [24, 24],
+    iconAnchor: [12, 2],  // 꼭짓점(아래) 기준
+    popupAnchor: [0, -10],
+});
+
+function BoundsFetcherAcc({ onData, onLoading }: { onData: (rows: Acc[]) => void; onLoading: (v: boolean) => void }) {
+    useMapEvents({
+        moveend: async (e) => {
+            const map = e.target;
+            const bound = map.getBounds();
+            const bounds = `${bound.getSouth()},${bound.getWest()},${bound.getNorth()},${bound.getEast()}`;
+
+            onLoading(true);
+
+            try {
+                const res = await fetch(
+                    `/api/map/acc_hotspots?bounds=${encodeURIComponent(bounds)}`,
+                    { cache: "no-store" }
+                );
+
+                if (res.ok) {
+                    const json = await res.json();
+                    if (validateAccHotspotData(json)) {
+                        onData(json);
+                        return;
+                    }
+                }
+                onData([]);
+            } catch (apiError) {
+                console.warn("[MapView] API acc_hotspot failed:", apiError);
+                onData([]);
+            } finally {
+                onLoading(false);
+            }
+        },
+    });
+    return null;
+}
+
 
 function BoundsFetcher({ onData, onLoading }: { onData: (rows: Crosswalk[]) => void; onLoading: (v: boolean) => void }) {
     useMapEvents({
@@ -107,58 +200,21 @@ function BoundsFetcher({ onData, onLoading }: { onData: (rows: Crosswalk[]) => v
             onLoading(true);
 
             try {
-                // 임시 mock 데이터 (개발용)
-                const mockData: Crosswalk[] = [
-                    {
-                        cw_uid: "mock_1",
-                        crosswalk_lat: 37.5665 + (Math.random() - 0.5) * 0.01,
-                        crosswalk_lon: 126.978 + (Math.random() - 0.5) * 0.01,
-                        address: "서울특별시 중구 명동",
-                        hasSignal: Math.random() > 0.5,
-                        isHighland: true,
-                        hasPedButton: true,
-                        hasPedSound: true,
-                        hasBump: true,
-                        hasBrailleBlock: true,
-                        hasSpotlight: true,
-                        signalSource: Math.random() > 0.5 ? 'direct' as const : 'mapped' as const
-                    },
-                    {
-                        cw_uid: "mock_2",
-                        crosswalk_lat: 37.5665 + (Math.random() - 0.5) * 0.01,
-                        crosswalk_lon: 126.978 + (Math.random() - 0.5) * 0.01,
-                        address: "서울특별시 중구 을지로",
-                        hasSignal: false,
-                        isHighland: false,
-                        hasPedButton: false,
-                        hasPedSound: false,
-                        hasBump: false,
-                        hasBrailleBlock: false,
-                        hasSpotlight: false,
-                        signalSource: Math.random() > 0.5 ? 'direct' as const : 'mapped' as const
-                    }
-                ];
+                const res = await fetch(
+                    `/api/map/crosswalks?bounds=${encodeURIComponent(bounds)}`,
+                    { cache: "no-store" }
+                );
 
-                // 실제 API 호출 시도, 실패하면 mock 데이터 사용
-                try {
-                    const res = await fetch(
-                        `/api/map/crosswalks?bounds=${encodeURIComponent(bounds)}`,
-                        { cache: "no-store" }
-                    );
-
-                    if (res.ok) {
-                        const json = await res.json();
-                        if (validateCrosswalkData(json)) {
-                            onData(json);
-                            return;
-                        }
+                if (res.ok) {
+                    const json = await res.json();
+                    if (validateCrosswalkData(json)) {
+                        onData(json);
+                        return;
                     }
-                } catch (apiError) {
-                    console.warn("[MapView] API failed, using mock data:", apiError);
                 }
 
-                // API 실패 시 mock 데이터 사용
-                onData(mockData);
+                onData([]);
+
             } catch (err) {
                 console.error("[MapView] Error:", err);
                 onData([]);
@@ -173,12 +229,15 @@ function BoundsFetcher({ onData, onLoading }: { onData: (rows: Crosswalk[]) => v
 
 export default function MapView() {
     const [rows, setRows] = useState<Crosswalk[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [accRows, setAccRows] = useState<Acc[]>([]);
+    const [loadingCw, setLoadingCw] = useState(false);
+    const [loadingAcc, setLoadingAcc] = useState(false);
+    const loading = loadingCw || loadingAcc;
 
     const center = useMemo<[number, number]>(() => [37.531, 127.0066], []);
 
     return (
-        <section className="relative w-full">
+        <section className="relative w-full h-full">
             <style jsx global>{`
                 /* 지도 모노톤 스타일 */
                 .map-grayscale {
@@ -242,7 +301,7 @@ export default function MapView() {
                     font-size: 18px;
                 }
             `}</style>
-            <div className="relative h-[70vh] min-h-130 w-full overflow-hidden rounded-2xl border bg-white shadow">
+            <div className="relative h-full w-full overflow-hidden rounded-2xl border bg-white shadow">
                 <MapContainer center={center} zoom={20} className="h-full w-full">
                     {/* 안정적인 OpenStreetMap 타일 + CSS 필터로 모노톤 처리 */}
                     <TileLayer
@@ -250,8 +309,15 @@ export default function MapView() {
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
 
-                    <BoundsFetcher onData={setRows} onLoading={setLoading} />
-
+                    <BoundsFetcher onData={setRows} onLoading={setLoadingCw} />
+                    <BoundsFetcherAcc onData={setAccRows} onLoading={setLoadingAcc} />
+                    {accRows.map((a) => (
+                        <Marker
+                            key={a.accident_id}
+                            position={[a.accident_lat, a.accident_lon]}
+                            icon={iconAccTriangle}
+                        />
+                    ))}
                     <MarkerClusterGroup
                         chunkedLoading
                         iconCreateFunction={createClusterCustomIcon}
@@ -281,7 +347,7 @@ export default function MapView() {
                     ].join(" ")}
                 >
                     불러오는 중…
-                </div>                
+                </div>
             </div>
         </section>
     );
