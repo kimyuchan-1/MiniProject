@@ -2,7 +2,8 @@
 
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { useState, useMemo, use } from "react";
+import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import { CrosswalkMarkerWithPopup } from "@/components/map/CrosswalkMarkerWithPopup";
@@ -236,6 +237,14 @@ export default function MapView() {
 
     const center = useMemo<[number, number]>(() => [37.531, 127.0066], []);
 
+    const router = useRouter();
+    function onHotspotClick(a: any) {
+        const code = String(a.district_code ?? "").slice(0, 5);
+        if (!code) return;
+
+        router.push(`/pedacc?region=${encodeURIComponent(code)}`);
+    }
+
     return (
         <section className="relative w-full h-full">
             <style jsx global>{`
@@ -316,6 +325,7 @@ export default function MapView() {
                             key={a.accident_id}
                             position={[a.accident_lat, a.accident_lon]}
                             icon={iconAccTriangle}
+                            eventHandlers={{ click: () => onHotspotClick(a) }}
                         />
                     ))}
                     <MarkerClusterGroup
