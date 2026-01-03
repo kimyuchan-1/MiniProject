@@ -11,25 +11,33 @@ export async function GET() {
 
   const supabase = createClient(url, serviceKey, { auth: { persistSession: false } });
 
-  // ✅ 너 district 테이블 컬럼에 맞게 여기만 조정하면 됨
-  // 예시: district_code(10자리 또는 그 이상), district_name
   const { data, error } = await supabase
     .from("District")
-    .select("district_id, district_name")
-    .order("district_name", { ascending: true });
+    .select("district_code, district_short_name")
+    .order("district_short_name", { ascending: true });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const rows = (data ?? []).map((r: any) => {
-    const code5 = String(r.district_code ?? "").slice(0, 5);
-    return { code5, name: String(r.district_name ?? code5) };
+    const code5 = String(r.district_code ?? "");
+    return { code5, name: String(r.district_short_name ?? code5) };
   });
 
-  // code5 중복 제거(같은 시군구가 여러 행으로 있을 수 있으니)
+  // code5 중복 제거 및 필터링 조건 완화
   const uniq = new Map<string, { code5: string; name: string }>();
   for (const r of rows) {
-    if (r.code5 && r.code5.length === 5 && !uniq.has(r.code5)) uniq.set(r.code5, r);
+    // 조건을 완화: code5가 존재하고 비어있지 않으면 포함
+    if (r.code5 && r.code5.trim() !== "" && !uniq.has(r.code5)) {
+      uniq.set(r.code5, r);
+    }
   }
 
-  return NextResponse.json(Array.from(uniq.values()));
+  const result = Array.from(uniq.values());
+  
+  // 디버깅을 위한 로깅
+  console.log(`Total districts fetched: ${data?.length || 0}`);
+  console.log(`Valid districts after filtering: ${result.length}`);
+  console.log(`First 5 districts:`, result.slice(0, 5));
+
+  return NextResponse.json(result);
 }
