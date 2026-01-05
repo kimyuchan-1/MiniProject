@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import { CrosswalkMarkerWithPopup } from "@/components/dashboard/map/CrosswalkMarkerWithPopup";
+import MapFilter, { type MapFilterValue } from "./MapFilter";
 
 interface Crosswalk {
     cw_uid: string;
@@ -156,6 +157,74 @@ const iconAccTriangle = L.divIcon({
     popupAnchor: [0, -10],
 });
 
+const iconHasSelected = L.divIcon({
+    className: "",
+    html: `
+    <div style="
+      width:20px;height:20px;
+      border-radius:9999px;
+      background:#22c55e;
+      border:3px solid #0ea5e9;
+      box-shadow:0 0 0 4px rgba(14,165,233,.25), 0 2px 10px rgba(0,0,0,.35);
+    "></div>
+  `,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+    popupAnchor: [0, -10],
+});
+
+const iconNoneSelected = L.divIcon({
+    className: "",
+    html: `
+    <div style="
+      width:20px;height:20px;
+      border-radius:9999px;
+      background:#ef4444;
+      border:3px solid #0ea5e9;
+      box-shadow:0 0 0 4px rgba(14,165,233,.25), 0 2px 10px rgba(0,0,0,.35);
+    "></div>
+  `,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+    popupAnchor: [0, -10],
+});
+
+const iconAccTriangleSelected = L.divIcon({
+    className: "",
+    html: `
+    <div style="position: relative; width: 26px; height: 26px;">
+      <div style="
+        position:absolute; left:50%; top:50%;
+        transform: translate(-50%,-50%);
+        width:0;height:0;
+        border-left: 13px solid transparent;
+        border-right: 13px solid transparent;
+        border-bottom: 24px solid #0ea5e9;
+        filter: drop-shadow(0 2px 10px rgba(0,0,0,.35));
+      "></div>
+      <div style="
+        position:absolute; left:50%; top:50%;
+        transform: translate(-50%,-50%) translateY(2px);
+        width:0;height:0;
+        border-left: 10px solid transparent;
+        border-right: 10px solid transparent;
+        border-bottom: 18px solid #ef4444;
+      "></div>
+      <div style="
+        position:absolute;
+        left:50%; top:50%;
+        transform: translate(-50%,-50%) translateY(4px);
+        width:10px; height:2px;
+        background:white;
+        border-radius:1px;
+      "></div>
+    </div>
+  `,
+    iconSize: [26, 26],
+    iconAnchor: [13, 2],
+    popupAnchor: [0, -10],
+});
+
 function BoundsFetcherAcc({ onData, onLoading }: { onData: (rows: Acc[]) => void; onLoading: (v: boolean) => void }) {
     useMapEvents({
         moveend: async (e) => {
@@ -233,6 +302,18 @@ export default function MapView() {
     const [accRows, setAccRows] = useState<Acc[]>([]);
     const [loadingCw, setLoadingCw] = useState(false);
     const [loadingAcc, setLoadingAcc] = useState(false);
+    const [filter, setFilter] = useState<MapFilterValue>({
+        signalHas: true,
+        signalNone: true,
+        accHotspot: true,
+    });
+    const [selected, setSelected] = useState<
+        | { kind: 'cw'; id: string }
+        | { kind: 'acc'; id: string }
+        | null
+    >(null);
+
+
     const loading = loadingCw || loadingAcc;
 
     const center = useMemo<[number, number]>(() => [37.531, 127.0066], []);
@@ -244,6 +325,15 @@ export default function MapView() {
 
         router.push(`/pedacc?region=${encodeURIComponent(code)}`);
     }
+
+    const filteredCrosswalks = useMemo(() => {
+        return rows.filter(cw => (cw.hasSignal ? filter.signalHas : filter.signalNone));
+    }, [rows, filter.signalHas, filter.signalNone]);
+
+    const filteredAcc = useMemo(() => {
+        return filter.accHotspot ? accRows : [];
+    }, [accRows, filter.accHotspot]);
+
 
     return (
         <section className="relative w-full h-full">
@@ -311,6 +401,9 @@ export default function MapView() {
                 }
             `}</style>
             <div className="relative h-full w-full overflow-hidden rounded-2xl border bg-white shadow">
+
+
+
                 <MapContainer center={center} zoom={20} className="h-full w-full">
                     {/* 안정적인 OpenStreetMap 타일 + CSS 필터로 모노톤 처리 */}
                     <TileLayer
@@ -319,15 +412,23 @@ export default function MapView() {
                     />
 
                     <BoundsFetcher onData={setRows} onLoading={setLoadingCw} />
-                    <BoundsFetcherAcc onData={setAccRows} onLoading={setLoadingAcc} />
-                    {accRows.map((a) => (
-                        <Marker
-                            key={a.accident_id}
-                            position={[a.accident_lat, a.accident_lon]}
-                            icon={iconAccTriangle}
-                            eventHandlers={{ click: () => onHotspotClick(a) }}
-                        />
-                    ))}
+                    {filter.accHotspot && <BoundsFetcherAcc onData={setAccRows} onLoading={setLoadingAcc} />}
+                    {filteredAcc.map((a) => {
+                        const isSelected = selected?.kind === 'acc' && selected.id === a.accident_id;
+                        return (
+                            <Marker
+                                key={a.accident_id}
+                                position={[a.accident_lat, a.accident_lon]}
+                                icon={isSelected ? iconAccTriangleSelected : iconAccTriangle}
+                                eventHandlers={{
+                                    click: () => {
+                                        setSelected({ kind: 'acc', id: a.accident_id });
+                                        onHotspotClick(a);
+                                    },
+                                }}
+                            />
+                        );
+                    })}
                     <MarkerClusterGroup
                         chunkedLoading
                         iconCreateFunction={createClusterCustomIcon}
@@ -339,13 +440,22 @@ export default function MapView() {
                         zoomToBoundsOnClick
                     >
 
-                        {rows.map((cw) => (
-                            <CrosswalkMarkerWithPopup
-                                key={cw.cw_uid}
-                                icon={cw.hasSignal ? iconHas : iconNone}
-                                crosswalk={cw}
-                            />
-                        ))}
+                        {filteredCrosswalks.map((cw) => {
+                            const isSelected = selected?.kind === 'cw' && selected.id === cw.cw_uid;
+
+                            const baseIcon = cw.hasSignal ? iconHas : iconNone;
+                            const selectedIcon = cw.hasSignal ? iconHasSelected : iconNoneSelected;
+
+                            return (
+                                <CrosswalkMarkerWithPopup
+                                    key={cw.cw_uid}
+                                    crosswalk={cw}
+                                    icon={isSelected ? selectedIcon : baseIcon}
+                                    onMarkerClick={() => setSelected({ kind: 'cw', id: cw.cw_uid })}
+                                />
+                            );
+                        })}
+
                     </MarkerClusterGroup>
                 </MapContainer>
 
@@ -358,6 +468,7 @@ export default function MapView() {
                 >
                     불러오는 중…
                 </div>
+                <MapFilter value={filter} onChange={setFilter} />
             </div>
         </section>
     );

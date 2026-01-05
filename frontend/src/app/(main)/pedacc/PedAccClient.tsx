@@ -224,60 +224,61 @@ export default function PedAccClient() {
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8 py-8 bg-gray-50">
-      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">보행자 사고 현황</h1>
-          <div className="text-sm text-gray-600">선택 지역: {selectedName}</div>
-        </div>
-
-        <RegionSelectors
-          provinces={provinces}
-          cities={cities}
-          selectedProvince={selectedProvince}
-          selectedCity={selectedCity}
-          loadingCities={loadingCities}
-          onChangeProvince={onChangeProvince}
-          onChangeCity={onChangeCity}
-        />
-      </div>
-
-      {loading && <div>로딩 중…</div>}
-      {error && <div className="text-red-600">에러: {error}</div>}
-
-      {/* 그래프 섹션 */}
-      {yearlyAggregated.length > 0 && (
-        <div className="space-y-6">
-          {/* 연도별 추세 그래프 */}
-          <div className="rounded-xl border p-4 bg-white">
-            <YearlyTrendChart yearlyData={yearlyAggregated} />
+    <div className="w-full bg-gray-50 h-full">
+      <div className="max-w-7xl p-6 space-y-6 h-full  mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">보행자 사고 현황</h1>
+            <div className="text-sm text-gray-600">선택 지역: {selectedName}</div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* 사고 유형별 그래프 */}
+          <RegionSelectors
+            provinces={provinces}
+            cities={cities}
+            selectedProvince={selectedProvince}
+            selectedCity={selectedCity}
+            loadingCities={loadingCities}
+            onChangeProvince={onChangeProvince}
+            onChangeCity={onChangeCity}
+          />
+        </div>
+
+        {loading && <div>로딩 중…</div>}
+        {error && <div className="text-red-600">에러: {error}</div>}
+
+        {/* 그래프 섹션 */}
+        {yearlyAggregated.length > 0 && (
+          <div className="space-y-6">
+            {/* 연도별 추세 그래프 */}
             <div className="rounded-xl border p-4 bg-white">
-              <AccidentTypeChart yearlyData={yearlyAggregated} />
+              <YearlyTrendChart yearlyData={yearlyAggregated} />
             </div>
 
-            {/* 월별 상세 그래프 */}
-            {selectedYear && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* 사고 유형별 그래프 */}
               <div className="rounded-xl border p-4 bg-white">
-                <MonthlyChart monthlyData={monthly} selectedYear={selectedYear} />
+                <AccidentTypeChart yearlyData={yearlyAggregated} />
               </div>
-            )}
+
+              {/* 월별 상세 그래프 */}
+              {selectedYear && (
+                <div className="rounded-xl border p-4 bg-white">
+                  <MonthlyChart monthlyData={monthly} selectedYear={selectedYear} />
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* 테이블 섹션 */}
-      <TablesSection
-        yearlyAggregated={yearlyAggregated}
-        selectedYear={selectedYear}
-        availableYears={availableYears}
-        selectedYearMonthly={selectedYearMonthly}
-        setSelectedYear={setSelectedYear} 
-      />
-
+        {/* 테이블 섹션 */}
+        <TablesSection
+          yearlyAggregated={yearlyAggregated}
+          selectedYear={selectedYear}
+          availableYears={availableYears}
+          selectedYearMonthly={selectedYearMonthly}
+          setSelectedYear={setSelectedYear}
+        />
+      </div>
     </div>
   );
 

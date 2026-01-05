@@ -13,6 +13,7 @@ import {
   ChartOptions,
 } from 'chart.js';
 import { Line, Bar } from 'react-chartjs-2';
+import type { AccData } from '@/features/pedacc/types';
 
 ChartJS.register(
   CategoryScale,
@@ -25,34 +26,27 @@ ChartJS.register(
   Legend
 );
 
-type YearlyData = {
-  year: number;
-  accident_count: number;
-  casualty_count: number;
-  fatality_count: number;
-  serious_injury_count: number;
-  minor_injury_count: number;
-  reported_injury_count: number;
-};
-
-type MonthlyData = {
-  year: number;
-  month: number;
-  accident_count: number;
-  casualty_count: number;
-  fatality_count: number;
-  serious_injury_count: number;
-  minor_injury_count: number;
-  reported_injury_count: number;
-};
-
-interface AccidentChartProps {
-  yearlyData: YearlyData[];
-  monthlyData: MonthlyData[];
-  selectedYear: number | null;
+function padRange(min: number, max: number, padRatio = 0.1) {
+  const span = Math.max(1, max - min);
+  const pad = span * padRatio;
+  return { min: Math.floor(min - pad), max: Math.ceil(max + pad) };
 }
 
-export function YearlyTrendChart({ yearlyData }: { yearlyData: YearlyData[] }) {
+export function YearlyTrendChart({ yearlyData }: { yearlyData: AccData[] }) {
+  const accidents = yearlyData.map(d => d.accident_count);
+  const casualties = yearlyData.map(d => d.casualty_count);
+  const deaths = yearlyData.map(d => d.fatality_count);
+
+  // 좌측축(사고/사상자) 범위: 두 series를 같이 고려
+  const leftMin = Math.min(...accidents, ...casualties);
+  const leftMax = Math.max(...accidents, ...casualties);
+  const left = padRange(leftMin, leftMax, 0.15);
+
+  // 우측축(사망) 범위
+  const rightMin = Math.min(...deaths);
+  const rightMax = Math.max(...deaths);
+  const right = padRange(rightMin, rightMax, 0.2);
+
   const data = {
     labels: yearlyData.map(d => `${d.year}년`),
     datasets: [
@@ -62,6 +56,7 @@ export function YearlyTrendChart({ yearlyData }: { yearlyData: YearlyData[] }) {
         borderColor: 'rgb(239, 68, 68)',
         backgroundColor: 'rgba(239, 68, 68, 0.1)',
         tension: 0.1,
+        yAxisID: 'y',
       },
       {
         label: '사상자',
@@ -69,6 +64,7 @@ export function YearlyTrendChart({ yearlyData }: { yearlyData: YearlyData[] }) {
         borderColor: 'rgb(245, 158, 11)',
         backgroundColor: 'rgba(245, 158, 11, 0.1)',
         tension: 0.1,
+        yAxisID: 'y',
       },
       {
         label: '사망',
@@ -76,34 +72,50 @@ export function YearlyTrendChart({ yearlyData }: { yearlyData: YearlyData[] }) {
         borderColor: 'rgb(220, 38, 127)',
         backgroundColor: 'rgba(220, 38, 127, 0.1)',
         tension: 0.1,
+        yAxisID: 'y1',
       },
     ],
   };
 
   const options: ChartOptions<'line'> = {
     responsive: true,
-    plugins: {
-      legend: {
-        position: 'top' as const,
-      },
-      title: {
-        display: true,
-        text: '연도별 사고 추세',
-      },
-    },
+    maintainAspectRatio: false,
     scales: {
       y: {
-        beginAtZero: true,
+        position: 'left',
+        min: left.min,
+        max: left.max,
+        ticks: {
+          // 변화량을 보기 쉬운 간격으로: 자동 or 직접 stepSize
+          // stepSize: 200, // 예시(데이터에 맞게)
+          maxTicksLimit: 6,
+        },
+        title: { display: true, text: '사고/사상자' },
+      },
+      y1: {
+        position: 'right',
+        min: right.min,
+        max: right.max,
+        grid: { drawOnChartArea: false },
+        ticks: {
+          // stepSize: 20, // 예시(데이터에 맞게)
+          maxTicksLimit: 6,
+        },
+        title: { display: true, text: '사망자' },
       },
     },
+    plugins: { legend: { position: 'top' as const }, title: { display: true, text: '연도별 사고 추세' } },
   };
 
-  return <Line data={data} options={options} />;
+  return (
+    <div className="relative w-full h-72 sm:h-80">
+      <Line data={data} options={options} />
+    </div>);
 }
 
-export function MonthlyChart({ monthlyData, selectedYear }: { monthlyData: MonthlyData[], selectedYear: number }) {
+export function MonthlyChart({ monthlyData, selectedYear }: { monthlyData: AccData[], selectedYear: number }) {
   const yearData = monthlyData.filter(d => d.year === selectedYear);
-  
+
   // 1-12월 데이터 준비
   const monthlyStats = [];
   for (let month = 1; month <= 12; month++) {
@@ -143,6 +155,7 @@ export function MonthlyChart({ monthlyData, selectedYear }: { monthlyData: Month
 
   const options: ChartOptions<'bar'> = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         position: 'top' as const,
@@ -159,10 +172,13 @@ export function MonthlyChart({ monthlyData, selectedYear }: { monthlyData: Month
     },
   };
 
-  return <Bar data={data} options={options} />;
+  return (
+    <div className="relative w-full h-72 sm:h-80">
+      <Bar data={data} options={options} />
+    </div>);
 }
 
-export function AccidentTypeChart({ yearlyData }: { yearlyData: YearlyData[] }) {
+export function AccidentTypeChart({ yearlyData }: { yearlyData: AccData[] }) {
   if (yearlyData.length === 0) return null;
 
   // 전체 기간 합계
@@ -211,6 +227,7 @@ export function AccidentTypeChart({ yearlyData }: { yearlyData: YearlyData[] }) 
 
   const options: ChartOptions<'bar'> = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         display: false,
@@ -227,5 +244,8 @@ export function AccidentTypeChart({ yearlyData }: { yearlyData: YearlyData[] }) 
     },
   };
 
-  return <Bar data={data} options={options} />;
+  return (
+    <div className="relative w-full h-72 sm:h-80">
+      <Bar data={data} options={options} />
+    </div>);
 }

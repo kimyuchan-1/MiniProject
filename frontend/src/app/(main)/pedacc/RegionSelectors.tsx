@@ -10,7 +10,17 @@ export default function RegionSelectors(props: {
   onChangeProvince: (v: string) => void;
   onChangeCity: (v: string) => void;
 }) {
-  const { provinces, cities, selectedProvince, selectedCity, loadingCities, onChangeProvince, onChangeCity } = props;
+  const {
+    provinces,
+    cities,
+    selectedProvince,
+    selectedCity,
+    loadingCities,
+    onChangeProvince,
+    onChangeCity,
+  } = props;
+
+  const isAllProvince = selectedProvince === "ALL";
 
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -23,7 +33,9 @@ export default function RegionSelectors(props: {
         >
           <option value="ALL">전국</option>
           {provinces.map((p) => (
-            <option key={p.code} value={p.code}>{p.name}</option>
+            <option key={p.code} value={p.code}>
+              {p.name}
+            </option>
           ))}
         </select>
       </div>
@@ -34,16 +46,23 @@ export default function RegionSelectors(props: {
           className="border rounded-lg px-3 py-2 text-sm min-w-30"
           value={selectedCity}
           onChange={(e) => onChangeCity(e.target.value)}
-          disabled={loadingCities}
+          disabled={loadingCities || isAllProvince} // ✅ 전국이면 선택 자체도 막고 싶으면 유지, 아니면 isAllProvince 제거
         >
-          <option value="ALL">
-            {loadingCities ? "로딩 중..." : selectedProvince === "ALL" ? "전체" : "전체 (시도 통계)"}
-          </option>
-          {cities.map((c) => (
-            <option key={c.code} value={c.code}>
-              {selectedProvince === "ALL" ? `${c.provinceName} ${c.name}` : c.name}
-            </option>
-          ))}
+          {/* ✅ 전국이면 "전체"만 */}
+          {isAllProvince ? (
+            <option value="ALL">전체</option>
+          ) : (
+            <>
+              <option value="ALL">
+                {loadingCities ? "로딩 중..." : "전체 (시도 통계)"}
+              </option>
+              {cities.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.name}
+                </option>
+              ))}
+            </>
+          )}
         </select>
       </div>
     </div>
