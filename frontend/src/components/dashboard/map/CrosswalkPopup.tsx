@@ -1,4 +1,5 @@
-import { Crosswalk, AccidentData, calculateSafetyScore, calculateAggregatedRiskScore } from '@/types/accident';
+import { Crosswalk, AccidentData } from '@/features/acc_calculate/types';
+import { calculateAggregatedRiskScore, calculateSafetyScore } from '@/features/acc_calculate/utils';
 import { CrosswalkFeatureIcons } from './CrosswalkFeatures';
 
 interface CrosswalkPopupProps {

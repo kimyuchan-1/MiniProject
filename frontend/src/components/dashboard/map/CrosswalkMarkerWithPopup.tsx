@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { CrosswalkPopup } from './CrosswalkPopup';
 import { useCrosswalkDetails, convertToEnhancedCrosswalk } from '@/hooks/useCrosswalkDetails';
-import { Crosswalk } from '@/types/accident';
+import { Crosswalk } from '@/features/acc_calculate/types';
 
 interface CrosswalkMarkerWithPopupProps {
   crosswalk: Crosswalk; // 기존 Crosswalk 타입

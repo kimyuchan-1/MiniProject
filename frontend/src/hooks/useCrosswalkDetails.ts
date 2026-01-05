@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Crosswalk, AccidentData, haversineMeters } from '@/types/accident';
+import { Crosswalk, AccidentData } from '@/features/acc_calculate/types';
+import { haversineMeters } from '@/features/acc_calculate/utils';
 
 interface UseCrosswalkDetailsProps {
   crosswalk: Crosswalk | null;

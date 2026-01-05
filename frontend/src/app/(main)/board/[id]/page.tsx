@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { FaMapMarkerAlt, FaHeart, FaComment, FaEye, FaArrowLeft } from 'react-icons/fa';
+import { Suggestion, Comment } from '@/features/board/types';
+import { SuggestionStatusLabels, SuggestionTypeLabels, StatusColors } from '@/features/board/constants';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 
 // 지도 컴포넌트
-const LocationViewer = dynamic(() => import('../../../../components/LocationViewer'), {
+const LocationViewer = dynamic(() => import('../../../../components/board/map/LocationViewer'), {
   ssr: false,
   loading: () => (
     <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -16,71 +18,11 @@ const LocationViewer = dynamic(() => import('../../../../components/LocationView
   ),
 });
 
-interface Suggestion {
-  id: number;
-  title: string;
-  content: string;
-  location_lat: number;
-  location_lon: number;
-  address: string;
-  sido: string;
-  sigungu: string;
-  suggestion_type: 'SIGNAL' | 'CROSSWALK' | 'FACILITY';
-  status: 'PENDING' | 'REVIEWING' | 'APPROVED' | 'REJECTED' | 'COMPLETED';
-  priority_score: number;
-  like_count: number;
-  view_count: number;
-  created_at: string;
-  updated_at: string;
-  user: {
-    id: number;
-    name: string;
-  };
-  admin_response?: string;
-  admin_id?: number;
-  processed_at?: string;
-  is_liked?: boolean;
-}
-
-interface Comment {
-  id: number;
-  content: string;
-  created_at: string;
-  user: {
-    id: number;
-    name: string;
-  };
-  parent_id?: number;
-  replies?: Comment[];
-}
-
-const SuggestionTypeLabels = {
-  SIGNAL: '신호등 설치',
-  CROSSWALK: '횡단보도 설치', 
-  FACILITY: '기타 시설'
-};
-
-const SuggestionStatusLabels = {
-  PENDING: '접수',
-  REVIEWING: '검토중',
-  APPROVED: '승인',
-  REJECTED: '반려',
-  COMPLETED: '완료'
-};
-
-const StatusColors = {
-  PENDING: 'bg-gray-100 text-gray-800',
-  REVIEWING: 'bg-blue-100 text-blue-800',
-  APPROVED: 'bg-green-100 text-green-800',
-  REJECTED: 'bg-red-100 text-red-800',
-  COMPLETED: 'bg-purple-100 text-purple-800'
-};
-
 export default function SuggestionDetailPage() {
   const params = useParams();
   const router = useRouter();
   const suggestionId = params.id as string;
-  
+
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,7 +36,7 @@ export default function SuggestionDetailPage() {
       const response = await fetch(`/api/suggestions/${suggestionId}`, {
         credentials: 'include'
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setSuggestion(data);
@@ -130,13 +72,13 @@ export default function SuggestionDetailPage() {
   // 좋아요 토글
   const toggleLike = async () => {
     if (!suggestion) return;
-    
+
     try {
       const response = await fetch(`/api/suggestions/${suggestionId}/like`, {
         method: 'POST',
         credentials: 'include'
       });
-      
+
       if (response.ok) {
         setSuggestion(prev => prev ? {
           ...prev,
@@ -152,9 +94,9 @@ export default function SuggestionDetailPage() {
   // 댓글 작성
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!newComment.trim()) return;
-    
+
     setCommentLoading(true);
     try {
       const response = await fetch(`/api/suggestions/${suggestionId}/comments`, {
@@ -168,7 +110,7 @@ export default function SuggestionDetailPage() {
           parent_id: replyTo
         })
       });
-      
+
       if (response.ok) {
         setNewComment('');
         setReplyTo(null);
@@ -287,11 +229,10 @@ export default function SuggestionDetailPage() {
           <div className="flex items-center justify-between pt-6 border-t">
             <button
               onClick={toggleLike}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                suggestion.is_liked
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${suggestion.is_liked
                   ? 'bg-red-100 text-red-700 hover:bg-red-200'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+                }`}
             >
               <FaHeart className={`w-4 h-4 ${suggestion.is_liked ? 'text-red-600' : ''}`} />
               <span>{suggestion.like_count}</span>
@@ -329,7 +270,7 @@ export default function SuggestionDetailPage() {
           <form onSubmit={handleCommentSubmit} className="mb-6">
             {replyTo && (
               <div className="mb-2 text-sm text-gray-600">
-                답글 작성 중... 
+                답글 작성 중...
                 <button
                   type="button"
                   onClick={() => setReplyTo(null)}
@@ -386,7 +327,7 @@ export default function SuggestionDetailPage() {
                       </button>
                     </div>
                   </div>
-                  
+
                   {/* 답글 */}
                   {comment.replies && comment.replies.length > 0 && (
                     <div className="ml-11 mt-4 space-y-3">

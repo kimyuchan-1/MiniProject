@@ -1,23 +1,48 @@
-import { NextRequest, NextResponse } from "next/server";
-import { backendClient } from "@/lib/backendClient";
-import { forwardSetCookie } from "@/lib/forwardSetCookie";
+import { NextResponse } from "next/server";
+import { jwtVerify } from "jose";
 
-export async function GET(req: NextRequest) {
-  const cookie = req.headers.get("cookie") ?? "";
+function mustGetEnv(name: string) {
+  const v = process.env[name];
+  if (!v) throw new Error(`Missing env: ${name}`);
+  return v;
+}
 
-  const upstream = await backendClient.get("/api/me", {
-    headers: {
-      cookie,
-      Accept: "application/json",
-      "Cache-Control": "no-store",
-      Pragma: "no-cache",
-    },
-    withCredentials: true,
-  });
+export async function GET(req: Request) {
+  const cookieHeader = req.headers.get("cookie") ?? "";
+  const token = cookieHeader
+    .split(";")
+    .map((v) => v.trim())
+    .find((v) => v.startsWith("access_token="))
+    ?.split("=")[1];
 
-  const res = NextResponse.json(upstream.data, { status: upstream.status });
+  if (!token) {
+    return NextResponse.json(
+      { ok: false, message: "Not signed in" },
+      { status: 401 }
+    );
+  }
 
-  forwardSetCookie(res, upstream.headers);
+  try {
+    const secret = new TextEncoder().encode(mustGetEnv("JWT_SECRET"));
+    const { payload } = await jwtVerify(token, secret);
 
-  return res;
+    // payload는 signin에서 넣은 값(sub/email/role/name 등)
+    return NextResponse.json(
+      {
+        ok: true,
+        user: {
+          id: payload.sub ?? null,
+          email: (payload as any).email ?? null,
+          role: (payload as any).role ?? null,
+          name: (payload as any).name ?? null,
+        },
+      },
+      { status: 200 }
+    );
+  } catch {
+    return NextResponse.json(
+      { ok: false, message: "Invalid token" },
+      { status: 401 }
+    );
+  }
 }

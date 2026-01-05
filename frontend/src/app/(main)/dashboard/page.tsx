@@ -1,6 +1,6 @@
 'use client'
 
-import KPICard from '@/components/KPICard';
+import KPICard from '@/components/dashboard/KPICard';
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 
@@ -42,14 +42,12 @@ function normalizeKpiPayload(payload: any): KPIData {
 export default function Dashboard() {
   const [kpiData, setKpiData] = useState<KPIData>(EMPTY_KPI);
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
 
     const fetchData = async () => {
       setLoading(true);
-      setErrorMsg(null);
 
       try {
         const resp = await fetch('/api/dashboard/kpi', {
@@ -72,7 +70,6 @@ export default function Dashboard() {
         console.error('KPI fetch failed:', err);
         if (alive) {
           setKpiData(EMPTY_KPI);
-          setErrorMsg(err?.message ?? 'Failed to load KPI');
         }
       } finally {
         if (alive) setLoading(false);
@@ -108,25 +105,25 @@ export default function Dashboard() {
           <div className="grid grid-cols-4 md:grid-cols-4 gap-4">
             <KPICard
               title="전체 횡단보도"
-              content={kpiData.totalCrosswalks.toLocaleString()}
+              content={loading ? "로딩중..." : kpiData.totalCrosswalks.toLocaleString()}
               caption="개소"
               color="gray"
             />
             <KPICard
               title="신호등 설치율"
-              content={`${kpiData.signalInstallationRate}%`}
+              content={loading ? "로딩중..." : `${kpiData.signalInstallationRate}%`}
               caption="전체 횡단보도 대비"
               color="green"
             />
             <KPICard
               title="안전 지수"
-              content={`${Math.round(kpiData.safetyIndex * 100) / 100}점`}
+              content={loading ? "로딩중..." : `${Math.round(kpiData.safetyIndex * 100) / 100}점`}
               caption="100점 만점"
               color="blue"
             />
             <KPICard
               title="위험 지수"
-              content={`${Math.round(kpiData.riskIndex * 100) / 100}점`}
+              content={loading ? "로딩중..." : `${Math.round(kpiData.riskIndex * 100) / 100}점`}
               caption="100점 만점"
               color="red"
             />

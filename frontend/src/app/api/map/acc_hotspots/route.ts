@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { AccidentData, MapBounds } from "@/types/accident";
+import { AccidentData, MapBounds } from "@/features/acc_calculate/types";
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -28,6 +28,8 @@ export async function GET(req: Request) {
         const { data: accidents, error: accErr } = await supabase
             .from("ACC_Hotspot")
             .select(`
+
+
                 accident_id,
                 district_code,
                 year,
@@ -55,8 +57,6 @@ export async function GET(req: Request) {
             console.log("[Accidents API] No accidents data found");
             return NextResponse.json([]);
         }
-
-        console.log("[Accidents API] Sample accident data:", accidents[0]);
 
         // 데이터 형식 변환 및 좌표 추정
         const formattedAccidents = accidents
@@ -89,7 +89,6 @@ export async function GET(req: Request) {
                     acc.accident_lon <= bound.east;
             });
 
-        console.log(`[Accidents API] Returning ${formattedAccidents.length} accidents`);
         return NextResponse.json(formattedAccidents);
 
     } catch (error) {

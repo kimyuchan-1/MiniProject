@@ -21,13 +21,22 @@ export async function GET(req: Request) {
     .order("year", { ascending: true })
     .order("month", { ascending: true });
 
-  if (region && region.length >= 5) {
-    // bigint 컬럼이라면 LIKE 대신 범위로 처리 (이미 너가 만든 방식)
-    const base = Number(region);
-    const from = base * 100000;
-    const to = base * 100000 + 99999;
+  if (region) {
 
-    q = q.gte("sigungu_code", from).lte("sigungu_code", to);
+    if (region.length === 2) {
+      const base = Number(region);
+      const from = base * 100000000;            
+      const to   = base * 100000000 + 99999999; 
+      q = q.gte("sigungu_code", from).lte("sigungu_code", to);
+      
+    } else {
+      const base = Number(region);
+      const from = base * 100000;
+      const to = base * 100000 + 99999;
+
+      q = q.gte("sigungu_code", from).lte("sigungu_code", to);
+    }
+    
   }
 
   const { data, error } = await q;
@@ -66,9 +75,39 @@ export async function GET(req: Request) {
 
   const yearly = Array.from(byYear.values()).sort((a, b) => a.year - b.year);
 
+   // 연월별 합계
+  const byMonth = new Map<number, any>();
+  for (const r of rows) {
+    const y = Number(r.year);
+    const m = Number(r.month);
+    const cur =
+      byMonth.get(y * 100 + m) ??
+      {
+        year: y,
+        month: m,
+        accident_count: 0,
+        casualty_count: 0,
+        fatality_count: 0,
+        serious_injury_count: 0,
+        minor_injury_count: 0,
+        reported_injury_count: 0,
+      };
+
+    cur.accident_count += Number(r.accident_count ?? 0);
+    cur.casualty_count += Number(r.casualty_count ?? 0);
+    cur.fatality_count += Number(r.fatality_count ?? 0);
+    cur.serious_injury_count += Number(r.serious_injury_count ?? 0);
+    cur.minor_injury_count += Number(r.minor_injury_count ?? 0);
+    cur.reported_injury_count += Number(r.reported_injury_count ?? 0);
+
+    byMonth.set(y * 100 + m, cur);
+  }
+
+  const monthly = Array.from(byMonth.values()).sort((a, b) => (a.year - b.year) || (a.month - b.month));
+
   return NextResponse.json({
     region: region && region.length >= 5 ? region.slice(0, 5) : null,
     yearly,
-    rawMonthly: rows,
+    monthly,
   });
 }

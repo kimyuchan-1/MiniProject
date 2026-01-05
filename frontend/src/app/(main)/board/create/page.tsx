@@ -6,7 +6,7 @@ import { FaMapMarkerAlt, FaSave, FaTimes } from 'react-icons/fa';
 import dynamic from 'next/dynamic';
 
 // 지도 컴포넌트 (위치 선택용)
-const LocationPicker = dynamic(() => import('../../../../components/LocationPicker'), {
+const LocationPicker = dynamic(() => import('../../../../components/board/map/LocationPicker'), {
   ssr: false,
   loading: () => (
     <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center">

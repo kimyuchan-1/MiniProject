@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Crosswalk } from "@/types/accident";
+import { Crosswalk } from "@/features/acc_calculate/types";
 
 type FeatureItem = {
     key: string;
