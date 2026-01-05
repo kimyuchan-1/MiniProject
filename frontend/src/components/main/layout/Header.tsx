@@ -1,4 +1,3 @@
-// components/Header.tsx  ✅ Server Component
 import Link from "next/link";
 import NavTabs from "./NavTabs";
 import AccountMenu from "./AccountMenu";

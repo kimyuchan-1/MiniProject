@@ -46,8 +46,8 @@ export default function AccountMenu({ user }: { user: AuthUser }) {
   const onLogout = async () => {
     setOpen(false);
     await fetch("/api/signout", { method: "POST", credentials: "include" });
-    router.refresh();        // ✅ Server Header가 즉시 비로그인으로 바뀜
-    router.push("/");        // ✅ 필요하면 홈으로(원하면 제거)
+    router.replace("/");
+    router.refresh();        
   };
 
   const displayName = user.name ?? "사용자";

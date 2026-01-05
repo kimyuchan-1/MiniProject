@@ -1,9 +1,9 @@
 import Link from "next/link";
 
 const items = [
-  { href: "/settings/profile", label: "프로필" },
-  { href: "/settings/security", label: "보안" },
-  { href: "/settings/activity", label: "활동 내역" },
+  { href: "/account/profile", label: "프로필" },
+  { href: "/account/security", label: "보안" },
+  { href: "/account/activity", label: "활동 내역" },
 ];
 
 export default function AccountNav() {
