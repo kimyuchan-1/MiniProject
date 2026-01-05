@@ -44,6 +44,13 @@ public class User {
     @Enumerated(EnumType.STRING)
     private Role role;
     
+    @Enumerated(EnumType.STRING)
+    private AuthProvider provider;
+    
+    @Column(name = "provider_id")
+    private String providerId;
+    
+    @Column(name = "refresh_token")
     private String refreshToken;
     
     @Builder.Default

@@ -1,8 +1,11 @@
 package com.kdt03.ped_accident.api.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -16,8 +19,16 @@ import com.kdt03.ped_accident.domain.crosswalk.entity.Crosswalk;
 import com.kdt03.ped_accident.domain.signal.entity.TrafficSignal;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/dashboard")
 public class DashboardController {
+	
+	 @GetMapping("/info")
+	    public Map<String, Object> getInfo(@AuthenticationPrincipal UserDetails userDetails) {
+	        return Map.of(
+	                "email", userDetails.getUsername(),
+	                "authorities", userDetails.getAuthorities()
+	        );
+	    }
     
     @GetMapping("/dashboard/stats")
     public ResponseEntity<DashboardStats> getDashboardStats(

@@ -31,6 +31,7 @@
 - Supabase PostgreSQL Connector
 - Spring Web (REST API)
 - Spring Security
+- Spring Security OAuth2 Client
 - JJWT (JWT Library)
 - Lombok
 - Jackson (JSON 처리)
@@ -234,6 +235,12 @@ public class User {
     @Enumerated(EnumType.STRING)
     private Role role;
     
+    @Enumerated(EnumType.STRING)
+    private AuthProvider provider;
+    
+    @Column(name = "provider_id")
+    private String providerId;
+    
     @Column(name = "refresh_token")
     private String refreshToken;
     
@@ -275,6 +282,14 @@ public enum Role {
     
     private final String key;
     private final String title;
+}
+
+@Getter
+public enum AuthProvider {
+    LOCAL,
+    GOOGLE,
+    NAVER,
+    KAKAO
 }
 ```
 
@@ -561,16 +576,20 @@ CREATE TABLE suggestions (
 CREATE TABLE users (
     id BIGSERIAL PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,                -- 이메일 (로그인 ID)
-    password VARCHAR(255) NOT NULL,                    -- 암호화된 비밀번호
+    password VARCHAR(255),                             -- 암호화된 비밀번호 (OAuth2 사용자는 null)
     name VARCHAR(100),                                 -- 사용자 이름
     picture VARCHAR(500),                              -- 프로필 이미지 URL
-    role VARCHAR(20) DEFAULT 'USER',                   -- 사용자 역할 (USER, ADMIN)
-    refresh_token TEXT,                                -- JWT 리프레시 토큰
+    role VARCHAR(20) NOT NULL DEFAULT 'USER',          -- 사용자 역할 (USER, ADMIN)
+    provider VARCHAR(20),                              -- 인증 제공자 (LOCAL, GOOGLE, NAVER)
+    provider_id VARCHAR(255),                          -- 제공자 ID
+    refresh_token TEXT,                                -- JWT 리프레시 토큰 private final User user;
+    
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     INDEX idx_email (email),
-    INDEX idx_role (role)
+    INDEX idx_role (role),
+    UNIQUE (provider, provider_id)
 );
 ```
 
@@ -1458,6 +1477,19 @@ jwt.refresh-expiration=86400000
 
 # CORS 설정
 cors.allowed-origins=${CORS_ORIGINS:http://localhost:3000}
+
+# OAuth2 설정
+spring.security.oauth2.client.registration.google.client-id=${GOOGLE_CLIENT_ID}
+spring.security.oauth2.client.registration.google.client-secret=${GOOGLE_CLIENT_SECRET}
+spring.security.oauth2.client.registration.google.scope=profile,email
+
+spring.security.oauth2.client.registration.naver.client-id=${NAVER_CLIENT_ID}
+spring.security.oauth2.client.registration.naver.client-secret=${NAVER_CLIENT_SECRET}
+spring.security.oauth2.client.registration.naver.client-authentication-method=post
+spring.security.oauth2.client.registration.naver.authorization-grant-type=authorization_code
+spring.security.oauth2.client.registration.naver.redirect-uri={baseUrl}/{action}/oauth2/code/{registrationId}
+spring.security.oauth2.client.registration.naver.scope=name,email,profile_image
+spring.security.oauth2.client.registration.naver.client-name=Naver
 
 logging.level.org.springframework.security=DEBUG
 logging.level.com.pedestriansafety=DEBUG

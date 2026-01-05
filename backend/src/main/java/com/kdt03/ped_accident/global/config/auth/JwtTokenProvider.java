@@ -2,6 +2,7 @@ package com.kdt03.ped_accident.global.config.auth;
 
 import java.security.Key;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Date;
 import java.util.stream.Collectors;
@@ -19,68 +20,77 @@ import lombok.RequiredArgsConstructor;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 
 @Component
 @RequiredArgsConstructor
 public class JwtTokenProvider {
 
-    @Value("${jwt.secret}")
-    private String secretKey;
+	@Value("${jwt.secret}")
+	private String secretKey;
 
-    @Value("${jwt.expiration}")
-    private long validityInMilliseconds;
+	@Value("${jwt.expiration}")
+	private long validityInMilliseconds;
 
-    private Key key;
+	@Value("${jwt.refresh-expiration}")
+	private long refreshValidityInMilliseconds;
 
-    @PostConstruct
-    protected void init() {
-        byte[] keyBytes = Keys.secretKeyFor(io.jsonwebtoken.SignatureAlgorithm.HS256).getEncoded();
-        this.key = Keys.hmacShaKeyFor(keyBytes);
-    }
+	private Key key;
 
-    public String createToken(Authentication authentication) {
-        String authorities = authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.joining(","));
+	@PostConstruct
+	protected void init() {
+		byte[] keyBytes = Base64.getDecoder().decode(secretKey);
+		System.out.println("JWT key length (bytes): " + keyBytes.length);
+		this.key = Keys.hmacShaKeyFor(keyBytes);
+	}
 
-        long now = System.currentTimeMillis();
-        Date validity = new Date(now + validityInMilliseconds);
+	public String createAccessToken(Authentication authentication) {
+		String authorities = authentication.getAuthorities().stream().map(GrantedAuthority::getAuthority)
+				.collect(Collectors.joining(","));
 
-        return Jwts.builder()
-                .setSubject(authentication.getName())
-                .claim("auth", authorities)
-                .setIssuedAt(new Date(now))
-                .setExpiration(validity)
-                .signWith(key, SignatureAlgorithm.HS512)
-                .compact();
-    }
+		long now = System.currentTimeMillis();
+		Date validity = new Date(now + validityInMilliseconds);
 
-    public Authentication getAuthentication(String token) {
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+		return Jwts.builder().setSubject(authentication.getName()).claim("auth", authorities).setIssuedAt(new Date(now))
+				.setExpiration(validity).signWith(key, SignatureAlgorithm.HS512).compact();
+	}
 
-        Collection<? extends GrantedAuthority> authorities =
-                Arrays.stream(claims.get("auth").toString().split(","))
-                        .map(SimpleGrantedAuthority::new)
-                        .collect(Collectors.toList());
+	public Authentication getAuthentication(String token) {
+		Claims claims = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
 
-        var principal = new org.springframework.security.core.userdetails.User(
-                claims.getSubject(), "", authorities);
+		Collection<? extends GrantedAuthority> authorities = Arrays.stream(claims.get("auth").toString().split(","))
+				.map(SimpleGrantedAuthority::new).collect(Collectors.toList());
 
-        return new UsernamePasswordAuthenticationToken(principal, token, authorities);
-    }
+		var principal = new org.springframework.security.core.userdetails.User(claims.getSubject(), "", authorities);
 
-    public boolean validateToken(String token) {
-        try {
-            Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
-    }
+		return new UsernamePasswordAuthenticationToken(principal, token, authorities);
+	}
+
+	public boolean validateToken(String token) {
+		try {
+			Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
+			return true;
+		} catch (Exception e) {
+			return false;
+		}
+	}
+
+	public String createRefreshToken(Authentication authentication) {
+	    String authorities = authentication.getAuthorities().stream()
+	            .map(GrantedAuthority::getAuthority)
+	            .collect(Collectors.joining(","));
+
+	    long now = System.currentTimeMillis();
+	    Date validity = new Date(now + refreshValidityInMilliseconds);
+
+	    return Jwts.builder()
+	            .setSubject(authentication.getName())
+	            .claim("auth", authorities) 
+	            .setIssuedAt(new Date(now))
+	            .setExpiration(validity)
+	            .signWith(key, SignatureAlgorithm.HS512)
+	            .compact();
+	}
+
+
 }

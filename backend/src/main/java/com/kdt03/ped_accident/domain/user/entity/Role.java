@@ -1,5 +1,7 @@
 package com.kdt03.ped_accident.domain.user.entity;
 
+import org.springframework.security.core.GrantedAuthority;
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -11,4 +13,8 @@ public enum Role {
     
     private final String key;
     private final String title;
+    public GrantedAuthority toAuthority() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }
