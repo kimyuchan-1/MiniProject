@@ -915,11 +915,15 @@ public double calculateTotalScore(double facilityScore, double riskScore) {
 @Configuration
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
+@RequiredArgsConstructor
 public class SecurityConfig {
     
     private final JwtTokenProvider jwtTokenProvider;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+    private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
     
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -933,12 +937,19 @@ public class SecurityConfig {
                 .accessDeniedHandler(jwtAccessDeniedHandler)
             )
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/api/public/**", "/api/auth/**").permitAll()
+                .requestMatchers("/api/public/**", "/api/auth/**", "/oauth2/**", "/login/**").permitAll()
                 .requestMatchers("/api/dashboard/**").authenticated()
                 .requestMatchers("/api/map/**").authenticated()
                 .requestMatchers("/api/analysis/**").authenticated()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
+            )
+            .oauth2Login(oauth2 -> oauth2
+                .userInfoEndpoint(userInfo -> userInfo
+                    .userService(customOAuth2UserService)
+                )
+                .successHandler(oAuth2AuthenticationSuccessHandler)
+                .failureHandler(oAuth2AuthenticationFailureHandler)
             )
             .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class)
             .cors(cors -> cors.configurationSource(corsConfigurationSource()));
@@ -1184,10 +1195,19 @@ public class CustomUserDetailsService implements UserDetailsService {
 }
 
 @Getter
-@RequiredArgsConstructor
-public class CustomUserPrincipal implements UserDetails {
+public class CustomUserPrincipal implements UserDetails, OAuth2User {
     
     private final User user;
+    private Map<String, Object> attributes;
+
+    public CustomUserPrincipal(User user) {
+        this.user = user;
+    }
+
+    public CustomUserPrincipal(User user, Map<String, Object> attributes) {
+        this.user = user;
+        this.attributes = attributes;
+    }
     
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -1222,6 +1242,16 @@ public class CustomUserPrincipal implements UserDetails {
     @Override
     public boolean isEnabled() {
         return user.isEnabled();
+    }
+
+    @Override
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    @Override
+    public String getName() {
+        return user.getEmail();
     }
 }
 ```
