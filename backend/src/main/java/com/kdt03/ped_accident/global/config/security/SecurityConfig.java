@@ -1,4 +1,4 @@
-package com.kdt03.ped_accident.global.config;
+package com.kdt03.ped_accident.global.config.security;
 
 import java.util.Arrays;
 
@@ -63,11 +63,6 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()));
 
         return http.build();
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
     }
 
     @Bean

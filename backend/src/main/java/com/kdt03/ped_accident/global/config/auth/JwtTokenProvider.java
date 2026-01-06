@@ -40,7 +40,6 @@ public class JwtTokenProvider {
 	@PostConstruct
 	protected void init() {
 		byte[] keyBytes = Base64.getDecoder().decode(secretKey);
-		System.out.println("JWT key length (bytes): " + keyBytes.length);
 		this.key = Keys.hmacShaKeyFor(keyBytes);
 	}
 
