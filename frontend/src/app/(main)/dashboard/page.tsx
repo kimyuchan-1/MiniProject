@@ -87,20 +87,17 @@ export default function Dashboard() {
     <div className="h-screen overflow-hidden bg-gray-50">
       <main className="max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8 py-8">
         {/* 헤더 */}
-        <div className="mb-8">
+        <div className="mb-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">보행자 교통안전 대시보드</h1>
-              <p className="text-gray-600 mt-1">보행자 사고 데이터 기반 안전 현황 분석</p>
-            </div>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+              횡단보도 신호등 설치 현황
+            </h2>
           </div>
         </div>
 
         {/* KPI 대시보드 */}
         <div className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            횡단보도 신호등 설치 현황
-          </h2>
+
 
           <div className="grid grid-cols-4 md:grid-cols-4 gap-4">
             <KPICard
@@ -131,9 +128,9 @@ export default function Dashboard() {
         </div>
 
         <div className="flex-1 min-h-0">
-            <div className="bg-white rounded-lg shadow-sm border h-125 relative overflow-hidden">
-              <MapView />
-            </div>
+          <div className="bg-white rounded-lg shadow-sm border h-140 relative overflow-hidden">
+            <MapView />
+          </div>
         </div>
       </main>
     </div>
