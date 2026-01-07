@@ -67,29 +67,58 @@ export function CrosswalkFeatureIcons({ crosswalk }: { crosswalk: Crosswalk }) {
     const features = getCrosswalkFeatures(crosswalk);
 
     return (
-        <div className="flex flex-wrap justify-center gap-2">
-            {features.map((f) => (
-                <div
-                    key={f.key}
-                    title={`${f.name} - ${f.enabled ? "있음" : "없음"}\n${f.desc}`}
-                    aria-label={`${f.name} - ${f.enabled ? "있음" : "없음"}. ${f.desc}`}
-                    className={[
-                        "flex justify-center items-center p-1.5 rounded-md border",
-                        "transition-colors",
-                        f.enabled
-                            ? "bg-green-50 border-green-200"
-                            : "bg-gray-50 border-gray-200",
-                    ].join(" ")}
-                >
-                    <Image
-                        src={f.src}
-                        alt={f.name}
-                        width={20}
-                        height={20}
-                        className={f.enabled ? "opacity-90" : "opacity-40 grayscale"}
-                    />
-                </div>
-            ))}
-        </div>
-    );
+        <div
+      className="grid gap-2 sm:gap-3"
+      style={{
+        gridTemplateColumns: "repeat(auto-fit, minmax(56px, 1fr))",
+      }}
+    >
+      {features.map((f) => {
+        const title = `${f.name} - ${f.enabled ? "있음" : "없음"}\n${f.desc}`;
+        const aria = `${f.name} - ${f.enabled ? "있음" : "없음"}. ${f.desc}`;
+
+        return (
+          <div
+            key={f.key}
+            title={title}
+            aria-label={aria}
+            className={[
+              "flex flex-col items-center justify-center rounded-lg border",
+              "transition-colors",
+              "py-2 sm:py-3",
+              f.enabled ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200",
+            ].join(" ")}
+          >
+            <div
+              className={[
+                "flex items-center justify-center rounded-md border",
+                f.enabled ? "bg-green-100 border-green-200" : "bg-white border-gray-200",
+              ].join(" ")}
+              style={{
+                width: "clamp(34px, 4vw, 46px)",
+                height: "clamp(34px, 4vw, 46px)",
+                padding: "clamp(6px, 0.8vw, 10px)",
+              }}
+            >
+              <Image
+                src={f.src}
+                alt={f.name}
+                width={64}
+                height={64}
+                className={f.enabled ? "opacity-90" : "opacity-40 grayscale"}
+                style={{
+                  width: "clamp(18px, 2.2vw, 26px)",
+                  height: "clamp(18px, 2.2vw, 26px)",
+                }}
+              />
+            </div>
+
+            <div className="mt-1 text-[11px] sm:text-xs font-medium text-gray-700">
+              {f.name}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 }

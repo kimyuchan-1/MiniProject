@@ -2,30 +2,13 @@
 
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import { CrosswalkMarkerWithPopup } from "@/components/dashboard/map/CrosswalkMarkerWithPopup";
 import MapFilter, { type MapFilterValue } from "./MapFilter";
-import { useCrosswalkDetails, convertToEnhancedCrosswalk } from '@/hooks/useCrosswalkDetails';
-import { SelectedCrosswalkPanel } from '@/components/dashboard/map/SelectedCrosswalkPanel';
-
-
-interface Crosswalk {
-    cw_uid: string;
-    address: string;
-    crosswalk_lat: number;
-    crosswalk_lon: number;
-    hasSignal: boolean;
-    isHighland: boolean;
-    hasPedButton: boolean;
-    hasPedSound: boolean;
-    hasBump: boolean;
-    hasBrailleBlock: boolean;
-    hasSpotlight: boolean;
-    signalSource?: 'direct' | 'mapped' | 'none'; // 신호등 정보 출처
-}
+import type { Crosswalk } from "@/features/acc_calculate/types";
 
 interface Acc {
     accident_id: string,
@@ -39,6 +22,43 @@ interface Acc {
     reported_injury_count: number,
     accident_lat: number,
     accident_lon: number,
+}
+
+type MoveTarget = { lat: number; lon: number; zoom?: number } | null;
+
+export type MapViewProps = {
+    selectedCrosswalkId: string | null;
+    onSelectCrosswalk: (cw: Crosswalk | null) => void;
+    moveTo?: MoveTarget;
+};
+
+function MapFlyTo({ target }: { target?: MoveTarget }) {
+    const map = useMap();
+
+    useEffect(() => {
+        if (!target) return;
+
+        const lat = Number(target.lat);
+        const lon = Number(target.lon);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+
+        // ✅ target.zoom이 없으면 “현재 줌”이 아니라 “기본 줌”으로 내려서 이동이 확실히 보이게
+        const z = Number.isFinite(target.zoom as number) ? (target.zoom as number) : 12;
+
+        // 디버깅: 실제 호출 확인
+        console.log("[MapFlyTo] flyTo:", { lat, lon, z });
+
+        // ✅ react-leaflet 렌더 타이밍 이슈 예방: 다음 프레임에 실행
+        requestAnimationFrame(() => {
+            try {
+                map.flyTo([lat, lon], z, { duration: 0.8 });
+            } catch {
+                map.setView([lat, lon], z, { animate: true });
+            }
+        });
+    }, [map, target?.lat, target?.lon, target?.zoom]);
+
+    return null;
 }
 
 function validateCrosswalkData(data: unknown): data is Crosswalk[] {
@@ -192,42 +212,6 @@ const iconNoneSelected = L.divIcon({
     popupAnchor: [0, -10],
 });
 
-const iconAccTriangleSelected = L.divIcon({
-    className: "",
-    html: `
-    <div style="position: relative; width: 26px; height: 26px;">
-      <div style="
-        position:absolute; left:50%; top:50%;
-        transform: translate(-50%,-50%);
-        width:0;height:0;
-        border-left: 13px solid transparent;
-        border-right: 13px solid transparent;
-        border-bottom: 24px solid #0ea5e9;
-        filter: drop-shadow(0 2px 10px rgba(0,0,0,.35));
-      "></div>
-      <div style="
-        position:absolute; left:50%; top:50%;
-        transform: translate(-50%,-50%) translateY(2px);
-        width:0;height:0;
-        border-left: 10px solid transparent;
-        border-right: 10px solid transparent;
-        border-bottom: 18px solid #ef4444;
-      "></div>
-      <div style="
-        position:absolute;
-        left:50%; top:50%;
-        transform: translate(-50%,-50%) translateY(4px);
-        width:10px; height:2px;
-        background:white;
-        border-radius:1px;
-      "></div>
-    </div>
-  `,
-    iconSize: [26, 26],
-    iconAnchor: [13, 2],
-    popupAnchor: [0, -10],
-});
-
 function BoundsFetcherAcc({ onData, onLoading }: { onData: (rows: Acc[]) => void; onLoading: (v: boolean) => void }) {
     useMapEvents({
         moveend: async (e) => {
@@ -307,7 +291,9 @@ function MapClickDeselect({ onDeselect }: { onDeselect: () => void }) {
     return null;
 }
 
-export default function MapView() {
+export default function MapView(props: MapViewProps) {
+    const { selectedCrosswalkId, onSelectCrosswalk, moveTo } = props;
+
     const [rows, setRows] = useState<Crosswalk[]>([]);
     const [accRows, setAccRows] = useState<Acc[]>([]);
     const [loadingCw, setLoadingCw] = useState(false);
@@ -317,12 +303,6 @@ export default function MapView() {
         signalNone: true,
         accHotspot: true,
     });
-    const [selected, setSelected] = useState<
-        | { kind: 'cw'; id: string }
-        | { kind: 'acc'; id: string }
-        | null
-    >(null);
-
 
     const loading = loadingCw || loadingAcc;
 
@@ -344,25 +324,9 @@ export default function MapView() {
         return filter.accHotspot ? accRows : [];
     }, [accRows, filter.accHotspot]);
 
-    const selectedCrosswalk = useMemo(() => {
-        if (selected?.kind !== 'cw') return null;
-        return rows.find(cw => cw.cw_uid === selected.id) ?? null;
-    }, [selected, rows]);
-
-    const enhancedSelected = useMemo(() => {
-        return selectedCrosswalk ? convertToEnhancedCrosswalk(selectedCrosswalk) : null;
-    }, [selectedCrosswalk]);
-
-    const {
-        data: selectedDetails,
-        nearbyAccidents,
-        loading: loadingDetails,
-        error: detailsError,
-    } = useCrosswalkDetails({
-        crosswalk: enhancedSelected,
-        enabled: !!enhancedSelected,
-    });
-
+    const deselectAll = () => {
+        onSelectCrosswalk(null);
+    };
 
     return (
         <section className="relative w-full h-full">
@@ -430,38 +394,27 @@ export default function MapView() {
                 }
             `}</style>
             <div className="relative h-full w-full overflow-hidden rounded-lg bg-white shadow">
-
-
-
                 <MapContainer center={center} zoom={20} className="h-full w-full">
-                    {/* 안정적인 OpenStreetMap 타일 + CSS 필터로 모노톤 처리 */}
                     <TileLayer
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
-                    <MapClickDeselect onDeselect={() => setSelected(null)} />
+                    <MapFlyTo target={moveTo ?? null} />
+
+                    <MapClickDeselect onDeselect={deselectAll} />
                     <BoundsFetcher onData={setRows} onLoading={setLoadingCw} />
                     {filter.accHotspot && <BoundsFetcherAcc onData={setAccRows} onLoading={setLoadingAcc} />}
                     {filteredAcc.map((a) => {
-                        const isSelected = selected?.kind === 'acc' && selected.id === a.accident_id;
                         return (
                             <Marker
                                 key={a.accident_id}
                                 position={[a.accident_lat, a.accident_lon]}
-                                icon={isSelected ? iconAccTriangleSelected : iconAccTriangle}
+                                icon={iconAccTriangle}
                                 eventHandlers={{
                                     click: (e) => {
                                         e.originalEvent?.stopPropagation?.();
-
-                                        setSelected((prev) => {
-                                            const same = prev?.kind === 'acc' && prev.id === a.accident_id;
-                                            const next = same ? null : { kind: 'acc' as const, id: a.accident_id };
-
-                                            // 선택으로 바뀌는 경우에만 이동
-                                            if (!same) onHotspotClick(a);
-
-                                            return next;
-                                        });
+                                        onSelectCrosswalk(null);
+                                        onHotspotClick(a);
                                     },
                                 }}
                             />
@@ -479,7 +432,7 @@ export default function MapView() {
                     >
 
                         {filteredCrosswalks.map((cw) => {
-                            const isSelected = selected?.kind === 'cw' && selected.id === cw.cw_uid;
+                            const isSelected = selectedCrosswalkId === cw.cw_uid;
 
                             const baseIcon = cw.hasSignal ? iconHas : iconNone;
                             const selectedIcon = cw.hasSignal ? iconHasSelected : iconNoneSelected;
@@ -490,12 +443,8 @@ export default function MapView() {
                                     crosswalk={cw}
                                     icon={isSelected ? selectedIcon : baseIcon}
                                     onMarkerClick={() => {
-                                        setSelected((prev) => {
-                                            const same = prev?.kind === 'cw' && prev.id === cw.cw_uid;
-                                            return same ? null : { kind: 'cw', id: cw.cw_uid };
-                                        });
+                                        onSelectCrosswalk(isSelected ? null : cw);
                                     }}
-
                                 />
                             );
                         })}
@@ -513,13 +462,6 @@ export default function MapView() {
                     불러오는 중…
                 </div>
                 <MapFilter value={filter} onChange={setFilter} />
-                <SelectedCrosswalkPanel
-                    selected={enhancedSelected}                 // ✅ 횡단보도 객체
-                    nearbyAccidents={nearbyAccidents ?? []}     // ✅ hook에서 온 값
-                    loading={loadingDetails}
-                    error={detailsError}
-                    onClose={() => setSelected(null)}
-                />
             </div>
         </section>
     );

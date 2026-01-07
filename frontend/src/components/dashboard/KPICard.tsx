@@ -14,8 +14,8 @@ const textColor: Record<string, string> = {
 
 export default function KPICard({ title, content, caption, color}: KPICardProps) {
     return (
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-            <div className="text-md font-medium text-gray-500 mb-2">
+        <div className="bg-white p-6 rounded-lg shadow-sm border min-w-0">
+            <div className="text-md font-medium text-gray-500 mb-8">
                 {title}
             </div>
             <div className="text-2xl font-bold ">{content}</div>

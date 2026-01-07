@@ -1,8 +1,7 @@
 'use client';
 
-import { Marker, Popup } from 'react-leaflet';
+import { Marker } from 'react-leaflet';
 import L from 'leaflet';
-import { CrosswalkPopup } from './CrosswalkPopup';
 import type { Crosswalk } from '@/features/acc_calculate/types';
 
 interface CrosswalkMarkerWithPopupProps {
@@ -62,13 +61,10 @@ export function CrosswalkMarkerWithPopup({ crosswalk, onMarkerClick, icon }: Cro
       eventHandlers={{
         click: (e) => {
           e.originalEvent?.stopPropagation?.();
-          onMarkerClick?.(crosswalk); // ✅ 선택 상태는 MapView가 관리
+          onMarkerClick?.(crosswalk); 
         },
       }}
     >
-      <Popup maxWidth={400} autoPan={false} keepInView className="enhanced-crosswalk-popup-container">
-        <CrosswalkPopup crosswalk={crosswalk} /> {/* ✅ 주소-only 팝업 */}
-      </Popup>
     </Marker>
   );
 }
