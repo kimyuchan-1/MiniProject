@@ -14,7 +14,18 @@ public enum Role {
         this.title = title;
     }
 
+    // Spring Security용 권한 변환
     public GrantedAuthority toAuthority() {
         return () -> key;
+    }
+
+    // key 반환
+    public String getKey() {
+        return key;
+    }
+
+    // title 반환 (선택적)
+    public String getTitle() {
+        return title;
     }
 }

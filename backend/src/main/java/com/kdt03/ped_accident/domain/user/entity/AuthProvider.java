@@ -1,6 +1,7 @@
 package com.kdt03.ped_accident.domain.user.entity;
 
 public enum AuthProvider {
+	LOCAL("local"),
     GOOGLE("google"),
     NAVER("naver"),
     KAKAO("kakao");

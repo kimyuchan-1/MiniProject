@@ -1,95 +1,110 @@
 package com.kdt03.ped_accident.global.config.auth;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
-import java.util.Arrays;
 import java.util.Base64;
-import java.util.Collection;
 import java.util.Date;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
+import com.kdt03.ped_accident.domain.user.service.CustomUserDetailsService;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
 public class JwtTokenProvider {
 
-	@Value("${jwt.secret}")
-	private String secretKey;
+    @Value("${jwt.secret}")
+    private String jwtSecret;
 
-	@Value("${jwt.expiration}")
-	private long validityInMilliseconds;
+    @Value("${jwt.expiration}")
+    private int jwtExpirationInMs;
 
-	@Value("${jwt.refresh-expiration}")
-	private long refreshValidityInMilliseconds;
+    @Value("${jwt.refresh-expiration}")
+    private int refreshExpirationInMs;
 
-	private Key key;
+    private final CustomUserDetailsService userDetailsService;
 
-	@PostConstruct
-	protected void init() {
-		byte[] keyBytes = Base64.getDecoder().decode(secretKey);
-		this.key = Keys.hmacShaKeyFor(keyBytes);
-	}
+    private Key key;
 
-	public String createAccessToken(Authentication authentication) {
-		String authorities = authentication.getAuthorities().stream().map(GrantedAuthority::getAuthority)
-				.collect(Collectors.joining(","));
+    @PostConstruct
+    protected void init() {
+        this.key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+    }
 
-		long now = System.currentTimeMillis();
-		Date validity = new Date(now + validityInMilliseconds);
+    public String createAccessToken(String email, String role) {
+        Claims claims = Jwts.claims().setSubject(email);
+        claims.put("role", role);
 
-		return Jwts.builder().setSubject(authentication.getName()).claim("auth", authorities).setIssuedAt(new Date(now))
-				.setExpiration(validity).signWith(key, SignatureAlgorithm.HS512).compact();
-	}
+        Date now = new Date();
+        Date validity = new Date(now.getTime() + jwtExpirationInMs);
 
-	public Authentication getAuthentication(String token) {
-		Claims claims = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
+        return Jwts.builder()
+                .setClaims(claims)
+                .setIssuedAt(now)
+                .setExpiration(validity)
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
 
-		Collection<? extends GrantedAuthority> authorities = Arrays.stream(claims.get("auth").toString().split(","))
-				.map(SimpleGrantedAuthority::new).collect(Collectors.toList());
+    public String createRefreshToken(String email) {
+        Claims claims = Jwts.claims().setSubject(email);
 
-		var principal = new org.springframework.security.core.userdetails.User(claims.getSubject(), "", authorities);
+        Date now = new Date();
+        Date validity = new Date(now.getTime() + refreshExpirationInMs);
 
-		return new UsernamePasswordAuthenticationToken(principal, token, authorities);
-	}
+        return Jwts.builder()
+                .setClaims(claims)
+                .setIssuedAt(now)
+                .setExpiration(validity)
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
 
-	public boolean validateToken(String token) {
-		try {
-			Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
-			return true;
-		} catch (Exception e) {
-			return false;
-		}
-	}
+    public Authentication getAuthentication(String token) {
+        UserDetails userDetails = userDetailsService.loadUserByUsername(getUsername(token));
+        return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
+    }
 
-	public String createRefreshToken(Authentication authentication) {
-	    String authorities = authentication.getAuthorities().stream()
-	            .map(GrantedAuthority::getAuthority)
-	            .collect(Collectors.joining(","));
+    public String getUsername(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject();
+    }
 
-	    long now = System.currentTimeMillis();
-	    Date validity = new Date(now + refreshValidityInMilliseconds);
+    public boolean validateToken(String token) {
+        try {
+            Jws<Claims> claims = Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token);
+            return !claims.getBody().getExpiration().before(new Date());
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
 
-	    return Jwts.builder()
-	            .setSubject(authentication.getName())
-	            .claim("auth", authorities) 
-	            .setIssuedAt(new Date(now))
-	            .setExpiration(validity)
-	            .signWith(key, SignatureAlgorithm.HS512)
-	            .compact();
-	}
-
-
+    public String resolveToken(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
+        }
+        return null;
+    }
 }

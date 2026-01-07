@@ -1401,7 +1401,6 @@ public class UserSessionDto {
                 .email(user.getEmail())
                 .name(user.getName())
                 .role(user.getRole().getKey())
-                .picture(user.getPicture())
                 .build();
     }
 }
@@ -1427,14 +1426,6 @@ public class LoginRequest {
     
     @NotBlank(message = "비밀번호는 필수입니다")
     private String password;
-}
-
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class RefreshTokenRequest {
-    @NotBlank(message = "리프레시 토큰은 필수입니다")
-    private String refreshToken;
 }
 
 @Data

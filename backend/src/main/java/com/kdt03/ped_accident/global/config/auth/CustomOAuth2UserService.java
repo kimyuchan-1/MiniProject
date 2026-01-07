@@ -11,7 +11,7 @@ import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
-import com.kdt03.ped_accident.api.dto.request.SignUpRequest;
+import com.kdt03.ped_accident.api.dto.request.RegisterRequest;
 import com.kdt03.ped_accident.domain.user.entity.User;
 import com.kdt03.ped_accident.domain.user.service.UserService;
 import com.kdt03.ped_accident.global.exception.custom.DataNotFoundException;
@@ -35,7 +35,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 		try {
 			user = userService.findByEmail(email);
 		} catch (DataNotFoundException e) {
-			user = userService.signUp(new SignUpRequest(email, UUID.randomUUID().toString(), name));
+			user = userService.signUp(new RegisterRequest(email, UUID.randomUUID().toString(), name));
 		}
 
 		return new DefaultOAuth2User(List.of(new SimpleGrantedAuthority(user.getRole().name())),

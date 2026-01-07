@@ -1,24 +1,31 @@
 package com.kdt03.ped_accident.global.config.auth;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+
 import org.springframework.security.core.AuthenticationException;
+
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kdt03.ped_accident.api.dto.response.ApiResponse;
 
-/**
- * 유효한 자격증명을 제공하지 않고 접근하려 할 때 401 Unauthorized 에러를 리턴하는 클래스
- */
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 @Component
 public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
-
+    
     @Override
-    public void commence(HttpServletRequest request,
-                         HttpServletResponse response,
-                         AuthenticationException authException) throws IOException {
-        // 클라이언트에게 401 에러를 보냅니다.
-        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
+    public void commence(HttpServletRequest request, HttpServletResponse response,
+                        AuthenticationException authException) throws IOException {
+        
+        response.setContentType("application/json;charset=UTF-8");
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        
+        ObjectMapper mapper = new ObjectMapper();
+        response.getWriter().write(mapper.writeValueAsString(
+                ApiResponse.error("인증이 필요합니다: " + authException.getMessage())
+        ));
     }
 }

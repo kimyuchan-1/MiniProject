@@ -5,13 +5,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kdt03.ped_accident.api.dto.request.SignUpRequest;
+import com.kdt03.ped_accident.api.dto.request.RegisterRequest;
 import com.kdt03.ped_accident.domain.user.entity.Role;
 import com.kdt03.ped_accident.domain.user.entity.User;
 import com.kdt03.ped_accident.domain.user.repository.UserRepository;
 import com.kdt03.ped_accident.global.exception.custom.DataNotFoundException;
 import com.kdt03.ped_accident.global.exception.custom.DuplicateEmailException;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -23,7 +24,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
-    public User signUp(SignUpRequest request) {
+    public User signUp(RegisterRequest request) {
         if (existsByEmail(request.getEmail())) {
             throw new DuplicateEmailException("이미 존재하는 이메일입니다.");
         }
