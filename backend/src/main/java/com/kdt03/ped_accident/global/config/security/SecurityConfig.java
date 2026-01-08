@@ -55,7 +55,7 @@ public class SecurityConfig {
                 .accessDeniedHandler(jwtAccessDeniedHandler)
             )
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/api/public/**", "/api/auth/**", "/oauth2/**", "/login/**").permitAll()
+                .requestMatchers("/api/public/**", "/api/auth/**", "/oauth2/**", "/login/**", "/").permitAll()
                 .requestMatchers("/api/dashboard/**").authenticated()
                 .requestMatchers("/api/map/**").authenticated()
                 .requestMatchers("/api/analysis/**").authenticated()
@@ -74,12 +74,6 @@ public class SecurityConfig {
         
         return http.build();
     }
-    
-    @Bean("securityPasswordEncoder")
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
     
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {

@@ -45,16 +45,13 @@ public class Suggestion {
 	@Column(columnDefinition = "TEXT")
 	private String content;
 
-	@Column(name = "location_lat", precision = 10, scale = 8)
-	private BigDecimal locationLat;
+	@Column(name = "location_lat")
+	private Double locationLat;
 
-	@Column(name = "location_lon", precision = 11, scale = 8)
-	private BigDecimal locationLon;
+	@Column(name = "location_lon")
+	private Double locationLon;
 
 	private String address;
-	
-	@Column(name = "district_code")
-    private String districtCode;
 	
 	@Enumerated(EnumType.STRING)
 	@Column(name = "suggestion_type")
@@ -65,15 +62,6 @@ public class Suggestion {
 	
 	@Column(name = "view_count")
     private Integer viewCount = 0;
-
-	@Column(name = "admin_response", columnDefinition = "TEXT")
-	private String adminResponse;
-
-	@Column(name = "admin_id")
-	private Long adminId;
-
-	@Column(name = "processed_at")
-	private LocalDateTime processedAt;
 
 	@CreationTimestamp
 	@Column(name = "created_at")
@@ -88,7 +76,4 @@ public class Suggestion {
 	@JoinColumn(name = "user_id", insertable = false, updatable = false)
 	private User user;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "admin_id", insertable = false, updatable = false)
-	private User admin;
 }

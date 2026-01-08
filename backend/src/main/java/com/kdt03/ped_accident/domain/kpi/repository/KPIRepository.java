@@ -1,26 +1,19 @@
 package com.kdt03.ped_accident.domain.kpi.repository;
 
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.StoredProcedureQuery;
+import com.kdt03.ped_accident.domain.kpi.KpiEntity;
+
 import lombok.RequiredArgsConstructor;
 
 @Repository
 @RequiredArgsConstructor
 public class KPIRepository {
-  private final EntityManager em;
 
-  public String callKpiProc() {
-    StoredProcedureQuery q = em.createStoredProcedureQuery("get_kpi_summary");
-    @SuppressWarnings("unchecked")
-    var rows = q.getResultList();              // 보통 1행
-    if (rows == null || rows.isEmpty()) return "{}";
+  public interface KpiSummaryRepo extends Repository<KpiEntity, Long> {
 
-    Object row = rows.get(0);
-
-    // 드라이버에 따라 row가 String이거나 Object[]일 수 있음
-    if (row instanceof Object[] arr) return String.valueOf(arr[0]);
-    return String.valueOf(row);
-  }
+	  @Query(value = "SELECT data FROM v_kpi_summary_json LIMIT 1", nativeQuery = true)
+	  String fetchKpiSummaryJson();
+	}
 }

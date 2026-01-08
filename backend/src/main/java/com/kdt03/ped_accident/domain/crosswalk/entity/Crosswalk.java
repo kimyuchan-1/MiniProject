@@ -1,14 +1,16 @@
 package com.kdt03.ped_accident.domain.crosswalk.entity;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import com.kdt03.ped_accident.domain.cwsigmap.entity.CwSigMap;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -66,4 +68,6 @@ public class Crosswalk {
 	
 	private Integer hasSpotlight;
 	
+	@OneToMany(mappedBy = "crosswalks", fetch = FetchType.LAZY)
+	private List<CwSigMap> cwSg = new ArrayList<>();
 }

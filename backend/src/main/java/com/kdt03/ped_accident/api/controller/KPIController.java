@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/kpi")
+@RequestMapping("/api/dashboard/kpi")
 public class KPIController {
   private final KPIService kpiService;
   private final ObjectMapper objectMapper;

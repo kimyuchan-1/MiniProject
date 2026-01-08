@@ -12,7 +12,6 @@ import com.kdt03.ped_accident.domain.user.repository.UserRepository;
 import com.kdt03.ped_accident.global.exception.custom.DataNotFoundException;
 import com.kdt03.ped_accident.global.exception.custom.DuplicateEmailException;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @Service
