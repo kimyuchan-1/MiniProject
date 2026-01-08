@@ -1,48 +1,30 @@
 import { NextResponse } from "next/server";
-import { jwtVerify } from "jose";
-
-function mustGetEnv(name: string) {
-  const v = process.env[name];
-  if (!v) throw new Error(`Missing env: ${name}`);
-  return v;
-}
+import axios from "axios";
+import { backendClient } from "@/lib/backendClient";
+import { forwardSetCookie } from "@/lib/forwardSetCookie";
 
 export async function GET(req: Request) {
-  const cookieHeader = req.headers.get("cookie") ?? "";
-  const token = cookieHeader
-    .split(";")
-    .map((v) => v.trim())
-    .find((v) => v.startsWith("access_token="))
-    ?.split("=")[1];
-
-  if (!token) {
-    return NextResponse.json(
-      { ok: false, message: "Not signed in" },
-      { status: 401 }
-    );
-  }
-
   try {
-    const secret = new TextEncoder().encode(mustGetEnv("JWT_SECRET"));
-    const { payload } = await jwtVerify(token, secret);
+    const cookie = req.headers.get("cookie") ?? "";
 
-    // payload는 signin에서 넣은 값(sub/email/role/name 등)
+    const upstream = await backendClient.get("/api/auth/me", {
+      headers: { cookie },
+      validateStatus: () => true,
+    });
+
+    const res = NextResponse.json(upstream.data ?? null, { status: upstream.status });
+    forwardSetCookie(res, upstream.headers); // 백엔드가 토큰 갱신(set-cookie)하면 전달
+    return res;
+  } catch (err: any) {
+    if (axios.isAxiosError(err)) {
+      return NextResponse.json(
+        { success: false, message: "백엔드 연결 실패", data: { detail: err.message } },
+        { status: 502 }
+      );
+    }
     return NextResponse.json(
-      {
-        ok: true,
-        user: {
-          id: payload.sub ?? null,
-          email: (payload as any).email ?? null,
-          role: (payload as any).role ?? null,
-          name: (payload as any).name ?? null,
-        },
-      },
-      { status: 200 }
-    );
-  } catch {
-    return NextResponse.json(
-      { ok: false, message: "Invalid token" },
-      { status: 401 }
+      { success: false, message: "Internal server error", data: null },
+      { status: 500 }
     );
   }
 }
