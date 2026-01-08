@@ -63,31 +63,30 @@ export default function PedAccClient() {
 
   // 선택된 시도의 시군구 목록 로딩
   useEffect(() => {
-    const run = async () => {
-      setLoadingCities(true);
-      try {
-        let resp;
-        if (selectedProvince === "ALL") {
-          // 전국의 모든 시군구 가져오기
-          resp = await fetch("/api/district/all-cities");
-        } else {
-          // 특정 시도의 시군구만 가져오기
-          resp = await fetch(`/api/district/cities?province=${encodeURIComponent(selectedProvince)}`);
-        }
+  const run = async () => {
+    // ✅ 전국이면 cities를 비우고 끝
+    if (selectedProvince === "ALL") {
+      setCities([]);
+      setLoadingCities(false);
+      return;
+    }
 
-        const json = await resp.json();
-        if (!resp.ok) throw new Error(json?.error ?? "Failed to load cities");
-        const cityData = Array.isArray(json) ? json : [];
-        setCities(cityData);
-      } catch (e: any) {
-        console.error("Failed to load cities:", e);
-        setCities([]);
-      } finally {
-        setLoadingCities(false);
-      }
-    };
-    run();
-  }, [selectedProvince]);
+    setLoadingCities(true);
+    try {
+      const resp = await fetch(`/api/district/cities?province=${encodeURIComponent(selectedProvince)}`);
+      const json = await resp.json();
+      if (!resp.ok) throw new Error(json?.error ?? "Failed to load cities");
+      setCities(Array.isArray(json) ? json : []);
+    } catch (e) {
+      console.error("Failed to load cities:", e);
+      setCities([]);
+    } finally {
+      setLoadingCities(false);
+    }
+  };
+  run();
+}, [selectedProvince]);
+
 
   // 통계 로딩: region 없으면 전국, 있으면 해당 지역
   useEffect(() => {

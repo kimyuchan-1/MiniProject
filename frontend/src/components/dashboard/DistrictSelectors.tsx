@@ -67,7 +67,7 @@ export default function DistrictSelectors({
   const cityOptions = useMemo(() => cities, [cities]);
 
   return (
-    <div className="flex flex-col gap-2 justify-center items-start">
+    <div className="flex flex-col gap-2 justify-center items-end">
       <select
         className="h-10 rounded-md border bg-white px-3 text-sm"
         value={province}
