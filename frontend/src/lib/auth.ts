@@ -1,11 +1,5 @@
 import { cookies } from "next/headers";
-import { jwtVerify } from "jose";
-
-function mustGetEnv(name: string) {
-  const v = process.env[name];
-  if (!v) throw new Error(`Missing env: ${name}`);
-  return v;
-}
+import { backendClient } from "@/lib/backendClient"; // 네 경로로 수정
 
 export type AuthUser = {
   id: string | null;
@@ -15,18 +9,30 @@ export type AuthUser = {
 };
 
 export async function getAuthUser(): Promise<AuthUser | null> {
-  const token = (await cookies()).get("access_token")?.value;
-  if (!token) return null;
+  // Next(server) -> Spring Boot로 쿠키 수동 전달
+  const cookieStore = await cookies();
+  const cookieHeader = cookieStore
+    .getAll()
+    .map((c) => `${c.name}=${c.value}`)
+    .join("; ");
+
+  if (!cookieHeader) return null;
 
   try {
-    const secret = new TextEncoder().encode(mustGetEnv("JWT_SECRET"));
-    const { payload } = await jwtVerify(token, secret);
+    const res = await backendClient.get("/api/auth/me", {
+      headers: { cookie: cookieHeader },
+      validateStatus: (s) => s >= 200 && s < 500,
+    });
 
+    if (res.status !== 200) return null;
+
+    // 백엔드 응답 DTO에 맞춰 매핑
+    const data = res.data ?? {};
     return {
-      id: payload.sub ?? null,
-      email: (payload as any).email ?? null,
-      name: (payload as any).name ?? null,
-      role: (payload as any).role ?? null,
+      id: data.id?.toString?.() ?? data.id ?? null,
+      email: data.email ?? null,
+      name: data.name ?? null,
+      role: data.role ?? null,
     };
   } catch {
     return null;

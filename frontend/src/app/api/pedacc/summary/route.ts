@@ -8,9 +8,15 @@ function prefixRange(prefix2: string) {
   return { gte: base, lt: next };
 }
 
+function rangeFromDistrict5(d5: number) {
+  const from = d5 * 100_000;        // d5 × 10^5
+  const toExcl = (d5 + 1) * 100_000;
+  return { from, toExcl };
+}
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const region = (searchParams.get("region") ?? "").trim(); // "" | "11" | "1111000000"
+  const region = (searchParams.get("region") ?? "").trim(); // "" | "11" | "1111000000" | "11110"
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
@@ -32,8 +38,14 @@ export async function GET(req: Request) {
     if (/^\d{2}$/.test(region)) {
       const { gte, lt } = prefixRange(region);
       q = q.gte("sigungu_code", gte).lt("sigungu_code", lt);
+
     } else if (/^\d{10}$/.test(region)) {
       q = q.eq("sigungu_code", Number(region));
+
+    } else if (/^\d{5}$/.test(region)) {
+      const { from, toExcl } = rangeFromDistrict5(Number(region));
+      q = q.gte("sigungu_code", from).lt("sigungu_code", toExcl);
+
     } else {
       return NextResponse.json({ error: "Invalid region" }, { status: 400 });
     }
