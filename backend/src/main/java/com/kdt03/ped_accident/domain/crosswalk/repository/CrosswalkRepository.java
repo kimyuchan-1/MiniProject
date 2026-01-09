@@ -6,7 +6,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
-public interface CWRepository extends JpaRepository<CW, String> {
+public interface CrosswalkRepository extends JpaRepository<CW, String> {
 
   @Query("""
     SELECT DISTINCT c
