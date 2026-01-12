@@ -1,19 +1,18 @@
 package com.kdt03.ped_accident.domain.kpi.repository;
 
-import org.springframework.data.jpa.repository.Query;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Repository;
 
-import com.kdt03.ped_accident.domain.kpi.KpiEntity;
-
-import lombok.RequiredArgsConstructor;
-
 @Repository
-@RequiredArgsConstructor
 public class KPIRepository {
 
-  public interface KpiSummaryRepo extends Repository<KpiEntity, Long> {
+    @PersistenceContext
+    private EntityManager em;
 
-	  @Query(value = "SELECT data FROM v_kpi_summary_json LIMIT 1", nativeQuery = true)
-	  String fetchKpiSummaryJson();
-	}
+    public String fetchKpiSummaryJson() {
+        return (String) em
+            .createNativeQuery("SELECT data FROM v_kpi_summary_json LIMIT 1")
+            .getSingleResult();
+    }
 }

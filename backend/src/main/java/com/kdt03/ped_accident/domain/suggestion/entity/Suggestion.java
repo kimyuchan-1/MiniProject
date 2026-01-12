@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.kdt03.ped_accident.domain.user.entity.User;
 
 import jakarta.persistence.Column;
@@ -74,6 +75,7 @@ public class Suggestion {
 	// 연관관계
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "user_id", insertable = false, updatable = false)
+	@JsonIgnore // Jackson 직렬화 제외
 	private User user;
 
 }

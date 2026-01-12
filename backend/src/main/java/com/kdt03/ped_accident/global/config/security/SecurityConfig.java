@@ -11,8 +11,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -25,8 +23,8 @@ import com.kdt03.ped_accident.global.config.auth.JwtAccessDeniedHandler;
 import com.kdt03.ped_accident.global.config.auth.JwtAuthenticationEntryPoint;
 import com.kdt03.ped_accident.global.config.auth.JwtAuthenticationFilter;
 import com.kdt03.ped_accident.global.config.auth.JwtTokenProvider;
-import com.kdt03.ped_accident.global.config.auth.OAuth2AuthenticationFailureHandler;
-import com.kdt03.ped_accident.global.config.auth.OAuth2AuthenticationSuccessHandler;
+import com.kdt03.ped_accident.global.config.auth.OAuth2FailureHandler;
+import com.kdt03.ped_accident.global.config.auth.OAuth2SuccessHandler;
 
 import lombok.RequiredArgsConstructor;
 
@@ -40,8 +38,8 @@ public class SecurityConfig {
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
     private final CustomOAuth2UserService customOAuth2UserService;
-    private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
-    private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
+    private final OAuth2SuccessHandler oAuth2SuccessHandler;
+    private final OAuth2FailureHandler oAuth2FailureHandler;
     
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -55,7 +53,9 @@ public class SecurityConfig {
                 .accessDeniedHandler(jwtAccessDeniedHandler)
             )
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/api/public/**", "/api/auth/**", "/oauth2/**", "/login/**", "/").permitAll()
+                .requestMatchers("/api/public/**", "/api/auth/**", "/oauth2/**", "/login/**", "/",
+                        "/api/oauth/**",
+                        "/login/oauth2/**").permitAll()
                 .requestMatchers("/api/dashboard/**").authenticated()
                 .requestMatchers("/api/map/**").authenticated()
                 .requestMatchers("/api/analysis/**").authenticated()
@@ -66,8 +66,8 @@ public class SecurityConfig {
                 .userInfoEndpoint(userInfo -> userInfo
                     .userService(customOAuth2UserService)
                 )
-                .successHandler(oAuth2AuthenticationSuccessHandler)
-                .failureHandler(oAuth2AuthenticationFailureHandler)
+                .successHandler(oAuth2SuccessHandler)
+                .failureHandler(oAuth2FailureHandler)
             )
             .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class)
             .cors(cors -> cors.configurationSource(corsConfigurationSource()));

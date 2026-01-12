@@ -10,12 +10,30 @@ import com.kdt03.ped_accident.domain.suggestion.dto.CreateSuggestionRequest;
 import com.kdt03.ped_accident.domain.suggestion.entity.Suggestion;
 import com.kdt03.ped_accident.domain.suggestion.entity.SuggestionComment;
 import com.kdt03.ped_accident.domain.suggestion.entity.SuggestionStatus;
+import com.kdt03.ped_accident.domain.suggestion.repository.SuggestionRepository;
 
 @Service
 public class SuggestionService {
-    public Page<Suggestion> getSuggestions(Pageable pageable, SuggestionStatus status, Long districtCode) {
-		return null;
-	}
+
+    private final SuggestionRepository suggestionRepository;
+
+    public SuggestionService(SuggestionRepository suggestionRepository) {
+        this.suggestionRepository = suggestionRepository;
+    }
+
+    // 전체 조회
+    public Page<Suggestion> findAll(Pageable pageable, SuggestionStatus status, String region) {
+        if (status != null) {
+            return suggestionRepository.findByStatus(status, pageable);
+        }
+        return suggestionRepository.findAll(pageable);
+    }
+
+    // 단건 조회
+    public Suggestion findById(Long id) {
+        return suggestionRepository.findById(id).orElse(null);
+    }
+    
     public Suggestion createSuggestion(CreateSuggestionRequest request, Long userId) {
 		return null;
 	}
@@ -30,5 +48,11 @@ public class SuggestionService {
 	}
     public SuggestionStatistics getSuggestionStatistics() {
 		return null;
-	}
+
+}
+
+
+
+    
+	
 }

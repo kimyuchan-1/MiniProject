@@ -68,6 +68,6 @@ public class Crosswalk {
 	
 	private Integer hasSpotlight;
 	
-	@OneToMany(mappedBy = "crosswalks", fetch = FetchType.LAZY)
+	@OneToMany(mappedBy = "cw", fetch = FetchType.LAZY)
 	private List<CwSigMap> cwSg = new ArrayList<>();
 }

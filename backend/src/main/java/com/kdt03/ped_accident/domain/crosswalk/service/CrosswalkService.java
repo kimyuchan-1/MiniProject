@@ -6,7 +6,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import com.kdt03.ped_accident.domain.crosswalk.entity.Crosswalk;
-import com.kdt03.ped_accident.domain.crosswalk.repository.
+import com.kdt03.ped_accident.domain.crosswalk.repository.CrosswalkRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -14,10 +14,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CrosswalkService {
 
-  private final CWRepository cwRepository;
+  private final CrosswalkRepository crosswalkRepository;
 
   public List<Crosswalk> getCrosswalksInBounds(double south, double north, double west, double east) {
-    return CrosswalkRepository.findInBoundsWithSg(
+    return crosswalkRepository.findInBoundsWithSg(
         south, north, west, east,
         PageRequest.of(0, 5000)
     );

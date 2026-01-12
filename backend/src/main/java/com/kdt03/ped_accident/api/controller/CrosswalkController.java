@@ -7,7 +7,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.kdt03.ped_accident.domain.crosswalk.entity.CrosswalkService;
+import com.kdt03.ped_accident.domain.crosswalk.entity.Crosswalk;
+import com.kdt03.ped_accident.domain.crosswalk.service.CrosswalkService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -19,7 +20,7 @@ public class CrosswalkController {
   private final CrosswalkService crosswalkService;
 
   @GetMapping
-  public List<CW> list(
+  public List<Crosswalk> list(
       @RequestParam double south,
       @RequestParam double north,
       @RequestParam double west,

@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.kdt03.ped_accident.api.dto.request.RegisterRequest;
+import com.kdt03.ped_accident.domain.user.entity.AuthProvider;
 import com.kdt03.ped_accident.domain.user.entity.Role;
 import com.kdt03.ped_accident.domain.user.entity.User;
 import com.kdt03.ped_accident.domain.user.repository.UserRepository;
@@ -53,6 +54,25 @@ public class UserService {
 
     public boolean existsByEmail(String email) {
         return userRepository.existsByEmail(email);
+    }
+
+    @Transactional
+    public User findOrCreateOAuthUser(String email, AuthProvider provider) {
+        return userRepository.findByEmail(email)
+            .map(user -> {
+                if (user.getProvider() != provider) {
+                    throw new IllegalStateException("이미 다른 로그인 방식으로 가입된 계정입니다.");
+                }
+                return user;
+            })
+            .orElseGet(() -> {
+                User user = User.builder()
+                    .email(email)
+                    .provider(provider)
+                    .role(Role.USER)
+                    .build();
+                return userRepository.save(user);
+            });
     }
 }
 

@@ -6,7 +6,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kdt03.ped_accident.domain.kpi.service.KPIService;
 
 import lombok.RequiredArgsConstructor;
@@ -16,12 +15,9 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/dashboard/kpi")
 public class KPIController {
   private final KPIService kpiService;
-  private final ObjectMapper objectMapper;
 
   @GetMapping
-  public ResponseEntity<JsonNode> getKpi() throws Exception {
-    String json = kpiService.getKPIJson();
-    JsonNode node = objectMapper.readTree(json);
-    return ResponseEntity.ok(node);
+  public ResponseEntity<JsonNode> getKpi() {
+      return ResponseEntity.ok(kpiService.getKpiSummary());
   }
 }

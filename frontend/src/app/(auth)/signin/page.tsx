@@ -89,19 +89,19 @@ export default function Signin() {
           <span className='relative bg-white px-5 text-[#666] text-sm'>또는</span>
         </div>
 
-        <a href="/api/oauth/google" className='inline-block w-full box-border p-3 rounded-lg text-base font-medium text-white no-underline transition-all duration-300 ease-in-out bg-[#4285f4] hover:bg-[#3367d6] hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(66,133,244,0.3)] active:translate-y-0'>
+        <a href="http://localhost:8080/oauth2/authorization/google" className='inline-block w-full box-border p-3 rounded-lg text-base font-medium text-white no-underline transition-all duration-300 ease-in-out bg-[#4285f4] hover:bg-[#3367d6] hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(66,133,244,0.3)] active:translate-y-0'>
           <span className='flex flex-row items-center justify-center'>
             <FcGoogle />&nbsp;구글으로 로그인
           </span>
         </a>
 
-        <a href="/api/oauth/naver" className="inline-block w-full box-border p-3 mt-2.5 rounded-lg text-base font-medium text-white no-underline transition-all duration-300 ease-in-out bg-[#2DB400] hover:bg-[#16AA52] hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(45,180,0,0.3)] active:translate-y-0">
+        <a href="http://localhost:8080/oauth2/authorization/naver" className="inline-block w-full box-border p-3 mt-2.5 rounded-lg text-base font-medium text-white no-underline transition-all duration-300 ease-in-out bg-[#2DB400] hover:bg-[#16AA52] hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(45,180,0,0.3)] active:translate-y-0">
           <span className='flex flex-row items-center justify-center'>
             <Image src="/naver.svg" alt="naver logo" width={16} height={16} className='rounded-xs' />&nbsp;Naver로 로그인
           </span>
         </a>
 
-        <a href="/api/oauth/github" className="inline-block w-full box-border p-3 mt-2.5 rounded-lg text-base font-medium text-white no-underline transition-all duration-300 ease-in-out bg-[#24292e] hover:bg-[#171515] hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(23,21,21,0.3)] active:translate-y-0 ">
+        <a href="http://localhost:8080/oauth2/authorization/github" className="inline-block w-full box-border p-3 mt-2.5 rounded-lg text-base font-medium text-white no-underline transition-all duration-300 ease-in-out bg-[#24292e] hover:bg-[#171515] hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(23,21,21,0.3)] active:translate-y-0 ">
           <span className='flex flex-row items-center justify-center'>
             <FaGithub />&nbsp;GitHub로 로그인
           </span>
