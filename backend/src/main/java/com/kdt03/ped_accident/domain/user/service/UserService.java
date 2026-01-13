@@ -1,6 +1,5 @@
 package com.kdt03.ped_accident.domain.user.service;
 
-
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +22,10 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    /* =========================
+       일반 회원가입 (이메일/비밀번호)
+       ========================= */
+
     @Transactional
     public User signUp(RegisterRequest request) {
         if (existsByEmail(request.getEmail())) {
@@ -34,6 +37,7 @@ public class UserService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .name(request.getName())
                 .role(Role.USER)
+                .provider(AuthProvider.LOCAL)
                 .enabled(true)
                 .build();
 
@@ -45,34 +49,42 @@ public class UserService {
                 .orElseThrow(() -> new DataNotFoundException("가입되지 않은 이메일입니다."));
     }
 
+    public boolean existsByEmail(String email) {
+        return userRepository.existsByEmail(email);
+    }
+
+    /* =========================
+       OAuth 전용 로직 (핵심)
+       ========================= */
+
+    @Transactional
+    public User findOrCreateOAuthUser(
+            AuthProvider provider,
+            String providerId,
+            String email
+    ) {
+        return userRepository
+                .findByProviderAndProviderId(provider, providerId)
+                .orElseGet(() -> {
+                    User user = User.builder()
+                            .provider(provider)
+                            .providerId(providerId)
+                            .email(email)        // null 가능
+                            .role(Role.USER)
+                            .enabled(true)
+                            .build();
+                    return userRepository.save(user);
+                });
+    }
+
+    /* =========================
+       Refresh Token
+       ========================= */
+
     @Transactional
     public void updateRefreshToken(Long userId, String refreshToken) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new DataNotFoundException("사용자를 찾을 수 없습니다."));
         user.setRefreshToken(refreshToken);
     }
-
-    public boolean existsByEmail(String email) {
-        return userRepository.existsByEmail(email);
-    }
-
-    @Transactional
-    public User findOrCreateOAuthUser(String email, AuthProvider provider) {
-        return userRepository.findByEmail(email)
-            .map(user -> {
-                if (user.getProvider() != provider) {
-                    throw new IllegalStateException("이미 다른 로그인 방식으로 가입된 계정입니다.");
-                }
-                return user;
-            })
-            .orElseGet(() -> {
-                User user = User.builder()
-                    .email(email)
-                    .provider(provider)
-                    .role(Role.USER)
-                    .build();
-                return userRepository.save(user);
-            });
-    }
 }
-

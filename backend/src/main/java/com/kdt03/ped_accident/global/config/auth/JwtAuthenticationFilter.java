@@ -4,41 +4,53 @@ import java.io.IOException;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.filter.GenericFilterBean;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-public class JwtAuthenticationFilter extends GenericFilterBean {
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
 
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-            throws IOException, ServletException {
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain
+    ) throws ServletException, IOException {
 
-        HttpServletRequest httpRequest = (HttpServletRequest) request;
+        try {
+            String token = resolveToken(request);
 
-        String token = resolveToken(httpRequest);
+            // 🔥 이미 인증된 경우 다시 세팅 안 함
+            if (token != null
+                    && jwtTokenProvider.validateToken(token)
+                    && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-        if (token != null && jwtTokenProvider.validateToken(token)) {
-            Authentication authentication = jwtTokenProvider.getAuthentication(token);
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+                Authentication authentication =
+                        jwtTokenProvider.getAuthentication(token);
+
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
+        } catch (Exception e) {
+            // 토큰 문제 발생 시 컨텍스트 초기화
+            SecurityContextHolder.clearContext();
         }
 
-        chain.doFilter(request, response);
+        filterChain.doFilter(request, response);
     }
 
     private String resolveToken(HttpServletRequest request) {
-        if (request.getCookies() == null) return null;
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) return null;
 
-        for (Cookie cookie : request.getCookies()) {
+        for (Cookie cookie : cookies) {
             if ("accessToken".equals(cookie.getName())) {
                 return cookie.getValue();
             }

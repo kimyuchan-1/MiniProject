@@ -60,4 +60,6 @@ public class User {
     
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+    
+//    @UniqueConstraint(columnNames = {"provider", "provider_id"})
 }

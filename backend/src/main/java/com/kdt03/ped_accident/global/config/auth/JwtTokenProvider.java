@@ -45,7 +45,10 @@ public class JwtTokenProvider {
         this.key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String createAccessToken(String email, String role) {
+    public String createAccessToken(Authentication authentication) {
+        String email = authentication.getName();
+        String role = authentication.getAuthorities().iterator().next().getAuthority();
+
         Claims claims = Jwts.claims().setSubject(email);
         claims.put("role", role);
 
@@ -60,7 +63,9 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    public String createRefreshToken(String email) {
+    public String createRefreshToken(Authentication authentication) {
+        String email = authentication.getName();
+
         Claims claims = Jwts.claims().setSubject(email);
 
         Date now = new Date();
@@ -73,6 +78,7 @@ public class JwtTokenProvider {
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
+
 
     public Authentication getAuthentication(String token) {
         UserDetails userDetails = userDetailsService.loadUserByUsername(getUsername(token));
