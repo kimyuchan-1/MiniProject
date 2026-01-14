@@ -22,6 +22,12 @@ export default function RegionSelectors(props: {
 
   const isAllProvince = selectedProvince === "ALL";
 
+  const cityLabel = (c: CityOpt) => {
+    // "서울특별시 강남구" -> "강남구"
+    const parts = (c.name ?? "").split(" ");
+    return parts.length >= 2 ? parts[parts.length - 1] : c.name;
+  };
+
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
       <div className="flex items-center gap-2">
@@ -58,7 +64,7 @@ export default function RegionSelectors(props: {
               </option>
               {cities.map((c) => (
                 <option key={c.code} value={c.code}>
-                  {c.name}
+                  {cityLabel(c)}
                 </option>
               ))}
             </>

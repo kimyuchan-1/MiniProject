@@ -6,7 +6,6 @@ export async function GET(
 ) {
   const provider = params.provider;
 
-  // 서버 전용 환경변수 (NEXT_PUBLIC 쓰지 말기)
   const backend = process.env.NEXT_PUBLIC_BACKEND_URL; // 
   if (!backend) {
     return NextResponse.json({ error: "BACKEND_URL is not set" }, { status: 500 });

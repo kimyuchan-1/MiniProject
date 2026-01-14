@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { YearlyTrendChart, MonthlyChart, AccidentTypeChart } from "@/components/pedacc/AccidentChart";
 import { AccData, ProvinceOpt, CityOpt } from "@/features/pedacc/types";
@@ -23,26 +23,40 @@ export default function PedAccClient() {
   const [monthly, setMonthly] = useState<AccData[]>([]);
   const [error, setError] = useState<string>("");
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [regionReady, setRegionReady] = useState(false);
+
+  const reqIdRef = useRef(0);
 
   // URL 파라미터에서 시도/시군구 분리
   useEffect(() => {
 
-    if (region) {
-      if (region.length >= 5) {
-        // 시군구 코드가 있는 경우
-        const provinceCode = region.substring(0, 2) + "000";
-        setSelectedProvince(provinceCode);
-        setSelectedCity(region);
-      } else if (region.length >= 2) {
-        // 시도 코드만 있는 경우 - 5자리 형태로 변환
-        const provinceCode = region.length === 2 ? region + "000" : region;
-        setSelectedProvince(provinceCode);
-        setSelectedCity("ALL");
-      }
-    } else {
+    if (!region) {
       setSelectedProvince("ALL");
       setSelectedCity("ALL");
+      setRegionReady(true);
+      return;
     }
+
+    // 시도(2자리)
+    if (/^\d{2}$/.test(region)) {
+      setSelectedProvince(region);
+      setSelectedCity("ALL");
+      setRegionReady(true);
+      return;
+    }
+
+    // 시군구(5자리)
+    if (/^\d{5}$/.test(region)) {
+      setSelectedProvince(region.slice(0, 2));
+      setSelectedCity(region);
+      setRegionReady(true);
+      return;
+    }
+
+    // 그 외는 안전하게 전국 처리
+    setSelectedProvince("ALL");
+    setSelectedCity("ALL");
+    setRegionReady(true);
   }, [region]);
 
   // 시도 목록 로딩
@@ -63,77 +77,86 @@ export default function PedAccClient() {
 
   // 선택된 시도의 시군구 목록 로딩
   useEffect(() => {
-  const run = async () => {
-    // ✅ 전국이면 cities를 비우고 끝
-    if (selectedProvince === "ALL") {
-      setCities([]);
-      setLoadingCities(false);
-      return;
-    }
+    const run = async () => {
+      // ✅ 전국이면 cities를 비우고 끝
+      if (selectedProvince === "ALL") {
+        setCities([]);
+        setLoadingCities(false);
+        return;
+      }
 
-    setLoadingCities(true);
-    try {
-      const resp = await fetch(`/api/district/cities?province=${encodeURIComponent(selectedProvince)}`);
-      const json = await resp.json();
-      if (!resp.ok) throw new Error(json?.error ?? "Failed to load cities");
-      setCities(Array.isArray(json) ? json : []);
-    } catch (e) {
-      console.error("Failed to load cities:", e);
-      setCities([]);
-    } finally {
-      setLoadingCities(false);
-    }
-  };
-  run();
-}, [selectedProvince]);
+      setLoadingCities(true);
+      try {
+        const resp = await fetch(`/api/district/cities?province=${encodeURIComponent(selectedProvince)}`);
+        const json = await resp.json();
+        if (!resp.ok) throw new Error(json?.error ?? "Failed to load cities");
+        setCities(Array.isArray(json) ? json : []);
+      } catch (e) {
+        console.error("Failed to load cities:", e);
+        setCities([]);
+      } finally {
+        setLoadingCities(false);
+      }
+    };
+    run();
+  }, [selectedProvince]);
 
 
   // 통계 로딩: region 없으면 전국, 있으면 해당 지역
   useEffect(() => {
+    if (!regionReady) return;
+
+    const controller = new AbortController();
+    const myId = ++reqIdRef.current;
+
     const run = async () => {
       setLoading(true);
       setError("");
+
       try {
         let regionParam = "";
+        if (selectedCity !== "ALL") regionParam = `?region=${encodeURIComponent(selectedCity)}`;
+        else if (selectedProvince !== "ALL") regionParam = `?region=${encodeURIComponent(selectedProvince)}`;
 
-        if (selectedCity !== "ALL") {
-          // 특정 시군구 선택된 경우
-          regionParam = `?region=${encodeURIComponent(selectedCity)}`;
-        } else if (selectedProvince !== "ALL") {
-          // 시도만 선택된 경우 - 시도 전체 통계
-          const provincePrefix = selectedProvince.substring(0, 2);
-          regionParam = `?region=${encodeURIComponent(provincePrefix)}`;
-        }
+        const resp = await fetch(`/api/pedacc/summary${regionParam}`, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
 
-        const resp = await fetch(`/api/pedacc/summary${regionParam}`);
         const json = await resp.json();
         if (!resp.ok) throw new Error(json?.error ?? "Failed");
 
-        setYearly(json.yearly ?? []);
+        if (myId !== reqIdRef.current) return; // ✅ 최신만
 
+        setYearly(json.yearly ?? []);
         const monthlyData = json.monthly ?? [];
         setMonthly(monthlyData);
 
-        // 첫 번째 연도를 기본 선택으로 설정
         if (monthlyData.length > 0) {
-          const firstYear = monthlyData[0].year;
-          setSelectedYear(firstYear);
+          const years: number[] = Array.from(new Set(monthlyData.map((r: any) => Number(r.year))));
+
+          const newest = years.length ? years.sort((a, b) => b - a)[0] : null;
+          setSelectedYear(newest);
         } else {
           setSelectedYear(null);
         }
       } catch (e: any) {
-        console.error("통계 로딩 오류:", e);
+        if (e?.name === "AbortError") return;
+        if (myId !== reqIdRef.current) return;
         setError(e.message ?? "Error");
       } finally {
+        if (myId !== reqIdRef.current) return;
         setLoading(false);
       }
     };
+
     run();
-  }, [selectedProvince, selectedCity]);
+    return () => controller.abort();
+  }, [regionReady, selectedProvince, selectedCity]);
 
   // 연도별 집계 데이터 생성 - API에서 이미 제공하므로 그대로 사용
   const yearlyAggregated = useMemo(() => {
-    return yearly.sort((a, b) => a.year - b.year);
+    return [...yearly].sort((a, b) => a.year - b.year);
   }, [yearly]);
 
   // 선택된 연도의 월별 데이터
@@ -169,56 +192,39 @@ export default function PedAccClient() {
   }, [monthly]);
 
   const selectedName = useMemo(() => {
-    if (selectedProvince === "ALL") {
-      if (selectedCity === "ALL") {
-        return "전국";
-      } else {
-        const cityInfo = cities.find(c => c.code === selectedCity);
-        return cityInfo ? cityInfo.fullName : selectedCity;
-      }
-    }
+    if (selectedProvince === "ALL") return "전국";
 
-    const provinceName = provinces.find(p => p.code === selectedProvince)?.name ??
-      selectedProvince.substring(0, 2);
+    const provinceName =
+      provinces.find((p) => p.code === selectedProvince)?.name ?? selectedProvince;
 
-    if (selectedCity === "ALL") {
-      return provinceName;
-    }
+    if (selectedCity === "ALL") return provinceName;
 
-    const cityInfo = cities.find(c => c.code === selectedCity);
-    if (cityInfo) {
-      return `${provinceName} ${cityInfo.name}`;
-    }
+    const cityInfo = cities.find((c) => c.code === selectedCity);
+    const cityName = cityInfo?.name ?? selectedCity;
 
-    return `${provinceName} ${selectedCity}`;
+    // ✅ cityName이 이미 "서울특별시 ..."처럼 시도명을 포함하면 그대로 사용
+    if (cityName.startsWith(provinceName)) return cityName;
+
+    // cityInfo.name이 이미 "강남구"면 그대로 붙이면 됨
+    return `${provinceName} ${cityName}`;
   }, [selectedProvince, selectedCity, provinces, cities]);
 
   const onChangeProvince = (provinceCode: string) => {
     setSelectedProvince(provinceCode);
     setSelectedCity("ALL");
 
-    if (provinceCode === "ALL") {
-      router.push("/pedacc");
-    } else {
-      // URL에는 앞 2자리만 사용
-      const provincePrefix = provinceCode.substring(0, 2);
-      router.push(`/pedacc?region=${encodeURIComponent(provincePrefix)}`);
-    }
+    if (provinceCode === "ALL") router.push("/pedacc");
+    else router.push(`/pedacc?region=${encodeURIComponent(provinceCode)}`);
   };
 
   const onChangeCity = (cityCode: string) => {
     setSelectedCity(cityCode);
 
     if (cityCode === "ALL") {
-      if (selectedProvince === "ALL") {
-        router.push("/pedacc");
-      } else {
-        // URL에는 앞 2자리만 사용
-        const provincePrefix = selectedProvince.substring(0, 2);
-        router.push(`/pedacc?region=${encodeURIComponent(provincePrefix)}`);
-      }
+      if (selectedProvince === "ALL") router.push("/pedacc");
+      else router.push(`/pedacc?region=${encodeURIComponent(selectedProvince)}`);
     } else {
-      router.push(`/pedacc?region=${encodeURIComponent(cityCode)}`);
+      router.push(`/pedacc?region=${encodeURIComponent(cityCode)}`); // ✅ 5자리
     }
   };
 

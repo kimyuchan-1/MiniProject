@@ -150,7 +150,7 @@ export default function Dashboard() {
               caption="100점 만점"
               color="red"
             />
-            <div className='py-5 px-4 flex flex-col items-end'>
+            <div className='py-5 flex flex-col items-end'>
               <div className="text-md font-medium text-gray-500 mb-2">
                 지역 선택
               </div>

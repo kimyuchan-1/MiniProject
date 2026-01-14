@@ -40,39 +40,25 @@ export async function GET(req: Request) {
   const sigungu10 = uniq(
     (accRows ?? [])
       .map((r: any) => String(r.sigungu_code ?? "").trim())
-      .filter((s) => /^\d{10}$/.test(s)) // 10자리만
-  ).sort();
+      .filter((s) => /^\d{10}$/.test(s))
+  );
 
-  if (sigungu10.length === 0) return NextResponse.json([]);
+  const district5 = uniq(sigungu10.map((s) => s.slice(0, 5))); // ✅ 5자리 문자열
 
-  // 2) District에서 표시명 매핑
-  //    네 규칙: district_code = district_id 앞 5자리(=sigungu_code 앞 5자리로도 같게 맞춰두는 게 안정)
-  const district5 = uniq(sigungu10.map((s) => Number(s.slice(0, 5))));
-
-  const { data: dRows, error: dErr } = await supabase
+  const { data: dRows } = await supabase
     .from("District")
     .select("district_code, district_short_name, district_name")
-    .in("district_code", district5);
+    .in("district_code", district5.map(Number));
 
-  if (dErr) return NextResponse.json({ error: dErr.message }, { status: 500 });
-
-  const nameByDistrict5 = new Map<number, string>();
+  const nameBy5 = new Map<string, string>();
   (dRows ?? []).forEach((r: any) => {
-    const dc = Number(r.district_code);
+    const code5 = String(r.district_code);
     const shortName = String(r.district_short_name ?? "").trim();
     const fullName = String(r.district_name ?? "").trim();
-    const label = shortName || fullName;
-    if (Number.isFinite(dc) && label && !nameByDistrict5.has(dc)) nameByDistrict5.set(dc, label);
+    nameBy5.set(code5, shortName || fullName || code5);
   });
 
-  // 3) 최종 cities: code=10자리 sigungu_code(조인키), name=표시명
-  const result = sigungu10.map((code10) => {
-    const dc5 = Number(code10.slice(0, 5));
-    return {
-      code: code10,
-      name: nameByDistrict5.get(dc5) ?? code10, // 이름 없으면 일단 코드로 (DB매핑 누락 탐지용)
-    };
-  });
-
-  return NextResponse.json(result);
+  return NextResponse.json(
+    district5.map((code5) => ({ code: code5, name: nameBy5.get(code5) ?? code5 }))
+  );
 }

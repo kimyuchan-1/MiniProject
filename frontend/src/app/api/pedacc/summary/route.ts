@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 function prefixRange(prefix2: string) {
   const p = Number(prefix2);
   const base = p * 100_000_000;
@@ -113,10 +116,19 @@ export async function GET(req: Request) {
     (a, b) => a.year - b.year || a.month - b.month
   );
 
-  return NextResponse.json({
+  return NextResponse.json(
+  {
     region: region || null,
-    regionType: region ? (region.length === 2 ? "SIDO_PREFIX2" : "SIGUNGU10") : "NATION",
+    regionType: !region
+      ? "NATION"
+      : /^\d{2}$/.test(region)
+      ? "SIDO_PREFIX2"
+      : /^\d{5}$/.test(region)
+      ? "DISTRICT5"
+      : "SIGUNGU10",
     yearly,
     monthly,
-  });
+  },
+  { headers: { "Cache-Control": "no-store" } }
+);
 }
