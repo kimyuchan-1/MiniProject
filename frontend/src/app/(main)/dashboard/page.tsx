@@ -2,6 +2,7 @@
 
 import KPICard from '@/components/dashboard/KPICard';
 import { useState, useEffect, useMemo } from 'react';
+import { FaInfoCircle, FaTimes } from "react-icons/fa";
 import dynamic from 'next/dynamic';
 
 import { SelectedCrosswalkPanel } from '@/components/dashboard/map/SelectedCrosswalkPanel';
@@ -9,6 +10,7 @@ import { useCrosswalkDetails, convertToEnhancedCrosswalk } from '@/hooks/useCros
 import type { Crosswalk } from '@/features/acc_calculate/types';
 
 import DistrictSelectors from '@/components/dashboard/DistrictSelectors';
+import IndexExplain from "./IndexExplain";
 
 const MapView = dynamic(() => import('./MapView'), { ssr: false });
 
@@ -50,6 +52,7 @@ function normalizeKpiPayload(payload: any): KPIData {
 export default function Dashboard() {
   const [kpiData, setKpiData] = useState<KPIData>(EMPTY_KPI);
   const [loading, setLoading] = useState(false);
+  const [openExplain, setOpenExplain] = useState(false);
 
   const [selectedCrosswalk, setSelectedCrosswalk] = useState<Crosswalk | null>(null);
 
@@ -119,9 +122,55 @@ export default function Dashboard() {
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">
               횡단보도 신호등 설치 현황
             </h2>
+            <button
+            type="button"
+            onClick={() => setOpenExplain(true)}
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 active:scale-[0.99]"
+            aria-haspopup="dialog"
+            aria-expanded={openExplain}
+          >
+            <FaInfoCircle />
+            지수 정보
+          </button>
           </div>
-
+          
         </div>
+
+         {openExplain && (
+        <div
+          className="fixed inset-0 z-999 flex items-center justify-center"
+          role="dialog"
+          aria-modal="true"
+        >
+          {/* overlay */}
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setOpenExplain(false)}
+          />
+
+          {/* modal panel */}
+          <div className="relative z-10 w-[min(920px,92vw)] max-h-[85vh] overflow-auto rounded-2xl bg-white shadow-xl">
+            <div className="sticky top-0 flex items-center justify-between border-b bg-white px-4 py-3">
+              <div className="text-sm font-semibold text-gray-900">
+                지수 산정 기준
+              </div>
+              <button
+                type="button"
+                onClick={() => setOpenExplain(false)}
+                className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
+              >
+                <FaTimes />
+                닫기
+              </button>
+            </div>
+
+            <div className="p-2">
+              {/* 여기서 IndexExplain을 "작은 창"에 호출 */}
+              <IndexExplain />
+            </div>
+          </div>
+        </div>
+      )}
 
         {/* KPI 대시보드 */}
         <div className="mb-4">

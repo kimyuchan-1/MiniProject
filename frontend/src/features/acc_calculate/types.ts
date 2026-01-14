@@ -33,8 +33,6 @@ export const DEFAULT_DISTANCE_WEIGHTS: DistanceBandWeights = {
   dInf: 0.0,
 };
 
-
-
 const DEFAULT_SEVERITY_P95 = 40;
 
 // 위험 지표 계산용 가중치

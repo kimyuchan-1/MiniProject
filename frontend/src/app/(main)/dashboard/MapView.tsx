@@ -455,7 +455,7 @@ export default function MapView(props: MapViewProps) {
                 {/* 로딩 뱃지 */}
                 <div
                     className={[
-                        "pointer-events-none absolute right-3 top-3 z-999 rounded-full border bg-white/90 px-3 py-1 text-xs shadow transition-opacity",
+                        "pointer-events-none absolute right-3 bottom-3 z-100 rounded-full border bg-white/90 px-3 py-1 text-xs shadow transition-opacity",
                         loading ? "opacity-100" : "opacity-0",
                     ].join(" ")}
                 >

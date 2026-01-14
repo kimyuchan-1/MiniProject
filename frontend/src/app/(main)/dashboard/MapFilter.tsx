@@ -13,7 +13,7 @@ export default function MapFilter(props: {
 }) {
   const { value, onChange, className } = props;
   return (
-    <div className="absolute right-3 top-3 z-999 rounded-xl border bg-white/90 px-3 py-2 text-xs shadow">
+    <div className="absolute right-3 top-3 z-100 rounded-xl border bg-white/90 px-3 py-2 text-xs shadow">
                     <div className="flex flex-col gap-2">
                         <label className="flex items-center gap-2 cursor-pointer select-none">
                             <input

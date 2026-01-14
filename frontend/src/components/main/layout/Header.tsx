@@ -7,7 +7,7 @@ export default async function Header() {
   const user = await getAuthUser(); // null이면 비로그인
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-gray-50/80 backdrop-blur">
+    <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-gray-100/80 backdrop-blur">
       <nav className="w-full flex h-16 items-center justify-between px-6">
         <Link href="/" className="flex items-center gap-2 select-none" aria-label="Go to Home">
           <span className="text-lg font-extrabold tracking-tight text-gray-900">PedSafe</span>
