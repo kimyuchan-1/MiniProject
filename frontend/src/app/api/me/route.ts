@@ -1,20 +1,27 @@
 import { NextResponse } from "next/server";
 import axios from "axios";
+import { cookies } from "next/headers";
 import { backendClient } from "@/lib/backendClient";
-import { forwardSetCookie } from "@/lib/forwardSetCookie";
 
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
   try {
-    const cookie = req.headers.get("cookie") ?? "";
+    // ✅ Next 타입에서 cookies()가 Promise면 await 필요
+    const c = await cookies();
+    const accessToken = c.get("access_token")?.value;
+
+    if (!accessToken) {
+      return NextResponse.json(
+        { success: false, message: "인증이 필요합니다", data: null },
+        { status: 401 }
+      );
+    }
 
     const upstream = await backendClient.get("/api/auth/me", {
-      headers: { cookie },
+      headers: { Authorization: `Bearer ${accessToken}` },
       validateStatus: () => true,
     });
 
-    const res = NextResponse.json(upstream.data ?? null, { status: upstream.status });
-    forwardSetCookie(res, upstream.headers); // 백엔드가 토큰 갱신(set-cookie)하면 전달
-    return res;
+    return NextResponse.json(upstream.data ?? null, { status: upstream.status });
   } catch (err: any) {
     if (axios.isAxiosError(err)) {
       return NextResponse.json(
