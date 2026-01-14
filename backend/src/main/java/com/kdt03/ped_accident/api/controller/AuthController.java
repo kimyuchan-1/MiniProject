@@ -47,56 +47,16 @@ public class AuthController {
         CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
         User user = principal.getUser();
 
-        String accessToken = jwtTokenProvider.createAccessToken(
-            user.getEmail(), user.getRole().getKey()
-        );
-        String refreshToken = jwtTokenProvider.createRefreshToken(user.getEmail());
-
-        userService.updateRefreshToken(user.getId(), refreshToken);
+        String accessToken = jwtTokenProvider.createAccessToken(authentication);
 
         response.addCookie(createHttpOnlyCookie(
             "accessToken", accessToken, 60 * 60   // 1시간
-        ));
-        response.addCookie(createHttpOnlyCookie(
-            "refreshToken", refreshToken, 60 * 60 * 24 * 7 // 7일
         ));
 
         return ResponseEntity.ok(
             ApiResponse.success("로그인 성공", UserSessionDto.from(user))
         );
     }
-    
-    @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse<Void>> refresh(
-            @CookieValue("refreshToken") String refreshToken,
-            HttpServletResponse response
-    ) {
-        if (!jwtTokenProvider.validateToken(refreshToken)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("유효하지 않은 리프레시 토큰"));
-        }
-
-        String email = jwtTokenProvider.getUsername(refreshToken);
-        User user = userService.findByEmail(email);
-
-        if (!refreshToken.equals(user.getRefreshToken())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("리프레시 토큰 불일치"));
-        }
-
-        String newAccessToken =
-            jwtTokenProvider.createAccessToken(user.getEmail(), user.getRole().getKey());
-        String newRefreshToken =
-            jwtTokenProvider.createRefreshToken(user.getEmail());
-
-        userService.updateRefreshToken(user.getId(), newRefreshToken);
-
-        response.addCookie(createHttpOnlyCookie("accessToken", newAccessToken, 60 * 60));
-        response.addCookie(createHttpOnlyCookie("refreshToken", newRefreshToken, 60 * 60 * 24 * 7));
-
-        return ResponseEntity.ok(ApiResponse.success("토큰 갱신 성공", null));
-    }
-
     
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<UserSessionDto>> register(@RequestBody @Valid RegisterRequest request) {
@@ -129,11 +89,9 @@ public class AuthController {
     ) {
         if (authentication != null && authentication.isAuthenticated()) {
             CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
-            userService.updateRefreshToken(principal.getUser().getId(), null);
         }
 
         response.addCookie(createHttpOnlyCookie("accessToken", null, 0));
-        response.addCookie(createHttpOnlyCookie("refreshToken", null, 0));
 
         return ResponseEntity.ok(ApiResponse.success("로그아웃 성공", null));
     }

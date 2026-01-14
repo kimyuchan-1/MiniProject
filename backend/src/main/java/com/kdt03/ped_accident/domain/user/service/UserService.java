@@ -1,5 +1,7 @@
 package com.kdt03.ped_accident.domain.user.service;
 
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,10 +23,6 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-
-    /* =========================
-       일반 회원가입 (이메일/비밀번호)
-       ========================= */
 
     @Transactional
     public User signUp(RegisterRequest request) {
@@ -53,38 +51,30 @@ public class UserService {
         return userRepository.existsByEmail(email);
     }
 
-    /* =========================
-       OAuth 전용 로직 (핵심)
-       ========================= */
-
+    /**
+     * OAuth 로그인 시 사용자 조회 또는 생성
+     * 이미 존재하는 이메일이면 해당 유저 반환
+     * 동시성 문제 시 안전하게 처리
+     */
     @Transactional
-    public User findOrCreateOAuthUser(
-            AuthProvider provider,
-            String providerId,
-            String email
-    ) {
-        return userRepository
-                .findByProviderAndProviderId(provider, providerId)
+    public User findOrCreateOAuthUser(AuthProvider provider, String providerId, String email) {
+        return userRepository.findByProviderAndProviderId(provider, providerId)
                 .orElseGet(() -> {
                     User user = User.builder()
                             .provider(provider)
                             .providerId(providerId)
-                            .email(email)        // null 가능
+                            .email(email)
                             .role(Role.USER)
                             .enabled(true)
+                            .password(new BCryptPasswordEncoder().encode("OAuthDummyPassword"))
                             .build();
-                    return userRepository.save(user);
+                    try {
+                        return userRepository.saveAndFlush(user);
+                    } catch (DataIntegrityViolationException e) {
+                        userRepository.flush(); // 혹은 entityManager.clear();
+                        return userRepository.findByProviderAndProviderId(provider, providerId)
+                                .orElseThrow(() -> e);
+                    }
                 });
-    }
-
-    /* =========================
-       Refresh Token
-       ========================= */
-
-    @Transactional
-    public void updateRefreshToken(Long userId, String refreshToken) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new DataNotFoundException("사용자를 찾을 수 없습니다."));
-        user.setRefreshToken(refreshToken);
     }
 }

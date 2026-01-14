@@ -19,7 +19,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = " crosswalks")
+@Table(name = "crosswalks")
 @Getter
 @Setter
 @NoArgsConstructor

@@ -36,65 +36,55 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
                 (OAuth2AuthenticationToken) authentication;
 
         OAuth2User oAuth2User = oauthToken.getPrincipal();
-
         String registrationId =
                 oauthToken.getAuthorizedClientRegistrationId();
 
         AuthProvider provider = AuthProvider.from(registrationId);
 
-        // ✅ 핵심: email이 아니라 providerId 기준
         String providerId;
         String email = null;
 
         if (provider == AuthProvider.NAVER) {
-            // 네이버는 response 안에 실제 데이터 있음
             Map<String, Object> responseMap =
                     oAuth2User.getAttribute("response");
-
-            providerId = (String) responseMap.get("id");   // 필수
-            email = (String) responseMap.get("email");     // 선택
+            providerId = (String) responseMap.get("id");
+            email = (String) responseMap.get("email");
 
         } else if (provider == AuthProvider.GITHUB) {
-            // GitHub는 email이 null인 경우 많음
             providerId = String.valueOf(oAuth2User.getAttribute("id"));
-            email = oAuth2User.getAttribute("email"); // nullable
+            email = oAuth2User.getAttribute("email");
 
         } else { // GOOGLE
             providerId = oAuth2User.getAttribute("sub");
-            email = oAuth2User.getAttribute("email"); // 거의 항상 존재
+            email = oAuth2User.getAttribute("email");
         }
 
-        // ✅ provider + providerId 기준으로 사용자 처리
+        // ✅ 우리 시스템 User
         User user = userService.findOrCreateOAuthUser(
                 provider,
                 providerId,
                 email
         );
 
-        String accessToken = jwtTokenProvider.createAccessToken(authentication);
-        String refreshToken = jwtTokenProvider.createRefreshToken(authentication);
+        // ✅ 우리 시스템 기준 Authentication 생성
+        Authentication userAuth =
+                jwtTokenProvider.getAuthenticationByEmail(user.getEmail());
 
-        // 쿠키 저장
-        response.addCookie(createCookie(
-                "accessToken",
-                accessToken,
-                60 * 60        // 1시간
-        ));
+        // ✅ JWT 생성
+        String accessToken =
+                jwtTokenProvider.createAccessToken(userAuth);
 
-        response.addCookie(createCookie(
-                "refreshToken",
-                refreshToken,
-                60 * 60 * 24 * 7   // 7일
-        ));
 
-        // 프론트로 이동
+        response.addCookie(createCookie("accessToken", accessToken, 60 * 60));
+
         response.sendRedirect("http://localhost:3000");
+
     }
 
     private Cookie createCookie(String name, String value, int maxAge) {
         Cookie cookie = new Cookie(name, value);
         cookie.setHttpOnly(true);
-        cookie.setSecure(false); // 로컬 개발용 (운영은 true)
+        cookie.setSecure(false);
         cookie.setPath("/");
         cookie.setMaxAge(maxAge);
         return cookie;

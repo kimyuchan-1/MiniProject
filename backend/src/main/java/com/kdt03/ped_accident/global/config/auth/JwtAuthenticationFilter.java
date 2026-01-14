@@ -17,7 +17,18 @@ import lombok.RequiredArgsConstructor;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
+    
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
 
+        return path.startsWith("/api/oauth2/")
+            || path.startsWith("/oauth2/")
+            || path.startsWith("/login/oauth2/")
+            || path.startsWith("/api/auth/")
+            || path.equals("/");
+    }
+    
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
@@ -28,7 +39,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String token = resolveToken(request);
 
-            // 🔥 이미 인증된 경우 다시 세팅 안 함
             if (token != null
                     && jwtTokenProvider.validateToken(token)
                     && SecurityContextHolder.getContext().getAuthentication() == null) {
@@ -39,7 +49,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         } catch (Exception e) {
-            // 토큰 문제 발생 시 컨텍스트 초기화
             SecurityContextHolder.clearContext();
         }
 

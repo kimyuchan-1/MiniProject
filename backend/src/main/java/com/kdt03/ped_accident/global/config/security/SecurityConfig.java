@@ -53,7 +53,7 @@ public class SecurityConfig {
                 .accessDeniedHandler(jwtAccessDeniedHandler)
             )
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/api/public/**", "/api/auth/**", "/oauth2/**", "/login/**", "/",
+                .requestMatchers("/api/public/**", "/api/auth/**", "/oauth2/**", "/login/**", "/", "/api/oauth2/**",
                         "/api/oauth/**",
                         "/login/oauth2/**").permitAll()
                 .requestMatchers("/api/dashboard/**").authenticated()

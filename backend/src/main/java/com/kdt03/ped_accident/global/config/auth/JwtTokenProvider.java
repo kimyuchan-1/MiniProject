@@ -1,8 +1,8 @@
 package com.kdt03.ped_accident.global.config.auth;
 
+
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
-import java.util.Base64;
 import java.util.Date;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -20,7 +20,6 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
 @Component
@@ -37,7 +36,6 @@ public class JwtTokenProvider {
     private int refreshExpirationInMs;
 
     private final CustomUserDetailsService userDetailsService;
-
     private Key key;
 
     @PostConstruct
@@ -47,7 +45,10 @@ public class JwtTokenProvider {
 
     public String createAccessToken(Authentication authentication) {
         String email = authentication.getName();
-        String role = authentication.getAuthorities().iterator().next().getAuthority();
+        String role = authentication.getAuthorities().stream()
+                .findFirst()
+                .map(a -> a.getAuthority())
+                .orElse("ROLE_USER");
 
         Claims claims = Jwts.claims().setSubject(email);
         claims.put("role", role);
@@ -63,26 +64,26 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    public String createRefreshToken(Authentication authentication) {
-        String email = authentication.getName();
+    public Authentication getAuthentication(String token) {
+        UserDetails userDetails =
+                userDetailsService.loadUserByUsername(getUsername(token));
 
-        Claims claims = Jwts.claims().setSubject(email);
-
-        Date now = new Date();
-        Date validity = new Date(now.getTime() + refreshExpirationInMs);
-
-        return Jwts.builder()
-                .setClaims(claims)
-                .setIssuedAt(now)
-                .setExpiration(validity)
-                .signWith(key, SignatureAlgorithm.HS256)
-                .compact();
+        return new UsernamePasswordAuthenticationToken(
+                userDetails,
+                null,
+                userDetails.getAuthorities()
+        );
     }
 
+    public Authentication getAuthenticationByEmail(String email) {
+        UserDetails userDetails =
+                userDetailsService.loadUserByUsername(email);
 
-    public Authentication getAuthentication(String token) {
-        UserDetails userDetails = userDetailsService.loadUserByUsername(getUsername(token));
-        return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
+        return new UsernamePasswordAuthenticationToken(
+                userDetails,
+                null,
+                userDetails.getAuthorities()
+        );
     }
 
     public String getUsername(String token) {
@@ -104,13 +105,5 @@ public class JwtTokenProvider {
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
-    }
-
-    public String resolveToken(HttpServletRequest request) {
-        String bearerToken = request.getHeader("Authorization");
-        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
-        }
-        return null;
     }
 }

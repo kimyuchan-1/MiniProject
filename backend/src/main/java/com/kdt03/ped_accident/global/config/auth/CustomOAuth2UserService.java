@@ -1,5 +1,7 @@
 package com.kdt03.ped_accident.global.config.auth;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -11,40 +13,63 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
 import com.kdt03.ped_accident.domain.user.entity.AuthProvider;
+import com.kdt03.ped_accident.domain.user.entity.User;
+import com.kdt03.ped_accident.domain.user.service.UserService;
 
 import lombok.RequiredArgsConstructor;
 
+// ... 나머지 import 생략
+
 @Service
 @RequiredArgsConstructor
-public class CustomOAuth2UserService
-        implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
+public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
 
-	@Override
-	public OAuth2User loadUser(OAuth2UserRequest userRequest) {
-	    OAuth2User oAuth2User = new DefaultOAuth2UserService().loadUser(userRequest);
+    private final UserService userService;
 
-	    String registrationId =
-	        userRequest.getClientRegistration().getRegistrationId();
+    @Override
+    public OAuth2User loadUser(OAuth2UserRequest userRequest) {
+        OAuth2User oAuth2User = new DefaultOAuth2UserService().loadUser(userRequest);
 
-	    AuthProvider provider =
-	        AuthProvider.valueOf(registrationId.toUpperCase());
+        String registrationId = userRequest.getClientRegistration().getRegistrationId();
+        AuthProvider provider = AuthProvider.valueOf(registrationId.toUpperCase());
 
-	    String email;
+        String providerId = null;
+        String email = null;
+        String name = null;
 
-	    if (provider == AuthProvider.NAVER) {
-	        Map<String, Object> response = oAuth2User.getAttribute("response");
-	        email = (String) response.get("email");
-	    } else {
-	        email = oAuth2User.getAttribute("email");
-	    }
+        if (provider == AuthProvider.NAVER) {
+            Map<String, Object> response = oAuth2User.getAttribute("response");
+            providerId = response != null ? (String) response.get("id") : null;
+            email = response != null ? (String) response.get("email") : null;
+            name = response != null ? (String) response.get("name") : null;
+        } else if (provider == AuthProvider.GITHUB) {
+            providerId = String.valueOf(oAuth2User.getAttribute("id"));
+            email = oAuth2User.getAttribute("email");
+            name = (String) oAuth2User.getAttribute("name");
+        } else { // GOOGLE
+            providerId = oAuth2User.getAttribute("sub");
+            email = oAuth2User.getAttribute("email");
+            name = oAuth2User.getAttribute("name");
+        }
 
-	    User user = userService.findOrCreateOAuthUser(email, provider);
+        if (email == null || email.isEmpty()) {
+            email = provider + "_" + providerId + "@example.com";
+        }
 
-	    return new DefaultOAuth2User(
-	        List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())),
-	        oAuth2User.getAttributes(),
-	        "email"
-	    );
-	}
+        if (name == null || name.isEmpty()) {
+            name = "User_" + providerId;
+        }
 
+        User user = userService.findOrCreateOAuthUser(provider, providerId, email);
+
+        Map<String, Object> mappedAttributes = new HashMap<>(oAuth2User.getAttributes());
+        mappedAttributes.put("email", email);
+        mappedAttributes.put("name", name);
+
+        return new DefaultOAuth2User(
+                List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())),
+                mappedAttributes,
+                "email"
+        );
+    }
 }
