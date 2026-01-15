@@ -43,9 +43,12 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
             email = response != null ? (String) response.get("email") : null;
             name = response != null ? (String) response.get("name") : null;
         } else if (provider == AuthProvider.GITHUB) {
-            providerId = String.valueOf(oAuth2User.getAttribute("id"));
-            email = oAuth2User.getAttribute("email");
-            name = (String) oAuth2User.getAttribute("name");
+            Object idObj = oAuth2User.getAttribute("id");
+            providerId = idObj != null ? String.valueOf(idObj) : null;
+            Object emailObj = oAuth2User.getAttribute("email");
+            email = emailObj != null ? String.valueOf(emailObj) : null;
+            Object nameObj = oAuth2User.getAttribute("name");
+            name = nameObj != null ? String.valueOf(nameObj) : null;
         } else { // GOOGLE
             providerId = oAuth2User.getAttribute("sub");
             email = oAuth2User.getAttribute("email");

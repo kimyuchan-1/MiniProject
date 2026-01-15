@@ -7,7 +7,7 @@ import { FaGithub } from "react-icons/fa";
 import Image from "next/image";
 
 // 백엔드 ngrok URL (환경변수로 관리 권장)
-const BACKEND_URL = process.env.BACKEND_URL_NGROK || "https://primeval-trinh-nonfalteringly.ngrok-free.dev";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 export default function Signin() {
   const [credentials, setCredentials] = useState({ email: "", password: "" });
