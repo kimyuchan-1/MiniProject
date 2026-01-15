@@ -2,14 +2,19 @@ import { NextResponse } from "next/server";
 
 export async function GET(
   _req: Request,
-  ctx: { params: Promise<{ provider: string }> }
+  { params }: { params: Promise<{ provider: string }> }
 ) {
-  const { provider } = await ctx.params;
+  const { provider } = await params;
 
-  const backend = process.env.BACKEND_URL; // 서버 전용 env 권장
+
+  const backend = process.env.BACKEND_URL; // ex) https://xxxx.ngrok-free.dev
   if (!backend) {
-    return NextResponse.json({ error: "BACKEND_URL is not set" }, { status: 500 });
+    return NextResponse.json({ error: "BACKEND_URL_NGROK is not set" }, { status: 500 });
   }
 
-  return NextResponse.redirect(`${backend}/oauth2/authorization/${provider}`);
+  const url = `${backend}/oauth2/authorization/${provider}`;
+
+  const res = NextResponse.redirect(url, { status: 302 });
+  res.headers.set("Cache-Control", "no-store");
+  return res;
 }

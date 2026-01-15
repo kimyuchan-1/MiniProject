@@ -27,12 +27,14 @@ export async function getAuthUser(): Promise<AuthUser | null> {
     if (res.status !== 200) return null;
 
     // 백엔드 응답 DTO에 맞춰 매핑
-    const data = res.data ?? {};
+    const payload = res.data ?? {};
+    const user = payload.data ?? {}; // ApiResponse의 data
+
     return {
-      id: data.id?.toString?.() ?? data.id ?? null,
-      email: data.email ?? null,
-      name: data.name ?? null,
-      role: data.role ?? null,
+      id: user.id?.toString?.() ?? user.id ?? null,
+      email: user.email ?? null,
+      name: user.name ?? null,
+      role: user.role ?? null,
     };
   } catch {
     return null;

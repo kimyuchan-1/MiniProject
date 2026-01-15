@@ -16,6 +16,8 @@ export type MySuggestion = {
     viewCount?: number;
 };
 
+type ApiResponse<T> = { success: boolean; message: string; data: T };
+
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
     const res = await fetch(url, {
         ...init,
@@ -27,12 +29,21 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
         cache: "no-store",
     });
 
-    // 서버가 {success,message,data} 형식이면 여기에 맞춰도 됨.
+    const json = await res.json().catch(() => null);
+
     if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        throw new Error(text || `Request failed: ${res.status}`);
+        const msg =
+            (json && typeof json === "object" && "message" in json && (json as any).message) ||
+            `Request failed: ${res.status}`;
+        throw new Error(String(msg));
     }
-    return (await res.json()) as T;
+
+    // ApiResponse면 data만 반환
+    if (json && typeof json === "object" && "data" in json) {
+        return (json as ApiResponse<T>).data;
+    }
+
+    return json as T;
 }
 
 export function fetchMe() {
