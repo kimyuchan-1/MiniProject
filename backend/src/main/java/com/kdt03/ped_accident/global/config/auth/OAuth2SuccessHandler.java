@@ -75,18 +75,8 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
                 jwtTokenProvider.createAccessToken(userAuth);
 
 
-        response.addCookie(createCookie("accessToken", accessToken, 60 * 60));
-
-        response.sendRedirect("http://localhost:3000");
-
-    }
-
-    private Cookie createCookie(String name, String value, int maxAge) {
-        Cookie cookie = new Cookie(name, value);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(true);
-        cookie.setPath("/");
-        cookie.setMaxAge(maxAge);
-        return cookie;
+        // 크로스 도메인 쿠키 문제 해결: 쿼리 파라미터로 토큰 전달
+        String redirectUrl = "http://localhost:3000/api/oauth2/callback?token=" + accessToken;
+        response.sendRedirect(redirectUrl);
     }
 }

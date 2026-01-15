@@ -1,40 +1,38 @@
 import type { NextResponse } from "next/server";
+import type { AxiosResponseHeaders, RawAxiosResponseHeaders } from "axios";
 
-export function forwardSetCookie(res: NextResponse, upstreamHeaders: unknown) {
-    if (!upstreamHeaders) {
-        return;
+export function forwardSetCookie(
+  res: NextResponse,
+  upstreamHeaders: AxiosResponseHeaders | RawAxiosResponseHeaders | unknown
+) {
+  if (!upstreamHeaders) {
+    return;
+  }
+
+  const anyHeader = upstreamHeaders as any;
+
+  // axios의 getSetCookie() 메서드 사용 (axios >= 1.x)
+  if (typeof anyHeader.getSetCookie === "function") {
+    const cookies: string[] = anyHeader.getSetCookie();
+    for (const c of cookies) {
+      res.headers.append("Set-Cookie", c);
     }
+    return;
+  }
 
-    const anyHeader = upstreamHeaders as any;
+  // axios headers 객체에서 직접 접근
+  const setCookieValue =
+    anyHeader["set-cookie"] ?? anyHeader["Set-Cookie"];
 
-    if (typeof anyHeader.getSetCookie === "function") {
-        const cookies: string[] = anyHeader.getSetCookie();
-        for (const c of cookies) {
-            res.headers.append("Set-Cookie", c);
-        }
-        return;
+  if (!setCookieValue) {
+    return;
+  }
+
+  if (Array.isArray(setCookieValue)) {
+    for (const c of setCookieValue) {
+      res.headers.append("Set-Cookie", c);
     }
-
-    if (typeof anyHeader.get === "function") {
-        const cookie = anyHeader.get("Set-Cookie");
-        if (cookie) {
-            res.headers.append("Set-Cookie", cookie);
-        }
-        return;
-    }
-
-    const cookie = (upstreamHeaders as any)["set-cookie"] ?? (upstreamHeaders as any)["Set-Cookie"];
-    if (!cookie) {
-        return;
-    }
-
-    if (Array.isArray(cookie)) {
-        for  (const c of cookie) {
-            res.headers.append("Set-Cookie", c);
-        }
-    } else {
-        res.headers.append("Set-Cookie", cookie);
-    
-    }
-
+  } else if (typeof setCookieValue === "string") {
+    res.headers.append("Set-Cookie", setCookieValue);
+  }
 }

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import axios from "axios";
 import { backendClient } from "@/lib/backendClient";
-import { forwardSetCookie } from "@/lib/forwardSetCookie"; 
 
 type SignInBody = {
   email?: string;
@@ -31,11 +30,28 @@ export async function POST(req: Request) {
     // Spring이 만든 응답(JSON)을 그대로 전달
     const res = NextResponse.json(upstream.data ?? null, { status: upstream.status });
 
-    // Spring이 Set-Cookie를 내려주면 브라우저로 전달 (access_token/refresh_token 등)
-    forwardSetCookie(res, upstream.headers);
+    // Spring이 Set-Cookie를 내려주면 프론트엔드 도메인에서 쿠키 설정
+    const setCookies = upstream.headers["set-cookie"];
+    if (setCookies) {
+      const cookieArray = Array.isArray(setCookies) ? setCookies : [setCookies];
+      for (const cookieStr of cookieArray) {
+        // 백엔드에서 온 쿠키를 파싱하여 프론트엔드 도메인에 맞게 재설정
+        const match = cookieStr.match(/^([^=]+)=([^;]*)/);
+        if (match) {
+          const [, name, value] = match;
+          res.cookies.set(name, value, {
+            httpOnly: true,
+            secure: false, // 로컬 개발: false / 운영(HTTPS): true
+            sameSite: "lax",
+            path: "/",
+            maxAge: 60 * 60, // 1시간
+          });
+        }
+      }
+    }
 
     return res;
-  } catch (err: any) {
+  } catch (err: unknown) {
     if (axios.isAxiosError(err)) {
       return NextResponse.json(
         { success: false, message: "백엔드 연결 실패", data: { detail: err.message } },
