@@ -51,8 +51,10 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
             email = (String) responseMap.get("email");
 
         } else if (provider == AuthProvider.GITHUB) {
-            providerId = String.valueOf(oAuth2User.getAttribute("id"));
-            email = oAuth2User.getAttribute("email");
+            Object idObj = oAuth2User.getAttribute("id");
+            providerId = idObj != null ? String.valueOf(idObj) : null;
+            Object emailObj = oAuth2User.getAttribute("email");
+            email = emailObj != null ? String.valueOf(emailObj) : null;
 
         } else { // GOOGLE
             providerId = oAuth2User.getAttribute("sub");
