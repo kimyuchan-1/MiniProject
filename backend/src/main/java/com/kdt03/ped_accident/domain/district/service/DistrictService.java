@@ -1,7 +1,5 @@
 package com.kdt03.ped_accident.domain.district.service;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,8 +34,8 @@ public class DistrictService {
             
             if (!prov.equals(province)) continue;
             
-            BigDecimal lat = d.getCenterLati();
-            BigDecimal lon = d.getCenterLong();
+            Double lat = d.getCenterLati();
+            Double lon = d.getCenterLong();
             if (lat == null || lon == null) continue;
             
             cityMap.computeIfAbsent(city, k -> new CityAccumulator())
@@ -69,8 +67,8 @@ public class DistrictService {
             if (tokens.length < 1) continue;
             
             String province = tokens[0];
-            BigDecimal lat = d.getCenterLati();
-            BigDecimal lon = d.getCenterLong();
+            Double lat = d.getCenterLati();
+            Double lon = d.getCenterLong();
             if (lat == null || lon == null) continue;
             
             provinceMap.computeIfAbsent(province, k -> new CityAccumulator())
@@ -92,22 +90,22 @@ public class DistrictService {
     }
 
     private static class CityAccumulator {
-        private BigDecimal sumLat = BigDecimal.ZERO;
-        private BigDecimal sumLon = BigDecimal.ZERO;
+        private double sumLat = 0;
+        private double sumLon = 0;
         private int count = 0;
 
-        void add(BigDecimal lat, BigDecimal lon) {
-            sumLat = sumLat.add(lat);
-            sumLon = sumLon.add(lon);
+        void add(Double lat, Double lon) {
+            sumLat += lat;
+            sumLon += lon;
             count++;
         }
 
         double getAvgLat() {
-            return count > 0 ? sumLat.divide(BigDecimal.valueOf(count), 8, RoundingMode.HALF_UP).doubleValue() : 0;
+            return count > 0 ? sumLat / count : 0;
         }
 
         double getAvgLon() {
-            return count > 0 ? sumLon.divide(BigDecimal.valueOf(count), 8, RoundingMode.HALF_UP).doubleValue() : 0;
+            return count > 0 ? sumLon / count : 0;
         }
     }
 }

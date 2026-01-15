@@ -1,7 +1,5 @@
 package com.kdt03.ped_accident.domain.district.entity;
 
-import java.math.BigDecimal;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -25,9 +23,9 @@ public class DistrictWithLatLon {
     @Column(name = "bjd_nm")
     private String bjdNm;
 
-    @Column(name = "center_lati", precision = 10, scale = 8)
-    private BigDecimal centerLati;
+    @Column(name = "center_lati")
+    private Double centerLati;
 
-    @Column(name = "center_long", precision = 11, scale = 8)
-    private BigDecimal centerLong;
+    @Column(name = "center_long")
+    private Double centerLong;
 }
