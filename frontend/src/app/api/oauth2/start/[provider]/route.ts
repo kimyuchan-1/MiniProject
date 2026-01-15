@@ -7,7 +7,7 @@ export async function GET(
   const { provider } = await params;
 
 
-  const backend = process.env.BACKEND_URL; // ex) https://xxxx.ngrok-free.dev
+  const backend = process.env.BACKEND_URL_NIP; // ex) https://xxxx.ngrok-free.dev
   if (!backend) {
     return NextResponse.json({ error: "BACKEND_URL_NGROK is not set" }, { status: 500 });
   }

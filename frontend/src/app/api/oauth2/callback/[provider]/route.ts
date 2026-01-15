@@ -6,7 +6,7 @@ export async function GET(
 ) {
   const { provider } = await ctx.params;
 
-  const backend = process.env.BACKEND_URL;
+  const backend = process.env.BACKEND_URL_NIP;
   if (!backend) return NextResponse.json({ error: "BACKEND_URL missing" }, { status: 500 });
 
   const url = new URL(req.url);
