@@ -44,13 +44,14 @@ public class SecurityConfig {
 	private final CustomOAuth2UserService customOAuth2UserService;
 	private final OAuth2SuccessHandler oAuth2SuccessHandler;
 	private final OAuth2FailureHandler oAuth2FailureHandler;
-/*
+	// OAuth2 전용 필터 체인 (세션 필요)
 	@Bean
     @Order(1)
     SecurityFilterChain oauthChain(HttpSecurity http) throws Exception {
     	http
     		.securityMatcher("/oauth2/**", "/login/oauth2/**")
     		.csrf(csrf -> csrf.disable())
+    		.cors(cors -> cors.configurationSource(corsConfigurationSource()))
     		.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
     		.authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
     		.oauth2Login(oauth2 -> oauth2
@@ -61,9 +62,10 @@ public class SecurityConfig {
     	            );
     	return http.build();
     }
-*/
+
+	// API 전용 필터 체인 (JWT, Stateless)
     @Bean
-   // @Order(2)
+    @Order(2)
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 		http.csrf(AbstractHttpConfigurer::disable)
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -79,13 +81,7 @@ public class SecurityConfig {
 						.anyRequest().permitAll())
 				.addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
 						UsernamePasswordAuthenticationFilter.class)
-				.cors(cors -> cors.configurationSource(corsConfigurationSource()))
-				.oauth2Login(oauth2 -> oauth2
-    	                .userInfoEndpoint(userInfo -> userInfo
-    	                    .userService(customOAuth2UserService))
-    	                .successHandler(oAuth2SuccessHandler)
-    	                .failureHandler(oAuth2FailureHandler)
-    	            );
+				.cors(cors -> cors.configurationSource(corsConfigurationSource()));
 
 		return http.build();
 	}
