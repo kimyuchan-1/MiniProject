@@ -77,5 +77,15 @@ public class Suggestion {
 	@JoinColumn(name = "user_id", insertable = false, updatable = false)
 	@JsonIgnore // Jackson 직렬화 제외
 	private User user;
-
+	
+	public static Suggestion from(Suggestion s) {
+        return Suggestion.builder()
+                .id(s.getId())
+                .title(s.getTitle())
+                .status(s.getStatus())
+                .suggestionType(s.getSuggestionType())
+                .createdAt(s.getCreatedAt())
+                .viewCount(s.getViewCount())
+                .build();
+    }
 }

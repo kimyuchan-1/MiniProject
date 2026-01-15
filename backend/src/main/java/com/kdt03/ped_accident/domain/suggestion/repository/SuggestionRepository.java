@@ -16,5 +16,9 @@ public interface SuggestionRepository extends JpaRepository<Suggestion, Long> {
     Page<Suggestion> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
 	Page<Suggestion> findByStatus(SuggestionStatus status, Pageable pageable);
+	
+	Page<Suggestion> findByUserId(Long userId, Pageable pageable);
+	
+	Page<Suggestion> findByUserIdAndStatus(Long userId, SuggestionStatus status, Pageable pageable);
 }
 

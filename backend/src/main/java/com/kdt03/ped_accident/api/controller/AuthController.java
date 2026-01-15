@@ -5,15 +5,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.kdt03.ped_accident.api.dto.request.ChangePasswordRequest;
 import com.kdt03.ped_accident.api.dto.request.LoginRequest;
 import com.kdt03.ped_accident.api.dto.request.RegisterRequest;
+import com.kdt03.ped_accident.api.dto.request.UpdateMeRequest;
 import com.kdt03.ped_accident.api.dto.response.ApiResponse;
 import com.kdt03.ped_accident.api.dto.response.UserSessionDto;
 import com.kdt03.ped_accident.domain.user.entity.User;
@@ -80,6 +82,51 @@ public class AuthController {
         UserSessionDto userSession = UserSessionDto.from(user);
         
         return ResponseEntity.ok(ApiResponse.success("사용자 정보 조회 성공", userSession));
+    }
+    
+    @PatchMapping("/me")
+    public ResponseEntity<ApiResponse<UserSessionDto>> updateMe(
+            Authentication authentication,
+            @Valid @RequestBody UpdateMeRequest req
+    ) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("인증되지 않은 사용자"));
+        }
+
+        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+        User me = principal.getUser();
+
+        String nextName = req.getName().trim();
+
+        User updated = userService.updateMyName(me.getId(), nextName);
+
+        UserSessionDto userSession = UserSessionDto.from(updated);
+
+        return ResponseEntity.ok(ApiResponse.success("회원명 수정 성공", userSession));
+    }
+    
+    @PostMapping("/change-password")
+    public ResponseEntity<ApiResponse<Object>> changePassword(
+            Authentication authentication,
+            @Valid @RequestBody ChangePasswordRequest req
+    ) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("인증되지 않은 사용자"));
+        }
+
+        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+        Long userId = principal.getUser().getId();
+
+        try {
+            userService.changeMyPassword(userId, req.getCurrentPassword(), req.getNewPassword());
+            return ResponseEntity.ok(ApiResponse.success("비밀번호 변경 성공", null));
+        } catch (IllegalArgumentException e) {
+            // 현재 비밀번호 불일치, 새 비밀번호 규칙 위반 등
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
+        }
     }
     
     @PostMapping("/logout")

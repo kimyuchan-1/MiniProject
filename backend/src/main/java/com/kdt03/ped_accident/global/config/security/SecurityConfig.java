@@ -2,6 +2,7 @@ package com.kdt03.ped_accident.global.config.security;
 
 import java.util.Arrays;
 
+import org.springframework.boot.web.servlet.server.CookieSameSiteSupplier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -43,7 +44,7 @@ public class SecurityConfig {
 	private final CustomOAuth2UserService customOAuth2UserService;
 	private final OAuth2SuccessHandler oAuth2SuccessHandler;
 	private final OAuth2FailureHandler oAuth2FailureHandler;
-
+/*
 	@Bean
     @Order(1)
     SecurityFilterChain oauthChain(HttpSecurity http) throws Exception {
@@ -53,8 +54,6 @@ public class SecurityConfig {
     		.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
     		.authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
     		.oauth2Login(oauth2 -> oauth2
-    					.authorizationEndpoint(ep -> ep
-    							.authorizationRequestRepository(new HttpCookieOAuth2AuthorizationRequestRepository()))
     	                .userInfoEndpoint(userInfo -> userInfo
     	                    .userService(customOAuth2UserService))
     	                .successHandler(oAuth2SuccessHandler)
@@ -62,34 +61,43 @@ public class SecurityConfig {
     	            );
     	return http.build();
     }
-
-	@Bean
-	@Order(2)
-	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+*/
+    @Bean
+   // @Order(2)
+    SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 		http.csrf(AbstractHttpConfigurer::disable)
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint)
 						.accessDeniedHandler(jwtAccessDeniedHandler))
 				.authorizeHttpRequests(authz -> authz
-						.requestMatchers("/api/public/**", "/api/auth/**", "/")
-						.permitAll().requestMatchers("/api/dashboard/**").authenticated().requestMatchers("/api/map/**")
-						.authenticated().requestMatchers("/api/analysis/**").authenticated()
-						.requestMatchers("/api/admin/**").hasRole("ADMIN").anyRequest().authenticated())
+						.requestMatchers("/api/public/**", "/api/auth/**")
+						.permitAll()
+						.requestMatchers("/api/dashboard/**").authenticated()
+						.requestMatchers("/api/map/**").authenticated()
+						.requestMatchers("/api/analysis/**").authenticated()
+						.requestMatchers("/api/admin/**").hasRole("ADMIN")
+						.anyRequest().permitAll())
 				.addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
 						UsernamePasswordAuthenticationFilter.class)
-				.cors(cors -> cors.configurationSource(corsConfigurationSource()));
+				.cors(cors -> cors.configurationSource(corsConfigurationSource()))
+				.oauth2Login(oauth2 -> oauth2
+    	                .userInfoEndpoint(userInfo -> userInfo
+    	                    .userService(customOAuth2UserService))
+    	                .successHandler(oAuth2SuccessHandler)
+    	                .failureHandler(oAuth2FailureHandler)
+    	            );
 
 		return http.build();
 	}
 
 	@Bean
-	public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
+	AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
 			throws Exception {
 		return authenticationConfiguration.getAuthenticationManager();
 	}
 
 	@Bean
-	public CorsConfigurationSource corsConfigurationSource() {
+	CorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration configuration = new CorsConfiguration();
 		configuration.setAllowedOriginPatterns(
 				Arrays.asList("http://localhost:3000", "https://primeval-trinh-nonfalteringly.ngrok-free.dev"));
@@ -101,4 +109,11 @@ public class SecurityConfig {
 		source.registerCorsConfiguration("/**", configuration);
 		return source;
 	}
+	
+	@Bean
+	CookieSameSiteSupplier cookieSameSiteSupplier() {
+		return CookieSameSiteSupplier.ofNone()
+				.whenHasName("accessToken");
+	}
+	
 }

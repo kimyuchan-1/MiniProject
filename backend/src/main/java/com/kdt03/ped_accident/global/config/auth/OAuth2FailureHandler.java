@@ -28,7 +28,7 @@ public class OAuth2FailureHandler implements AuthenticationFailureHandler {
         );
 
         response.sendRedirect(
-            "http://localhost:3000/login?error=" + errorMessage
+            "http://10.125.121.181:3000/signin?error=" + errorMessage
         );
     }
 }
