@@ -6,6 +6,9 @@ import { FcGoogle } from "react-icons/fc";
 import { FaGithub } from "react-icons/fa";
 import Image from "next/image";
 
+// 백엔드 ngrok URL (환경변수로 관리 권장)
+const BACKEND_URL = process.env.BACKEND_URL_NGROK || "https://primeval-trinh-nonfalteringly.ngrok-free.dev";
+
 export default function Signin() {
   const [credentials, setCredentials] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
@@ -25,7 +28,7 @@ export default function Signin() {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          email: credentials.email,      // ✅ route와 일치
+          email: credentials.email,
           password: credentials.password
         }),
       });
@@ -52,7 +55,7 @@ export default function Signin() {
           <input
             className='w-full box-border px-4 py-3 border-2 border-[#e1e5e9] rounded-lg text-base transition-all duration-300 ease-in-out focus:outline-none focus:border-[#667eea] focus:shadow-[0_0_0_3px_rgba(102,126,234,0.1)]'
             type="text"
-            id="email"                          // ✅ username -> email
+            id="email"
             placeholder="이메일을 입력하세요"
             value={credentials.email}
             onChange={handleChange}
@@ -89,19 +92,19 @@ export default function Signin() {
           <span className='relative bg-white px-5 text-[#666] text-sm'>또는</span>
         </div>
 
-        <a href="/api/oauth2/start/google" className='inline-block w-full box-border p-3 rounded-lg text-base font-medium text-white no-underline transition-all duration-300 ease-in-out bg-[#4285f4] hover:bg-[#3367d6] hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(66,133,244,0.3)] active:translate-y-0'>
+        <a href={`${BACKEND_URL}/oauth2/authorization/google`} className='inline-block w-full box-border p-3 rounded-lg text-base font-medium text-white no-underline transition-all duration-300 ease-in-out bg-[#4285f4] hover:bg-[#3367d6] hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(66,133,244,0.3)] active:translate-y-0'>
           <span className='flex flex-row items-center justify-center'>
             <FcGoogle />&nbsp;구글으로 로그인
           </span>
         </a>
 
-        <a href="/api/oauth2/start/naver" className="inline-block w-full box-border p-3 mt-2.5 rounded-lg text-base font-medium text-white no-underline transition-all duration-300 ease-in-out bg-[#2DB400] hover:bg-[#16AA52] hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(45,180,0,0.3)] active:translate-y-0">
+        <a href={`${BACKEND_URL}/oauth2/authorization/naver`} className="inline-block w-full box-border p-3 mt-2.5 rounded-lg text-base font-medium text-white no-underline transition-all duration-300 ease-in-out bg-[#2DB400] hover:bg-[#16AA52] hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(45,180,0,0.3)] active:translate-y-0">
           <span className='flex flex-row items-center justify-center'>
             <Image src="/naver.svg" alt="naver logo" width={16} height={16} className='rounded-xs' />&nbsp;Naver로 로그인
           </span>
         </a>
 
-        <a href="/api/oauth2/start/github" className="inline-block w-full box-border p-3 mt-2.5 rounded-lg text-base font-medium text-white no-underline transition-all duration-300 ease-in-out bg-[#24292e] hover:bg-[#171515] hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(23,21,21,0.3)] active:translate-y-0 ">
+        <a href={`${BACKEND_URL}/oauth2/authorization/github`} className="inline-block w-full box-border p-3 mt-2.5 rounded-lg text-base font-medium text-white no-underline transition-all duration-300 ease-in-out bg-[#24292e] hover:bg-[#171515] hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(23,21,21,0.3)] active:translate-y-0 ">
           <span className='flex flex-row items-center justify-center'>
             <FaGithub />&nbsp;GitHub로 로그인
           </span>

@@ -14,6 +14,9 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.client.web.AuthorizationRequestRepository;
+import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizationRequestRepository;
+import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -55,6 +58,8 @@ public class SecurityConfig {
     		.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
     		.authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
     		.oauth2Login(oauth2 -> oauth2
+    				.authorizationEndpoint(authz -> authz
+    					.authorizationRequestRepository(authorizationRequestRepository()))
     	                .userInfoEndpoint(userInfo -> userInfo
     	                    .userService(customOAuth2UserService))
     	                .successHandler(oAuth2SuccessHandler)
@@ -62,6 +67,11 @@ public class SecurityConfig {
     	            );
     	return http.build();
     }
+	
+	@Bean
+	AuthorizationRequestRepository<OAuth2AuthorizationRequest> authorizationRequestRepository() {
+		return new HttpSessionOAuth2AuthorizationRequestRepository();
+	}
 
 	// API 전용 필터 체인 (JWT, Stateless)
     @Bean
@@ -108,8 +118,8 @@ public class SecurityConfig {
 	
 	@Bean
 	CookieSameSiteSupplier cookieSameSiteSupplier() {
-		return CookieSameSiteSupplier.ofNone()
-				.whenHasName("accessToken");
+		// 세션 쿠키와 accessToken 쿠키 모두 SameSite=None 적용
+		return CookieSameSiteSupplier.ofNone();
 	}
 	
 }
