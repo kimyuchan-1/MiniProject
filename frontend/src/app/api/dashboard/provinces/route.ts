@@ -1,9 +1,18 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { backendClient } from "@/lib/backendClient";
 
 export async function GET() {
   try {
-    const response = await backendClient.get("/api/dashboard/provinces");
+    const c = await cookies();
+    const cookieHeader = c
+      .getAll()
+      .map((x) => `${x.name}=${x.value}`)
+      .join("; ");
+
+    const response = await backendClient.get("/api/dashboard/provinces", {
+      headers: cookieHeader ? { Cookie: cookieHeader } : {},
+    });
     return NextResponse.json(response.data);
   } catch (error: any) {
     console.error("[Dashboard Provinces API] Error:", error.message);

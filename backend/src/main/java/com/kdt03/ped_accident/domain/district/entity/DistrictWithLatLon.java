@@ -20,7 +20,7 @@ import lombok.NoArgsConstructor;
 public class DistrictWithLatLon {
     @Id
     @Column(name = "bjd_cd")
-    private String bjdCd;
+    private Long bjdCd;
 
     @Column(name = "bjd_nm")
     private String bjdNm;

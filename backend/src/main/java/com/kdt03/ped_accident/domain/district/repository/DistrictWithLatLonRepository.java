@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 import com.kdt03.ped_accident.domain.district.entity.DistrictWithLatLon;
 
 @Repository
-public interface DistrictWithLatLonRepository extends JpaRepository<DistrictWithLatLon, String> {
+public interface DistrictWithLatLonRepository extends JpaRepository<DistrictWithLatLon, Long> {
 
     @Query("SELECT d FROM DistrictWithLatLon d WHERE d.bjdNm LIKE :province%")
     List<DistrictWithLatLon> findByProvincePrefix(@Param("province") String province);

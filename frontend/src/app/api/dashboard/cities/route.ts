@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { backendClient } from "@/lib/backendClient";
 
 export async function GET(request: Request) {
@@ -10,8 +11,15 @@ export async function GET(request: Request) {
   }
 
   try {
+    const c = await cookies();
+    const cookieHeader = c
+      .getAll()
+      .map((x) => `${x.name}=${x.value}`)
+      .join("; ");
+
     const response = await backendClient.get("/api/dashboard/cities", {
-      params: { province: province.trim() }
+      params: { province: province.trim() },
+      headers: cookieHeader ? { Cookie: cookieHeader } : {},
     });
     return NextResponse.json(response.data);
   } catch (error: any) {
