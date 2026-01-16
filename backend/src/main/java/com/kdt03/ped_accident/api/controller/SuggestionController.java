@@ -26,6 +26,7 @@ import com.kdt03.ped_accident.domain.suggestion.dto.AddCommentRequest;
 import com.kdt03.ped_accident.domain.suggestion.dto.CommentResponse;
 import com.kdt03.ped_accident.domain.suggestion.dto.CreateSuggestionRequest;
 import com.kdt03.ped_accident.domain.suggestion.dto.PagedItems;
+import com.kdt03.ped_accident.domain.suggestion.dto.SuggestionDetailResponse;
 import com.kdt03.ped_accident.domain.suggestion.dto.SuggestionStatistics;
 import com.kdt03.ped_accident.domain.suggestion.dto.UpdateSuggestionStatusRequest;
 import com.kdt03.ped_accident.domain.suggestion.entity.Suggestion;
@@ -56,8 +57,15 @@ public class SuggestionController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Suggestion> getSuggestion(@PathVariable Long id) {
-        Suggestion suggestion = suggestionService.findById(id);
+    public ResponseEntity<?> getSuggestion(@PathVariable Long id, Authentication authentication) {
+        Long userId = null;
+        if (authentication != null && authentication.isAuthenticated() 
+                && authentication.getPrincipal() instanceof CustomUserPrincipal) {
+            CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+            userId = principal.getUser().getId();
+        }
+
+        SuggestionDetailResponse suggestion = suggestionService.findByIdWithLikeStatus(id, userId);
         if (suggestion == null) {
             return ResponseEntity.notFound().build();
         }

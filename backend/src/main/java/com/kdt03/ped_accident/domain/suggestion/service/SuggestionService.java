@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.kdt03.ped_accident.domain.suggestion.dto.CommentResponse;
 import com.kdt03.ped_accident.domain.suggestion.dto.CreateSuggestionRequest;
 import com.kdt03.ped_accident.domain.suggestion.dto.PagedItems;
+import com.kdt03.ped_accident.domain.suggestion.dto.SuggestionDetailResponse;
 import com.kdt03.ped_accident.domain.suggestion.entity.Suggestion;
 import com.kdt03.ped_accident.domain.suggestion.entity.SuggestionComment;
 import com.kdt03.ped_accident.domain.suggestion.entity.SuggestionLike;
@@ -51,8 +52,37 @@ public class SuggestionService {
         if (opt.isEmpty()) return null;
         
         Suggestion suggestion = opt.get();
-        suggestion.setViewCount(suggestion.getViewCount() + 1);
+        // null 체크
+        int currentViewCount = suggestion.getViewCount() != null ? suggestion.getViewCount() : 0;
+        suggestion.setViewCount(currentViewCount + 1);
         return suggestionRepository.save(suggestion);
+    }
+
+    // 단건 조회 (상세 - 좋아요 여부 포함)
+    @Transactional
+    public SuggestionDetailResponse findByIdWithLikeStatus(Long id, Long userId) {
+        Optional<Suggestion> opt = suggestionRepository.findById(id);
+        if (opt.isEmpty()) return null;
+        
+        Suggestion suggestion = opt.get();
+        // 조회수 증가
+        int currentViewCount = suggestion.getViewCount() != null ? suggestion.getViewCount() : 0;
+        suggestion.setViewCount(currentViewCount + 1);
+        suggestionRepository.save(suggestion);
+
+        // 작성자 정보 조회
+        User author = null;
+        if (suggestion.getUserId() != null) {
+            author = userRepository.findById(suggestion.getUserId()).orElse(null);
+        }
+
+        // 좋아요 여부 확인
+        boolean isLiked = false;
+        if (userId != null) {
+            isLiked = likeRepository.existsBySuggestionIdAndUserId(id, userId);
+        }
+
+        return SuggestionDetailResponse.from(suggestion, author, isLiked);
     }
 
     // 건의사항 생성
@@ -170,8 +200,9 @@ public class SuggestionService {
 
         SuggestionComment saved = commentRepository.save(comment);
 
-        // 댓글 수 증가
-        suggestion.setCommentCount(suggestion.getCommentCount() + 1);
+        // 댓글 수 증가 (null 체크)
+        int currentCommentCount = suggestion.getCommentCount() != null ? suggestion.getCommentCount() : 0;
+        suggestion.setCommentCount(currentCommentCount + 1);
         suggestionRepository.save(suggestion);
 
         // User 조회해서 DTO로 반환
@@ -187,10 +218,13 @@ public class SuggestionService {
 
         Optional<SuggestionLike> existingLike = likeRepository.findBySuggestionIdAndUserId(suggestionId, userId);
 
+        // null 체크
+        int currentLikeCount = suggestion.getLikeCount() != null ? suggestion.getLikeCount() : 0;
+
         if (existingLike.isPresent()) {
             // 좋아요 취소
             likeRepository.delete(existingLike.get());
-            suggestion.setLikeCount(Math.max(0, suggestion.getLikeCount() - 1));
+            suggestion.setLikeCount(Math.max(0, currentLikeCount - 1));
             suggestionRepository.save(suggestion);
             return false;
         } else {
@@ -200,7 +234,7 @@ public class SuggestionService {
                     .userId(userId)
                     .build();
             likeRepository.save(like);
-            suggestion.setLikeCount(suggestion.getLikeCount() + 1);
+            suggestion.setLikeCount(currentLikeCount + 1);
             suggestionRepository.save(suggestion);
             return true;
         }
