@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { backendClient } from "@/lib/backendClient"; // 네 경로로 수정
+import { backendClient } from "@/lib/backendClient";
 
 export type AuthUser = {
   id: string | null;
