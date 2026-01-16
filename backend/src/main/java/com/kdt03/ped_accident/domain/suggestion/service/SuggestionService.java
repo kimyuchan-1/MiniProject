@@ -1,7 +1,9 @@
 package com.kdt03.ped_accident.domain.suggestion.service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -10,6 +12,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.kdt03.ped_accident.domain.suggestion.dto.CommentResponse;
 import com.kdt03.ped_accident.domain.suggestion.dto.CreateSuggestionRequest;
 import com.kdt03.ped_accident.domain.suggestion.dto.PagedItems;
 import com.kdt03.ped_accident.domain.suggestion.entity.Suggestion;
@@ -19,6 +22,8 @@ import com.kdt03.ped_accident.domain.suggestion.entity.SuggestionStatus;
 import com.kdt03.ped_accident.domain.suggestion.repository.SuggestionCommentRepository;
 import com.kdt03.ped_accident.domain.suggestion.repository.SuggestionLikeRepository;
 import com.kdt03.ped_accident.domain.suggestion.repository.SuggestionRepository;
+import com.kdt03.ped_accident.domain.user.entity.User;
+import com.kdt03.ped_accident.domain.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,6 +34,7 @@ public class SuggestionService {
     private final SuggestionRepository suggestionRepository;
     private final SuggestionCommentRepository commentRepository;
     private final SuggestionLikeRepository likeRepository;
+    private final UserRepository userRepository;
 
     // 전체 조회
     public Page<Suggestion> findAll(Pageable pageable, SuggestionStatus status, String region) {
@@ -120,13 +126,28 @@ public class SuggestionService {
     }
 
     // 댓글 목록 조회
-    public List<SuggestionComment> getComments(Long suggestionId) {
-        return commentRepository.findBySuggestionIdOrderByCreatedAtAsc(suggestionId);
+    public List<CommentResponse> getComments(Long suggestionId) {
+        List<SuggestionComment> comments = commentRepository.findBySuggestionIdOrderByCreatedAtAsc(suggestionId);
+        
+        // 모든 userId 수집
+        List<Long> userIds = comments.stream()
+                .map(SuggestionComment::getUserId)
+                .distinct()
+                .collect(Collectors.toList());
+        
+        // 한 번에 User 조회
+        Map<Long, User> userMap = userRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+        
+        // DTO로 변환
+        return comments.stream()
+                .map(c -> CommentResponse.from(c, userMap.get(c.getUserId())))
+                .collect(Collectors.toList());
     }
 
     // 댓글 작성
     @Transactional
-    public SuggestionComment addComment(Long suggestionId, String content, Long userId, Long parentId) {
+    public CommentResponse addComment(Long suggestionId, String content, Long userId, Long parentId) {
         // 건의사항 존재 확인
         Suggestion suggestion = suggestionRepository.findById(suggestionId)
                 .orElseThrow(() -> new IllegalArgumentException("건의사항을 찾을 수 없습니다."));
@@ -153,7 +174,9 @@ public class SuggestionService {
         suggestion.setCommentCount(suggestion.getCommentCount() + 1);
         suggestionRepository.save(suggestion);
 
-        return saved;
+        // User 조회해서 DTO로 반환
+        User user = userRepository.findById(userId).orElse(null);
+        return CommentResponse.from(saved, user);
     }
 
     // 좋아요 토글

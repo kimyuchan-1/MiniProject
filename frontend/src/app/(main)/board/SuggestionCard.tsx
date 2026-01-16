@@ -52,7 +52,7 @@ export default function SuggestionCard(props: {
                             <FaComment className="w-3 h-3" />
                             <span>{suggestion.comment_count || 0}</span>
                         </div>
-                        <span>{suggestion.user.name}</span>
+                        <span>{suggestion.user?.name ?? "익명"}</span>
                         <span>{new Date(suggestion.created_at).toLocaleDateString()}</span>
                     </div>
 

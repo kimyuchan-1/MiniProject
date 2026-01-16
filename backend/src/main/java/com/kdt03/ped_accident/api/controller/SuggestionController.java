@@ -23,12 +23,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.kdt03.ped_accident.api.dto.response.ApiResponse;
 import com.kdt03.ped_accident.domain.suggestion.dto.AddCommentRequest;
+import com.kdt03.ped_accident.domain.suggestion.dto.CommentResponse;
 import com.kdt03.ped_accident.domain.suggestion.dto.CreateSuggestionRequest;
 import com.kdt03.ped_accident.domain.suggestion.dto.PagedItems;
 import com.kdt03.ped_accident.domain.suggestion.dto.SuggestionStatistics;
 import com.kdt03.ped_accident.domain.suggestion.dto.UpdateSuggestionStatusRequest;
 import com.kdt03.ped_accident.domain.suggestion.entity.Suggestion;
-import com.kdt03.ped_accident.domain.suggestion.entity.SuggestionComment;
 import com.kdt03.ped_accident.domain.suggestion.entity.SuggestionStatus;
 import com.kdt03.ped_accident.domain.suggestion.service.SuggestionService;
 import com.kdt03.ped_accident.domain.user.service.CustomUserPrincipal;
@@ -163,8 +163,8 @@ public class SuggestionController {
     }
 
     @GetMapping("/{id}/comments")
-    public ResponseEntity<List<SuggestionComment>> getComments(@PathVariable Long id) {
-        List<SuggestionComment> comments = suggestionService.getComments(id);
+    public ResponseEntity<List<CommentResponse>> getComments(@PathVariable Long id) {
+        List<CommentResponse> comments = suggestionService.getComments(id);
         return ResponseEntity.ok(comments);
     }
 
@@ -184,7 +184,7 @@ public class SuggestionController {
         Long userId = principal.getUser().getId();
 
         try {
-            SuggestionComment comment = suggestionService.addComment(
+            CommentResponse comment = suggestionService.addComment(
                     id, request.getContent(), userId, request.getParentId());
             return ResponseEntity.status(HttpStatus.CREATED).body(comment);
         } catch (IllegalArgumentException e) {

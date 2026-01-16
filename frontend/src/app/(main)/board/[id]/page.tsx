@@ -196,7 +196,7 @@ export default function SuggestionDetailPage() {
               <FaComment className="w-4 h-4" />
               <span>{comments.length}</span>
             </div>
-            <span>{suggestion.user.name}</span>
+            <span>{suggestion.user?.name ?? "익명"}</span>
             <span>{new Date(suggestion.created_at).toLocaleDateString()}</span>
           </div>
 
@@ -309,11 +309,11 @@ export default function SuggestionDetailPage() {
                 <div key={comment.id} className="border-b border-gray-100 pb-4 last:border-b-0">
                   <div className="flex items-start gap-3">
                     <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-sm font-medium">
-                      {comment.user.name.charAt(0)}
+                      {(comment.user?.name ?? "익명").charAt(0)}
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="font-medium text-gray-900">{comment.user.name}</span>
+                        <span className="font-medium text-gray-900">{comment.user?.name ?? "익명"}</span>
                         <span className="text-sm text-gray-500">
                           {new Date(comment.created_at).toLocaleDateString()}
                         </span>
@@ -334,11 +334,11 @@ export default function SuggestionDetailPage() {
                       {comment.replies.map((reply) => (
                         <div key={reply.id} className="flex items-start gap-3">
                           <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-xs">
-                            {reply.user.name.charAt(0)}
+                            {(reply.user?.name ?? "익명").charAt(0)}
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="font-medium text-gray-900 text-sm">{reply.user.name}</span>
+                              <span className="font-medium text-gray-900 text-sm">{reply.user?.name ?? "익명"}</span>
                               <span className="text-xs text-gray-500">
                                 {new Date(reply.created_at).toLocaleDateString()}
                               </span>
