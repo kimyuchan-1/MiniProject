@@ -4,7 +4,7 @@ import com.kdt03.ped_accident.api.dto.response.DashboardStats;
 import com.kdt03.ped_accident.api.dto.response.RiskScore;
 import com.kdt03.ped_accident.api.dto.response.SignalEffectAnalysis;
 import com.kdt03.ped_accident.api.dto.response.VulnerabilityScore;
-import com.kdt03.ped_accident.domain.accident.repository.AccidentHotspotRepository;
+import com.kdt03.ped_accident.domain.accidentHotSpot.repository.AccidentHotspotRepository;
 import com.kdt03.ped_accident.domain.crosswalk.entity.Crosswalk;
 import com.kdt03.ped_accident.domain.crosswalk.repository.CrosswalkRepository;
 import com.kdt03.ped_accident.domain.cwsigmap.repository.CwSigMapRepository;

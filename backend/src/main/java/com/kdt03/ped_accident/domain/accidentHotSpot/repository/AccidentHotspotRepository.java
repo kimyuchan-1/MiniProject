@@ -1,14 +1,15 @@
-package com.kdt03.ped_accident.domain.accident.repository;
+package com.kdt03.ped_accident.domain.accidentHotSpot.repository;
 
-import java.math.BigDecimal;
+
 import java.util.List;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.kdt03.ped_accident.domain.accident.entity.AccidentHotspot;
+import com.kdt03.ped_accident.domain.accidentHotSpot.entity.AccidentHotspot;
 
 @Repository
 public interface AccidentHotspotRepository extends JpaRepository<AccidentHotspot, Long> {
@@ -16,11 +17,11 @@ public interface AccidentHotspotRepository extends JpaRepository<AccidentHotspot
 	@Query("""
 			SELECT ahs
 			FROM AccidentHotspot ahs
-			WHERE ahs.accidentLat BETWEEN :minLat AND :maxLat
-			  AND ahs.accidentLon BETWEEN :minLon AND :maxLon
+			WHERE ahs.accidentLat BETWEEN :south AND :north
+			  AND ahs.accidentLon BETWEEN :west AND :east
 			""")
-	List<AccidentHotspot> findByBounds(@Param("minLat") BigDecimal minLat, @Param("maxLat") BigDecimal maxLat,
-			@Param("minLon") BigDecimal minLon, @Param("maxLon") BigDecimal maxLon);
+	List<AccidentHotspot> findByBounds(@Param("south") Double south, @Param("west") Double west,
+			@Param("north") Double north, @Param("east") Double east, Pageable pageable);
 
 	List<AccidentHotspot> findByDistrictCode(String districtCode);
 }

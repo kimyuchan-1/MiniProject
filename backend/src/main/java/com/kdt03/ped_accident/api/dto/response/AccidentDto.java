@@ -1,24 +1,31 @@
 package com.kdt03.ped_accident.api.dto.response;
 
-import java.math.BigDecimal;
+
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Getter
+@Setter
 public class AccidentDto {
+	
     private Long accidentId;
+    private String districtCode;
     private Integer year;
-    private String detail;
+    
+    private Integer casualtyCount;
     private Integer accidentCount;
     private Integer fatalityCount;
     private Integer seriousInjuryCount;
-    private BigDecimal accidentLat;
-    private BigDecimal accidentLon;
-    private String hotspotPolygon;
+    private Integer minorInjuryCount;
+    private Integer reportedInjuryCount;
+    
+    private Double accidentLon;
+    private Double accidentLat;
 }

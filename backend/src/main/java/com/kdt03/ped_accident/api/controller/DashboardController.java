@@ -16,7 +16,7 @@ import com.kdt03.ped_accident.api.dto.response.DashboardStats;
 import com.kdt03.ped_accident.api.dto.response.ImprovementCandidate;
 import com.kdt03.ped_accident.api.dto.response.ProvinceDto;
 import com.kdt03.ped_accident.api.dto.response.SignalEffectAnalysis;
-import com.kdt03.ped_accident.domain.accident.entity.AccidentHotspot;
+import com.kdt03.ped_accident.domain.accidentHotSpot.entity.AccidentHotspot;
 import com.kdt03.ped_accident.domain.crosswalk.entity.Crosswalk;
 import com.kdt03.ped_accident.domain.district.service.DistrictService;
 import com.kdt03.ped_accident.domain.signal.entity.TrafficSignal;

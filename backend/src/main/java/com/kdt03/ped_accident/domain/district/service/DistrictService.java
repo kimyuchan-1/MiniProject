@@ -9,17 +9,23 @@ import org.springframework.stereotype.Service;
 
 import com.kdt03.ped_accident.api.dto.response.CityDto;
 import com.kdt03.ped_accident.api.dto.response.ProvinceDto;
+import com.kdt03.ped_accident.domain.accident.repository.AccidentRepository;
 import com.kdt03.ped_accident.domain.district.entity.DistrictWithLatLon;
+import com.kdt03.ped_accident.domain.district.repository.DistrictCityDto;
+import com.kdt03.ped_accident.domain.district.repository.DistrictRepository;
 import com.kdt03.ped_accident.domain.district.repository.DistrictWithLatLonRepository;
 
 import lombok.RequiredArgsConstructor;
+
 
 @Service
 @RequiredArgsConstructor
 public class DistrictService {
 
     private final DistrictWithLatLonRepository districtWithLatLonRepository;
-
+    private final AccidentRepository accidentRepository; 
+    private final DistrictRepository districtRepository;
+    
     public List<CityDto> getCitiesByProvince(String province) {
         List<DistrictWithLatLon> districts = districtWithLatLonRepository.findByProvincePrefix(province + " ");
         
@@ -108,4 +114,30 @@ public class DistrictService {
             return count > 0 ? sumLon / count : 0;
         }
     }
+    
+    public List<DistrictCityDto> getCitiesByProvincePedAcc(String province2) {
+        if (province2 == null || !province2.matches("^\\d{2}$")) return List.of();
+
+        int p = Integer.parseInt(province2);
+        long gteNum = (long) p * 100_000_000L;
+        long ltNum  = (long) (p + 1) * 100_000_000L;
+
+        // varchar 비교 안전성: DB 값이 10자리 고정(예: 5100000000)일 때 OK
+        String gte = Long.toString(gteNum);
+        String lt  = Long.toString(ltNum);
+
+        return accidentRepository.findDistrictCities(gte, lt).stream()
+                .map(r -> new DistrictCityDto(r.getCode(), r.getName()))
+                .toList();
+    }
+
+	public List<Map<String, String>> getProvincesPedAcc() {
+        return districtRepository.findProvinces().stream()
+                .map(p -> Map.of(
+                        "code", p.getCode(),
+                        "name", p.getName()
+                ))
+                .toList();
+    }
+    
 }

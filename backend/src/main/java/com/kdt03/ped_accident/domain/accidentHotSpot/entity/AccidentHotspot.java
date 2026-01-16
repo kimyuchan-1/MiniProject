@@ -1,9 +1,4 @@
-package com.kdt03.ped_accident.domain.accident.entity;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
-import org.hibernate.annotations.CreationTimestamp;
+package com.kdt03.ped_accident.domain.accidentHotSpot.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -35,8 +30,11 @@ public class AccidentHotspot {
 	private String districtCode;
 
 	private String detail;
-
+	
 	@Column(name = "accident_count")
+	private Integer accidentCount;
+
+	@Column(name = "casualty_count")
 	private Integer casualtyCount;
 
 	@Column(name = "fatality_count")
@@ -51,9 +49,9 @@ public class AccidentHotspot {
 	@Column(name = "reported_injury_count")
 	private Integer reportedInjuryCount;
 
-	@Column(name = "accident_lon", precision = 11, scale = 8)
-	private BigDecimal accidentLon;
+	@Column(name = "accident_lon")
+	private Double accidentLon;
 
-	@Column(name = "accident_lat", precision = 10, scale = 8)
-	private BigDecimal accidentLat;
+	@Column(name = "accident_lat")
+	private Double accidentLat;
 }

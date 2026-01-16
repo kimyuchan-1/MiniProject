@@ -1,11 +1,13 @@
 package com.kdt03.ped_accident.domain.district.repository;
 
-import com.kdt03.ped_accident.domain.district.entity.District;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
+
+import com.kdt03.ped_accident.domain.district.entity.District;
 
 @Repository
 public interface DistrictRepository extends JpaRepository<District, String> {
@@ -18,5 +20,16 @@ public interface DistrictRepository extends JpaRepository<District, String> {
      * @return Optional<District>
      */
     Optional<District> findByDistrictCode(String districtCode);
+    
+    @Query(value = """
+            SELECT DISTINCT
+                LEFT(a.sido_code, 2) AS code,
+                d.district_name       AS name
+            FROM accidents a
+            JOIN districts d
+              ON d.district_id = CONCAT(LEFT(a.sido_code, 2), '00000000')
+            ORDER BY name
+            """, nativeQuery = true)
+        List<ProvinceProjection> findProvinces();
 }
 

@@ -5,7 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.kdt03.ped_accident.api.dto.response.RegionalStatistics;
-import com.kdt03.ped_accident.domain.accident.entity.AccidentHotspot;
+import com.kdt03.ped_accident.domain.accidentHotSpot.entity.AccidentHotspot;
 import com.kdt03.ped_accident.domain.crosswalk.entity.Crosswalk;
 import com.kdt03.ped_accident.domain.signal.entity.TrafficSignal;
 

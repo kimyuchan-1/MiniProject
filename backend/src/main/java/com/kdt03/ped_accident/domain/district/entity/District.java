@@ -19,13 +19,18 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class District {
+	
 	@Id
-	@Column(name = "district_code")
-	private String districtCode;
-
+	@Column(name = "district_id")
+	private String districtId;
+	
 	@Column(name = "district_name")
 	private String districtName;
-
-	private Boolean available;
+	
+	@Column(name = "district_code")
+	private String districtCode;
+	
+	@Column(name = "district_short_name")
+	private String districtShortName;
 
 }

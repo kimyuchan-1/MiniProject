@@ -1,6 +1,5 @@
 package com.kdt03.ped_accident.domain.crosswalk.entity;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,31 +40,37 @@ public class Crosswalk {
 	@Column(name = "is_highland")
 	private Boolean isHighland;
 	
-	@Column(name = "crosswalk_lat", precision = 10, scale = 8)
-	private BigDecimal crosswalkLat;
+	@Column(name = "crosswalk_lat")
+	private Double crosswalkLat;
 	
-	@Column(name = "crosswalk_lon", precision = 10, scale = 8)
-	private BigDecimal crosswalkLon;
+	@Column(name = "crosswalk_lon")
+	private Double crosswalkLon;
 	
+	@Column(name = "lane_count")
 	private Integer laneCount;
 	
-	@Column(name = "crosswalk_width", precision = 5, scale = 2)
-	private BigDecimal crosswalkWidth;
+	@Column(name = "crosswalk_width")
+	private Double crosswalkWidth;
 	
-	@Column(name = "crosswalk_length", precision = 5, scale = 2)
-	private BigDecimal crosswalkLength;
+	@Column(name = "crosswalk_length")
+	private Double crosswalkLength;
 	
+	@Column(name = "has_ped_signal")
 	private Boolean hasPedSignal;
+	
+	@Column(name = "has_ped_button")
 	private Boolean hasPedButton;
 	
 	@Column(name = "has_ped_sound")
 	private Boolean hasPedSound;
 	
-	private Integer hasBump;
+	@Column(name = "has_bump")
+	private Boolean hasBump;
 	
 	@Column(name = "has_braille_block")
 	private Boolean hasBrailleBlock;
 	
+	@Column(name = "has_spotlight")
 	private Integer hasSpotlight;
 	
 	@OneToMany(mappedBy = "cw", fetch = FetchType.LAZY)
