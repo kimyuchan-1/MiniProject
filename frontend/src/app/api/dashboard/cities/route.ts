@@ -21,9 +21,13 @@ export async function GET(request: Request) {
       params: { province: province.trim() },
       headers: cookieHeader ? { Cookie: cookieHeader } : {},
     });
-    return NextResponse.json(response.data);
+
+    return NextResponse.json(response.data, { status: response.status });
+
   } catch (error: any) {
+
     console.error("[Dashboard Cities API] Error:", error.message);
+    
     return NextResponse.json(
       { error: error.response?.data?.message || "Failed to fetch cities" },
       { status: error.response?.status || 500 }

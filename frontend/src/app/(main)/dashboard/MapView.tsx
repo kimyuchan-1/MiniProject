@@ -9,6 +9,7 @@ import MarkerClusterGroup from "react-leaflet-cluster";
 import { CrosswalkMarkerWithPopup } from "@/components/dashboard/map/CrosswalkMarkerWithPopup";
 import MapFilter, { type MapFilterValue } from "./MapFilter";
 import type { Crosswalk } from "@/features/acc_calculate/types";
+import type { ApiResponse } from "@/lib/api/account";
 
 interface Acc {
     accident_id: string,
@@ -227,10 +228,12 @@ function BoundsFetcherAcc({ onData, onLoading }: { onData: (rows: Acc[]) => void
                     { cache: "no-store" }
                 );
 
-                if (res.ok) {
-                    const json = await res.json();
-                    if (validateAccHotspotData(json)) {
-                        onData(json);
+                const json = (await res.json()) as ApiResponse<unknown>;
+
+                if (res.ok && json?.success) {
+                    const data = json.data; // 여기서부터가 실제 payload
+                    if (validateAccHotspotData(data)) {
+                        onData(data);
                         return;
                     }
                 }

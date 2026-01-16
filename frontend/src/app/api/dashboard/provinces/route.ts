@@ -13,7 +13,7 @@ export async function GET() {
     const response = await backendClient.get("/api/dashboard/provinces", {
       headers: cookieHeader ? { Cookie: cookieHeader } : {},
     });
-    return NextResponse.json(response.data);
+    return NextResponse.json(response.data, { status: response.status });
   } catch (error: any) {
     console.error("[Dashboard Provinces API] Error:", error.message);
     return NextResponse.json(

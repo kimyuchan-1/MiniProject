@@ -16,7 +16,7 @@ export type MySuggestion = {
     viewCount?: number;
 };
 
-type ApiResponse<T> = { success: boolean; message: string; data: T };
+export type ApiResponse<T> = { success: boolean; message: string; data: T };
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
     const res = await fetch(url, {
