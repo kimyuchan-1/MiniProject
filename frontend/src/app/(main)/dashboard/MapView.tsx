@@ -12,17 +12,17 @@ import type { Crosswalk } from "@/features/acc_calculate/types";
 import type { ApiResponse } from "@/lib/api/account";
 
 interface Acc {
-    accident_id: string,
-    district_code: string,
-    year: string,
-    accident_count: number,
-    casualty_count: number,
-    fatality_count: number,
-    serious_injury_count: number,
-    minor_injury_count: number,
-    reported_injury_count: number,
-    accident_lat: number,
-    accident_lon: number,
+    accidentId: number,
+    districtCode: string,
+    year: number,
+    accidentCount: number,
+    casualtyCount: number,
+    fatalityCount: number,
+    seriousInjuryCount: number,
+    minorInjuryCount: number,
+    reportedInjuryCount: number,
+    accidentLat: number,
+    accidentLon: number,
 }
 
 type MoveTarget = { lat: number; lon: number; zoom?: number } | null;
@@ -80,11 +80,11 @@ function validateAccHotspotData(data: unknown): data is Acc[] {
     return Array.isArray(data) && data.every(item =>
         typeof item === 'object' &&
         item !== null &&
-        'accident_id' in item &&
-        'accident_lat' in item &&
-        'accident_lon' in item &&
-        typeof item.accident_lat === 'number' &&
-        typeof item.accident_lon === 'number'
+        'accidentId' in item &&
+        'accidentLat' in item &&
+        'accidentLon' in item &&
+        typeof item.accidentLat === 'number' &&
+        typeof item.accidentLon === 'number'
     );
 }
 
@@ -312,8 +312,8 @@ export default function MapView(props: MapViewProps) {
     const center = useMemo<[number, number]>(() => [37.531, 127.0066], []);
 
     const router = useRouter();
-    function onHotspotClick(a: any) {
-        const code = String(a.district_code ?? "").slice(0, 5);
+    function onHotspotClick(a: Acc) {
+        const code = String(a.districtCode ?? "").slice(0, 5);
         if (!code) return;
 
         router.push(`/pedacc?region=${encodeURIComponent(code)}`);
@@ -410,8 +410,8 @@ export default function MapView(props: MapViewProps) {
                     {filteredAcc.map((a) => {
                         return (
                             <Marker
-                                key={a.accident_id}
-                                position={[a.accident_lat, a.accident_lon]}
+                                key={a.accidentId}
+                                position={[a.accidentLat, a.accidentLon]}
                                 icon={iconAccTriangle}
                                 eventHandlers={{
                                     click: (e) => {

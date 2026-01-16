@@ -26,11 +26,11 @@ export function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: 
 // 거리 미적용, 위험 지표 원점수
 export function calcSeverityRaw(accident: AccidentData, weights: RiskWeights = DEFAULT_RISK_WEIGHTS): number {
   const severity =
-    accident.fatality_count * weights.fatality +
-    accident.serious_injury_count * weights.serious +
-    accident.minor_injury_count * weights.minor +
-    accident.accident_count * weights.accident +
-    accident.reported_injury_count * weights.reported;
+    accident.fatalityCount * weights.fatality +
+    accident.seriousInjuryCount * weights.serious +
+    accident.minorInjuryCount * weights.minor +
+    accident.accidentCount * weights.accident +
+    accident.reportedInjuryCount * weights.reported;
 
   return severity;
 }
@@ -46,7 +46,7 @@ export function calculateAggregatedRiskScore(
   let sumW = 0;
 
   for (const h of hotspots) {
-    const d = haversineMeters(cwLat, cwLon, h.accident_lat, h.accident_lon);
+    const d = haversineMeters(cwLat, cwLon, h.accidentLat, h.accidentLon);
     const wDist = distanceWeightPiecewise(d);
     if (wDist <= 0) continue;
 

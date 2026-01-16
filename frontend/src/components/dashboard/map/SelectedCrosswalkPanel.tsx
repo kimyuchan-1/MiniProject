@@ -138,7 +138,7 @@ export function SelectedCrosswalkPanel(props: {
   const safetyScore = useMemo(() => clamp(calculateSafetyScore(selected), 0, 100), [selected]);
 
   const uniqueHotspots = useMemo(
-    () => new Set(nearbyAccidents.map((h) => String((h as any).accident_id))).size,
+    () => new Set(nearbyAccidents.map((h) => String((h as any).accidentId))).size,
     [nearbyAccidents]
   );
 
@@ -147,9 +147,9 @@ export function SelectedCrosswalkPanel(props: {
     const sum = (k: string) =>
       nearbyAccidents.reduce((acc, cur: any) => acc + (Number(cur?.[k]) || 0), 0);
 
-    const accidents = sum('accident_count');
-    const casualties = sum('casualty_count');
-    const deaths = sum('fatality_count');
+    const accidents = sum('accidentCount');
+    const casualties = sum('casualtyCount');
+    const deaths = sum('fatalityCount');
 
     // year 범위 표시 (있으면)
     const years = nearbyAccidents

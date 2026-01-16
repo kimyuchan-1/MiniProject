@@ -1,6 +1,7 @@
 package com.kdt03.ped_accident.api.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -10,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -62,45 +64,171 @@ public class SuggestionController {
         return ResponseEntity.ok(suggestion);
     }
 
-	@PostMapping
-	@PreAuthorize("hasRole('USER')")
-	public ResponseEntity<Suggestion> createSuggestion(@RequestBody @Valid CreateSuggestionRequest request,
-			Authentication authentication) {
-		return null;
-	}
+    @PostMapping
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<?> createSuggestion(
+            @RequestBody @Valid CreateSuggestionRequest request,
+            Authentication authentication) {
+        
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "인증이 필요합니다."));
+        }
 
-	@PutMapping("/{id}/status")
-	@PreAuthorize("hasRole('ADMIN')")
-	public ResponseEntity<Suggestion> updateSuggestionStatus(@PathVariable Long id,
-			@RequestBody @Valid UpdateSuggestionStatusRequest request, Authentication authentication) {
-		return null;
-	}
+        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+        Long userId = principal.getUser().getId();
 
-	@GetMapping("/{id}/comments")
-	public ResponseEntity<List<SuggestionComment>> getComments(@PathVariable Long id) {
-		return null;
-	}
+        try {
+            Suggestion created = suggestionService.createSuggestion(request, userId);
+            return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
 
-	@PostMapping("/{id}/comments")
-	@PreAuthorize("hasRole('USER')")
-	public ResponseEntity<SuggestionComment> addComment(@PathVariable Long id,
-			@RequestBody @Valid AddCommentRequest request, Authentication authentication) {
-		return null;
-	}
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<?> updateSuggestion(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> request,
+            Authentication authentication) {
+        
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "인증이 필요합니다."));
+        }
 
-	@GetMapping("/statistics")
-	@PreAuthorize("hasRole('ADMIN')")
-	public ResponseEntity<SuggestionStatistics> getSuggestionStatistics() {
-		return null;
-	}
-	
-	@GetMapping("/my")
+        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+        Long userId = principal.getUser().getId();
+
+        String title = request.get("title");
+        String content = request.get("content");
+
+        if (title == null || title.isBlank() || content == null || content.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "제목과 내용은 필수입니다."));
+        }
+
+        try {
+            Suggestion updated = suggestionService.updateSuggestion(id, title, content, userId);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<?> deleteSuggestion(
+            @PathVariable Long id,
+            Authentication authentication) {
+        
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "인증이 필요합니다."));
+        }
+
+        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+        Long userId = principal.getUser().getId();
+
+        try {
+            suggestionService.deleteSuggestion(id, userId);
+            return ResponseEntity.ok(Map.of("message", "건의사항이 삭제되었습니다."));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> updateSuggestionStatus(
+            @PathVariable Long id,
+            @RequestBody @Valid UpdateSuggestionStatusRequest request,
+            Authentication authentication) {
+        
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "인증이 필요합니다."));
+        }
+
+        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+        Long adminId = principal.getUser().getId();
+
+        try {
+            Suggestion updated = suggestionService.updateSuggestionStatus(
+                    id, request.getStatus(), request.getAdminResponse(), adminId);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/{id}/comments")
+    public ResponseEntity<List<SuggestionComment>> getComments(@PathVariable Long id) {
+        List<SuggestionComment> comments = suggestionService.getComments(id);
+        return ResponseEntity.ok(comments);
+    }
+
+    @PostMapping("/{id}/comments")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<?> addComment(
+            @PathVariable Long id,
+            @RequestBody @Valid AddCommentRequest request,
+            Authentication authentication) {
+        
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "인증이 필요합니다."));
+        }
+
+        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+        Long userId = principal.getUser().getId();
+
+        try {
+            SuggestionComment comment = suggestionService.addComment(
+                    id, request.getContent(), userId, request.getParentId());
+            return ResponseEntity.status(HttpStatus.CREATED).body(comment);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{id}/like")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<?> toggleLike(
+            @PathVariable Long id,
+            Authentication authentication) {
+        
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "인증이 필요합니다."));
+        }
+
+        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+        Long userId = principal.getUser().getId();
+
+        try {
+            boolean liked = suggestionService.toggleLike(id, userId);
+            String message = liked ? "좋아요를 추가했습니다." : "좋아요를 취소했습니다.";
+            return ResponseEntity.ok(Map.of("liked", liked, "message", message));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/statistics")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<SuggestionStatistics> getSuggestionStatistics() {
+        SuggestionStatistics stats = suggestionService.getSuggestionStatistics();
+        return ResponseEntity.ok(stats);
+    }
+
+    @GetMapping("/my")
     public ResponseEntity<ApiResponse<PagedItems<Suggestion>>> mySuggestions(
             Authentication authentication,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(defaultValue = "ALL") String status
-    ) {
+            @RequestParam(defaultValue = "ALL") String status) {
+        
         if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error("인증되지 않은 사용자"));
@@ -110,10 +238,9 @@ public class SuggestionController {
         Long userId = principal.getUser().getId();
 
         try {
-        	PagedItems<Suggestion> payload = suggestionService.getMySuggestions(userId, page, pageSize, status);
+            PagedItems<Suggestion> payload = suggestionService.getMySuggestions(userId, page, pageSize, status);
             return ResponseEntity.ok(ApiResponse.success("내 게시글 조회 성공", payload));
         } catch (IllegalArgumentException e) {
-            // status 값이 enum에 없을 때 valueOf에서 터짐
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error("status 값이 올바르지 않습니다"));
         }

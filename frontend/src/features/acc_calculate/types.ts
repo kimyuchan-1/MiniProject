@@ -1,18 +1,17 @@
 // 사고 데이터 타입 정의 (실제 ACC 테이블 구조 기반)
 
 export interface AccidentData {
-  accident_id: string;
-  district_code: string;
+  accidentId: number;
+  districtCode: string;
   year: number;
-  detail: string;
-  accident_count: number;
-  casualty_count: number;
-  fatality_count: number;
-  serious_injury_count: number;
-  minor_injury_count: number;
-  reported_injury_count: number;
-  accident_lon: number;
-  accident_lat: number;
+  accidentCount: number;
+  casualtyCount: number;
+  fatalityCount: number;
+  seriousInjuryCount: number;
+  minorInjuryCount: number;
+  reportedInjuryCount: number;
+  accidentLon: number;
+  accidentLat: number;
 }
 
 export type AccidentDataWithDistance = AccidentData & { distance: number };

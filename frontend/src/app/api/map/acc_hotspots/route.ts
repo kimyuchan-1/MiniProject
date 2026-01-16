@@ -23,7 +23,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const c = await cookies(); // Next 15+ 에선 await 없이 사용
+    const c = await cookies(); 
     const cookieHeader = c
       .getAll()
       .map((x) => `${x.name}=${x.value}`)

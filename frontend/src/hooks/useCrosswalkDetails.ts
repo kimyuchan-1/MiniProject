@@ -40,11 +40,20 @@ export function useCrosswalkDetails({ crosswalk, enabled = true }: UseCrosswalkD
 
         let hotspots: any[] = [];
         const resp = await fetch(`/api/map/acc_hotspots?bounds=${bounds}`);
-        if (resp.ok) hotspots = await resp.json();
+        if (resp.ok) {
+          const json = await resp.json();
+          // API가 { success: true, data: [...] } 형태로 반환
+          if (json?.success && Array.isArray(json.data)) {
+            hotspots = json.data;
+          } else if (Array.isArray(json)) {
+            // 혹시 배열로 직접 반환하는 경우
+            hotspots = json;
+          }
+        }
 
         const within500m = hotspots.filter((h) => {
-          const hLat = h.accident_lat;
-          const hLon = h.accident_lon;
+          const hLat = h.accidentLat;
+          const hLon = h.accidentLon;
           if (typeof hLat !== 'number' || typeof hLon !== 'number') return false;
           return haversineMeters(lat, lon, hLat, hLon) <= 500;
         });

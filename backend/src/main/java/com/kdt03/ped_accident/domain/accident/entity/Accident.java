@@ -8,9 +8,11 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @Entity
+@Getter
 @RequiredArgsConstructor
 @Table(
 		name = "accidents",

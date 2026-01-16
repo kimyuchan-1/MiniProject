@@ -23,5 +23,19 @@ public interface AccidentRepository extends JpaRepository<Accident, Long>{
 	        GROUP BY code, name
 	        ORDER BY code
 	        """, nativeQuery = true)
-	    List<DistrictCityProjection> findDistrictCities(@Param("gte") String gte, @Param("lt") String lt);
+	List<DistrictCityProjection> findDistrictCities(@Param("gte") String gte, @Param("lt") String lt);
+
+	// 전국 데이터 조회
+	List<Accident> findAll();
+
+	// 시도(2자리) 기준 조회
+	@Query("SELECT a FROM Accident a WHERE a.sidoCode >= :gte AND a.sidoCode < :lt")
+	List<Accident> findBySidoCodeRange(@Param("gte") String gte, @Param("lt") String lt);
+
+	// 시군구(5자리) 기준 조회
+	@Query("SELECT a FROM Accident a WHERE a.sigunguCode >= :gte AND a.sigunguCode < :lt")
+	List<Accident> findBySigunguCodeRange(@Param("gte") String gte, @Param("lt") String lt);
+
+	// 시군구(10자리) 정확히 일치 조회
+	List<Accident> findBySigunguCode(String sigunguCode);
 }

@@ -1,37 +1,47 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { dummySuggestions } from '@/lib/dummyData';
+import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { backendClient } from "@/lib/backendClient";
 
-// 좋아요 토글 (POST) - 더미 데이터 사용
+function parseIntStrict(v: string) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) throw new Error("Invalid id");
+  return n;
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-    const suggestionId = parseInt(id);
+    const suggestionId = parseIntStrict(id);
 
-    // 더미 데이터에서 건의사항 찾기
-    const suggestion = dummySuggestions.find(s => s.id === suggestionId);
+    const c = await cookies();
+    const cookieHeader = c
+      .getAll()
+      .map((x) => `${x.name}=${x.value}`)
+      .join("; ");
 
-    if (!suggestion) {
-      return NextResponse.json({ error: '건의사항을 찾을 수 없습니다.' }, { status: 404 });
+    if (!cookieHeader) {
+      return NextResponse.json({ error: "인증이 필요합니다." }, { status: 401 });
     }
 
-    // 더미 좋아요 상태 (실제로는 사용자별로 관리)
-    const isLiked = Math.random() > 0.5; // 랜덤하게 좋아요 상태 결정
+    const response = await backendClient.post(
+      `/api/suggestions/${suggestionId}/like`,
+      {},
+      { headers: { Cookie: cookieHeader } }
+    );
 
-    if (isLiked) {
-      // 좋아요 취소
-      suggestion.like_count = Math.max(0, suggestion.like_count - 1);
-      return NextResponse.json({ liked: false, message: '좋아요를 취소했습니다.' });
-    } else {
-      // 좋아요 추가
-      suggestion.like_count += 1;
-      return NextResponse.json({ liked: true, message: '좋아요를 추가했습니다.' });
-    }
+    const data = response.data;
 
-  } catch (error) {
-    console.error('API Route Error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({
+      liked: data.liked ?? false,
+      message: data.message ?? (data.liked ? "좋아요를 추가했습니다." : "좋아요를 취소했습니다."),
+    });
+  } catch (error: any) {
+    console.error("Like POST error:", error?.response?.data ?? error.message);
+    const status = error?.response?.status ?? 500;
+    const message = error?.response?.data?.message ?? error.message ?? "Internal Server Error";
+    return NextResponse.json({ error: message }, { status });
   }
 }
