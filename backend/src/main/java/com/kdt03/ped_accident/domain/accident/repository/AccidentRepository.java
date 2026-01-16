@@ -17,7 +17,7 @@ public interface AccidentRepository extends JpaRepository<Accident, Long>{
 	            COALESCE(NULLIF(TRIM(d.district_short_name), ''), NULLIF(TRIM(d.district_name), ''), SUBSTRING(a.sigungu_code, 1, 5)) AS name
 	        FROM accidents a
 	        LEFT JOIN districts d
-	          ON d.district_code = SUBSTRING(a.sigungu_code, 1, 5)
+	          ON d.district_code COLLATE utf8mb4_unicode_ci = SUBSTRING(a.sigungu_code, 1, 5) COLLATE utf8mb4_unicode_ci
 	        WHERE a.sido_code >= :gte
 	          AND a.sido_code <  :lt
 	        GROUP BY code, name

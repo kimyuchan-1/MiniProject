@@ -27,7 +27,7 @@ public interface DistrictRepository extends JpaRepository<District, String> {
                 d.district_name       AS name
             FROM accidents a
             JOIN districts d
-              ON d.district_id = CONCAT(LEFT(a.sido_code, 2), '00000000')
+              ON d.district_id COLLATE utf8mb4_unicode_ci = CONCAT(LEFT(a.sido_code, 2), '00000000') COLLATE utf8mb4_unicode_ci
             ORDER BY name
             """, nativeQuery = true)
         List<ProvinceProjection> findProvinces();
