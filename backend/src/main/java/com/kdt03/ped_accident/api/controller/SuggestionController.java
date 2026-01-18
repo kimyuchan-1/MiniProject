@@ -201,6 +201,60 @@ public class SuggestionController {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
+    
+    @PutMapping("/{suggestionId}/comments/{commentId}")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<?> updateComment(
+            @PathVariable Long suggestionId,
+            @PathVariable Long commentId,
+            @RequestBody Map<String, String> request,
+            Authentication authentication) {
+        
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "인증이 필요합니다."));
+        }
+
+        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+        Long userId = principal.getUser().getId();
+        String content = request.get("content");
+
+        if (content == null || content.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "댓글 내용은 필수입니다."));
+        }
+
+        try {
+            CommentResponse comment = suggestionService.updateComment(commentId, content, userId);
+            return ResponseEntity.ok(comment);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+    
+    @DeleteMapping("/{suggestionId}/comments/{commentId}")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<?> deleteComment(
+            @PathVariable Long suggestionId,
+            @PathVariable Long commentId,
+            Authentication authentication) {
+        
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "인증이 필요합니다."));
+        }
+
+        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+        Long userId = principal.getUser().getId();
+        boolean isAdmin = principal.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        try {
+            suggestionService.deleteComment(commentId, userId, isAdmin);
+            return ResponseEntity.ok(Map.of("message", "댓글이 삭제되었습니다."));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
 
     @PostMapping("/{id}/like")
     @PreAuthorize("hasRole('USER')")

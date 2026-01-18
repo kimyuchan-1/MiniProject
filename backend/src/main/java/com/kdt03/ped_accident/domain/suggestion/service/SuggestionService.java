@@ -219,6 +219,54 @@ public class SuggestionService {
         User user = userRepository.findById(userId).orElse(null);
         return CommentResponse.from(saved, user);
     }
+    
+    // 댓글 수정
+    @Transactional
+    public CommentResponse updateComment(Long commentId, String content, Long userId) {
+        SuggestionComment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다."));
+        
+        // 본인 댓글만 수정 가능
+        if (!comment.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("본인의 댓글만 수정할 수 있습니다.");
+        }
+        
+        comment.setContent(content);
+        SuggestionComment updated = commentRepository.save(comment);
+        
+        // User 조회해서 DTO로 반환
+        User user = userRepository.findById(userId).orElse(null);
+        return CommentResponse.from(updated, user);
+    }
+    
+    // 댓글 삭제
+    @Transactional
+    public void deleteComment(Long commentId, Long userId, boolean isAdmin) {
+        SuggestionComment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다."));
+        
+        // 본인 댓글이거나 관리자만 삭제 가능
+        if (!comment.getUserId().equals(userId) && !isAdmin) {
+            throw new IllegalArgumentException("본인의 댓글만 삭제할 수 있습니다.");
+        }
+        
+        // 건의사항 조회
+        Suggestion suggestion = suggestionRepository.findById(comment.getSuggestionId())
+                .orElseThrow(() -> new IllegalArgumentException("건의사항을 찾을 수 없습니다."));
+        
+        // 대댓글 개수 확인
+        long replyCount = commentRepository.countByParentId(commentId);
+        
+        commentRepository.delete(comment);
+        
+        // 댓글 수 감소 (대댓글 포함)
+        int currentCommentCount = suggestion.getCommentCount() != null ? suggestion.getCommentCount() : 0;
+        suggestion.setCommentCount(Math.max(0, currentCommentCount - 1 - (int)replyCount));
+        
+        // 우선순위 점수 재계산
+        suggestion.calculatePriorityScore();
+        suggestionRepository.save(suggestion);
+    }
 
     // 좋아요 토글
     @Transactional

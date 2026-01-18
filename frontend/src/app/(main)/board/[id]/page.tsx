@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { FaMapMarkerAlt, FaHeart, FaComment, FaEye, FaArrowLeft } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaHeart, FaComment, FaEye, FaArrowLeft, FaEdit, FaTrash } from 'react-icons/fa';
 import { Suggestion, Comment } from '@/features/board/types';
 import { SuggestionStatusLabels, SuggestionTypeLabels, StatusColors } from '@/features/board/constants';
 import dynamic from 'next/dynamic';
@@ -18,6 +18,13 @@ const LocationViewer = dynamic(() => import('../../../../components/board/map/Lo
   ),
 });
 
+interface CurrentUser {
+  id: number;
+  email: string;
+  name: string;
+  role: string;
+}
+
 export default function SuggestionDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -29,6 +36,28 @@ export default function SuggestionDetailPage() {
   const [commentLoading, setCommentLoading] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [replyTo, setReplyTo] = useState<number | null>(null);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editingContent, setEditingContent] = useState('');
+
+  // 현재 사용자 정보 조회
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await fetch('/api/me');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data) {
+            setCurrentUser(data.data);
+          }
+        }
+      } catch (error) {
+        console.error('사용자 정보 조회 실패:', error);
+      }
+    };
+
+    fetchCurrentUser();
+  }, []);
 
   // 건의사항 상세 조회
   const fetchSuggestion = async () => {
@@ -152,6 +181,109 @@ export default function SuggestionDetailPage() {
     }
   };
 
+  // 게시글 삭제
+  const handleDeleteSuggestion = async () => {
+    if (!confirm('정말 이 건의사항을 삭제하시겠습니까?')) return;
+
+    try {
+      const response = await fetch(`/api/suggestions/${suggestionId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        alert('건의사항이 삭제되었습니다.');
+        router.push('/board');
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || '삭제에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('삭제 실패:', error);
+      alert('삭제 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 댓글 수정 시작
+  const startEditComment = (commentId: number, content: string) => {
+    setEditingCommentId(commentId);
+    setEditingContent(content);
+  };
+
+  // 댓글 수정 취소
+  const cancelEditComment = () => {
+    setEditingCommentId(null);
+    setEditingContent('');
+  };
+
+  // 댓글 수정 저장
+  const handleUpdateComment = async (commentId: number) => {
+    if (!editingContent.trim()) {
+      alert('댓글 내용을 입력해주세요.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/suggestions/${suggestionId}/comments?commentId=${commentId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ content: editingContent })
+      });
+
+      if (response.ok) {
+        cancelEditComment();
+        await fetchComments();
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || '댓글 수정에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('댓글 수정 실패:', error);
+      alert('댓글 수정 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 댓글 삭제
+  const handleDeleteComment = async (commentId: number) => {
+    if (!confirm('정말 이 댓글을 삭제하시겠습니까?')) return;
+
+    try {
+      const response = await fetch(`/api/suggestions/${suggestionId}/comments?commentId=${commentId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        await fetchComments();
+        // Update comment count
+        setSuggestion(prev => prev ? {
+          ...prev,
+          comment_count: Math.max(0, (prev.comment_count ?? 0) - 1)
+        } : null);
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || '댓글 삭제에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('댓글 삭제 실패:', error);
+      alert('댓글 삭제 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 권한 확인 함수
+  const canEditSuggestion = () => {
+    if (!currentUser || !suggestion) return false;
+    return currentUser.id === suggestion.user_id || currentUser.role === 'ADMIN';
+  };
+
+  const canEditComment = (comment: Comment) => {
+    if (!currentUser) return false;
+    return currentUser.id === comment.user?.id || currentUser.role === 'ADMIN';
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -209,6 +341,26 @@ export default function SuggestionDetailPage() {
                 {suggestion.title}
               </h1>
             </div>
+            
+            {/* 수정/삭제 버튼 */}
+            {canEditSuggestion() && (
+              <div className="flex gap-2 ml-4">
+                <button
+                  onClick={() => router.push(`/board/${suggestionId}/edit`)}
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                >
+                  <FaEdit className="w-3.5 h-3.5" />
+                  수정
+                </button>
+                <button
+                  onClick={handleDeleteSuggestion}
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  <FaTrash className="w-3.5 h-3.5" />
+                  삭제
+                </button>
+              </div>
+            )}
           </div>
 
           {/* 메타 정보 */}
@@ -347,13 +499,60 @@ export default function SuggestionDetailPage() {
                           {new Date(comment.created_at).toLocaleDateString()}
                         </span>
                       </div>
-                      <p className="text-gray-800 whitespace-pre-wrap mb-2">{comment.content}</p>
-                      <button
-                        onClick={() => setReplyTo(comment.id)}
-                        className="text-sm text-blue-600 hover:text-blue-700 hover:cursor-pointer"
-                      >
-                        답글
-                      </button>
+                      
+                      {/* 댓글 내용 또는 수정 폼 */}
+                      {editingCommentId === comment.id ? (
+                        <div className="space-y-2">
+                          <textarea
+                            value={editingContent}
+                            onChange={(e) => setEditingContent(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                            rows={3}
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleUpdateComment(comment.id)}
+                              className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                            >
+                              저장
+                            </button>
+                            <button
+                              onClick={cancelEditComment}
+                              className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                            >
+                              취소
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-gray-800 whitespace-pre-wrap mb-2">{comment.content}</p>
+                          <div className="flex gap-3">
+                            <button
+                              onClick={() => setReplyTo(comment.id)}
+                              className="text-sm text-blue-600 hover:text-blue-700 hover:cursor-pointer"
+                            >
+                              답글
+                            </button>
+                            {canEditComment(comment) && (
+                              <>
+                                <button
+                                  onClick={() => startEditComment(comment.id, comment.content)}
+                                  className="text-sm text-gray-600 hover:text-gray-700 hover:cursor-pointer"
+                                >
+                                  수정
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteComment(comment.id)}
+                                  className="text-sm text-red-600 hover:text-red-700 hover:cursor-pointer"
+                                >
+                                  삭제
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -372,7 +571,52 @@ export default function SuggestionDetailPage() {
                                 {new Date(reply.created_at).toLocaleDateString()}
                               </span>
                             </div>
-                            <p className="text-gray-800 text-sm whitespace-pre-wrap">{reply.content}</p>
+                            
+                            {/* 대댓글 내용 또는 수정 폼 */}
+                            {editingCommentId === reply.id ? (
+                              <div className="space-y-2">
+                                <textarea
+                                  value={editingContent}
+                                  onChange={(e) => setEditingContent(e.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm"
+                                  rows={2}
+                                />
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handleUpdateComment(reply.id)}
+                                    className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                                  >
+                                    저장
+                                  </button>
+                                  <button
+                                    onClick={cancelEditComment}
+                                    className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                                  >
+                                    취소
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                <p className="text-gray-800 text-sm whitespace-pre-wrap mb-1">{reply.content}</p>
+                                {canEditComment(reply) && (
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => startEditComment(reply.id, reply.content)}
+                                      className="text-xs text-gray-600 hover:text-gray-700 hover:cursor-pointer"
+                                    >
+                                      수정
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteComment(reply.id)}
+                                      className="text-xs text-red-600 hover:text-red-700 hover:cursor-pointer"
+                                    >
+                                      삭제
+                                    </button>
+                                  </div>
+                                )}
+                              </>
+                            )}
                           </div>
                         </div>
                       ))}

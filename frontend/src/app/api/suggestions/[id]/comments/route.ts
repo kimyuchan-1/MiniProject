@@ -160,3 +160,101 @@ export async function POST(
     return NextResponse.json({ error: message }, { status });
   }
 }
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const suggestionId = parseIntStrict(id);
+    
+    const url = new URL(request.url);
+    const commentId = url.searchParams.get("commentId");
+    
+    if (!commentId) {
+      return NextResponse.json({ error: "댓글 ID가 필요합니다." }, { status: 400 });
+    }
+
+    const c = await cookies();
+    const cookieHeader = c
+      .getAll()
+      .map((x) => `${x.name}=${x.value}`)
+      .join("; ");
+
+    if (!cookieHeader) {
+      return NextResponse.json({ error: "인증이 필요합니다." }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const content = body?.content;
+
+    if (!content || !content.trim()) {
+      return NextResponse.json({ error: "댓글 내용을 입력해주세요." }, { status: 400 });
+    }
+
+    const response = await backendClient.put(
+      `/api/suggestions/${suggestionId}/comments/${commentId}`,
+      { content },
+      { headers: { Cookie: cookieHeader } }
+    );
+
+    const item = response.data;
+
+    const updatedComment: ApiComment = {
+      id: item.id,
+      suggestion_id: suggestionId,
+      content: item.content ?? "",
+      created_at: item.createdAt ?? new Date().toISOString(),
+      user: item.user ? { id: item.user.id, name: item.user.name, picture: item.user.picture ?? null } : null,
+      parent_id: item.parentId ?? null,
+      replies: [],
+    };
+
+    return NextResponse.json(updatedComment);
+  } catch (error: any) {
+    console.error("Comments PUT error:", error?.response?.data ?? error.message);
+    const status = error?.response?.status ?? 500;
+    const message = error?.response?.data?.message ?? error.message ?? "Internal Server Error";
+    return NextResponse.json({ error: message }, { status });
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const suggestionId = parseIntStrict(id);
+    
+    const url = new URL(request.url);
+    const commentId = url.searchParams.get("commentId");
+    
+    if (!commentId) {
+      return NextResponse.json({ error: "댓글 ID가 필요합니다." }, { status: 400 });
+    }
+
+    const c = await cookies();
+    const cookieHeader = c
+      .getAll()
+      .map((x) => `${x.name}=${x.value}`)
+      .join("; ");
+
+    if (!cookieHeader) {
+      return NextResponse.json({ error: "인증이 필요합니다." }, { status: 401 });
+    }
+
+    await backendClient.delete(
+      `/api/suggestions/${suggestionId}/comments/${commentId}`,
+      { headers: { Cookie: cookieHeader } }
+    );
+
+    return NextResponse.json({ message: "댓글이 삭제되었습니다." });
+  } catch (error: any) {
+    console.error("Comments DELETE error:", error?.response?.data ?? error.message);
+    const status = error?.response?.status ?? 500;
+    const message = error?.response?.data?.message ?? error.message ?? "Internal Server Error";
+    return NextResponse.json({ error: message }, { status });
+  }
+}

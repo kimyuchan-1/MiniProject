@@ -16,5 +16,13 @@ public interface SuggestionCommentRepository extends JpaRepository<SuggestionCom
      * @return 댓글 목록
      */
     List<SuggestionComment> findBySuggestionIdOrderByCreatedAtAsc(Long suggestionId);
+    
+    /**
+     * 특정 댓글의 대댓글 개수를 조회합니다.
+     *
+     * @param parentId 부모 댓글 ID
+     * @return 대댓글 개수
+     */
+    long countByParentId(Long parentId);
 }
 
