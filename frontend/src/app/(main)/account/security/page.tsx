@@ -1,7 +1,20 @@
+import { redirect } from "next/navigation";
 import SectionHeader from "@/components/account/SectionHeader";
 import PasswordForm from "../security/PasswordForm";
+import { getAuthUser } from "@/lib/auth";
 
-export default function SecurityPage() {
+// Force SSR with no caching for security
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+export default async function SecurityPage() {
+    // Server-side authentication check
+    const user = await getAuthUser();
+    
+    if (!user) {
+        redirect("/signin");
+    }
+    
     return (
         <div className="space-y-6">
             <SectionHeader

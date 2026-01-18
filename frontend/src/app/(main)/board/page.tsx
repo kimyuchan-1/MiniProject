@@ -1,138 +1,152 @@
-'use client'
+import BoardHeader from '@/components/board/BoardHeader';
+import BoardList from '@/components/board/BoardList';
+import BoardFilters from '@/components/board/BoardFilters';
+import BoardPagination from '@/components/board/BoardPagination';
+import { Suggestion } from '@/features/board/types';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Suggestion, FilterState } from '@/features/board/types';
-import SuggestionList from './SuggestionList';
-import Pagination from './Pagination';
-import { FaPlus } from 'react-icons/fa';
-import Link from 'next/link';
-import SearchBar from './SearchBar';
-import FiltersPanel from './FiltersPanel';
+// ISR: Revalidate every 60 seconds
+export const revalidate = 60;
 
-export default function BoardPage() {
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchQuery, setSearchQuery] = useState(''); // 실제 검색에 사용되는 값
-  const [filters, setFilters] = useState<FilterState>({
-    status: 'ALL',
-    type: 'ALL',
-    region: 'ALL',
-    sortBy: 'latest'
-  });
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [showFilters, setShowFilters] = useState(false);
+interface PageProps {
+  searchParams: Promise<{
+    page?: string;
+    search?: string;
+    status?: string;
+    type?: string;
+    region?: string;
+    sort?: string;
+  }>;
+}
 
-  // 건의사항 목록 조회
-  const fetchSuggestions = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        size: '10',
-        search: searchQuery,
-        status: filters.status !== 'ALL' ? filters.status : '',
-        type: filters.type !== 'ALL' ? filters.type : '',
-        region: filters.region !== 'ALL' ? filters.region : '',
-        sort: filters.sortBy
-      });
+async function getSuggestions(params: {
+  page?: string;
+  search?: string;
+  status?: string;
+  type?: string;
+  region?: string;
+  sort?: string;
+}) {
+  try {
+    const searchParams = new URLSearchParams({
+      page: params.page || '1',
+      size: '10',
+      search: params.search || '',
+      status: params.status && params.status !== 'ALL' ? params.status : '',
+      type: params.type && params.type !== 'ALL' ? params.type : '',
+      region: params.region && params.region !== 'ALL' ? params.region : '',
+      sort: params.sort || 'latest'
+    });
 
-      const response = await fetch(`/api/suggestions?${params}`);
-      if (response.ok) {
-        const data = await response.json();
-        setSuggestions(data.content || []);
-        setTotalPages(data.totalPages || 1);
+    // Remove empty params
+    Array.from(searchParams.keys()).forEach(key => {
+      if (!searchParams.get(key)) {
+        searchParams.delete(key);
       }
-    } catch (error) {
-      console.error('건의사항 조회 실패:', error);
-    } finally {
-      setLoading(false);
+    });
+
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const response = await fetch(`${baseUrl}/api/suggestions?${searchParams}`, {
+      next: { revalidate: 60 }, // ISR: Cache for 60 seconds
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      console.error('Failed to fetch suggestions:', response.status);
+      return { content: [], totalPages: 1, currentPage: 1 };
     }
-  }, [currentPage, filters, searchQuery]);
 
-  useEffect(() => {
-    fetchSuggestions();
-  }, [fetchSuggestions]);
+    const data = await response.json();
+    return {
+      content: data.content || [],
+      totalPages: data.totalPages || 1,
+      currentPage: parseInt(params.page || '1', 10),
+    };
+  } catch (error) {
+    console.error('Error fetching suggestions:', error);
+    return { content: [], totalPages: 1, currentPage: 1 };
+  }
+}
 
-  // 좋아요 토글
-  const toggleLike = async (suggestionId: number) => {
-    try {
-      const response = await fetch(`/api/suggestions/${suggestionId}/like`, {
-        method: 'POST',
-        credentials: 'include'
-      });
+export default async function BoardPage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const { content: suggestions, totalPages, currentPage } = await getSuggestions(params);
 
-      if (response.ok) {
-        fetchSuggestions(); // 목록 새로고침
+  // Generate JSON-LD structured data for ItemList
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'Pedestrian Safety Suggestions',
+    description: 'Community suggestions for improving pedestrian traffic safety',
+    numberOfItems: suggestions.length,
+    itemListElement: suggestions.map((suggestion: Suggestion, index: number) => ({
+      '@type': 'ListItem',
+      position: (currentPage - 1) * 10 + index + 1,
+      item: {
+        '@type': 'Article',
+        '@id': `${baseUrl}/board/${suggestion.id}`,
+        name: suggestion.title,
+        description: suggestion.content?.substring(0, 200) || '',
+        url: `${baseUrl}/board/${suggestion.id}`,
+        author: {
+          '@type': 'Person',
+          name: suggestion.user?.name || 'Anonymous'
+        },
+        datePublished: suggestion.created_at,
+        interactionStatistic: [
+          {
+            '@type': 'InteractionCounter',
+            interactionType: 'https://schema.org/LikeAction',
+            userInteractionCount: suggestion.like_count || 0
+          },
+          {
+            '@type': 'InteractionCounter',
+            interactionType: 'https://schema.org/CommentAction',
+            userInteractionCount: suggestion.comment_count || 0
+          }
+        ]
       }
-    } catch (error) {
-      console.error('좋아요 처리 실패:', error);
-    }
-  };
-
-  // 필터 변경
-  const handleFilterChange = (key: keyof FilterState, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-    setCurrentPage(1);
-  };
-
-  // 검색 실행
-  const handleSearch = () => {
-    setSearchQuery(searchTerm);
-    setCurrentPage(1);
+    }))
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* 헤더 */}
-        <div className="mb-8">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">시민 건의사항</h1>
-              <p className="text-gray-600 mt-1">교통 안전 시설 개선을 위한 시민 참여 공간</p>
-            </div>
-            <Link
-              href="/board/create"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <FaPlus className="w-4 h-4" />
-              건의사항 작성
-            </Link>
+    <>
+      {/* JSON-LD Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+      
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* 헤더 */}
+          <BoardHeader />
+
+          {/* 검색 및 필터 */}
+          <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+            <BoardFilters
+              initialValue={params.search || ''}
+              initialFilters={{
+                status: params.status || 'ALL',
+                type: params.type || 'ALL',
+                region: params.region || 'ALL',
+                sortBy: params.sort || 'latest'
+              }}
+            />
           </div>
-        </div>
 
-        {/* 검색 및 필터 */}
-        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-          <SearchBar
-            value={searchTerm}
-            onChange={setSearchTerm}
-            onToggleFilters={() => setShowFilters(v => !v)}
-            onSubmit={handleSearch}
+          {/* 건의사항 목록 */}
+          <BoardList suggestions={suggestions} />
+
+          {/* 페이지네이션 */}
+          <BoardPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
           />
-          {/* 필터 옵션 */}
-          {showFilters && (
-            <FiltersPanel
-              filters={filters}
-              onChange={handleFilterChange} />
-          )}
         </div>
-
-        {/* 건의사항 목록 */}
-        <SuggestionList
-          loading={loading}
-          suggestions={suggestions}
-          onLike={toggleLike}
-        />
-
-        {/* 페이지네이션 */}
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onChangePage={(p) => setCurrentPage(p)}
-        />
       </div>
-    </div>
+    </>
   );
 }

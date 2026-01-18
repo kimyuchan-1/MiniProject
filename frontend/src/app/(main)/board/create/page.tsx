@@ -4,6 +4,11 @@ import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { FaMapMarkerAlt, FaSave, FaTimes, FaArrowLeft } from 'react-icons/fa';
 import dynamic from 'next/dynamic';
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { Textarea } from "@/components/ui/Textarea";
+import { Button } from "@/components/ui/Button";
+import { Card, CardContent } from "@/components/ui/Card";
 
 // 지도 컴포넌트 (위치 선택용)
 const LocationPicker = dynamic(() => import('../../../../components/board/map/LocationPicker'), {
@@ -122,13 +127,14 @@ export default function CreateSuggestionPage() {
 
         {/* 뒤로가기 버튼 */}
         <div className='mb-6'>
-          <button
+          <Button
             onClick={() => router.push("/board")}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors hover:cursor-pointer"
+            variant="ghost"
+            className="flex items-center gap-2"
           >
             <FaArrowLeft className="w-4 h-4" />
             목록으로 돌아가기
-          </button>
+          </Button>
         </div>
         {/* 헤더 */}
         <div className="mb-8">
@@ -137,64 +143,64 @@ export default function CreateSuggestionPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            {/* 건의 유형 */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                건의 유형 <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="suggestion_type"
-                value={form.suggestion_type}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              >
-                <option value="SIGNAL">신호등 설치</option>
-                <option value="CROSSWALK">횡단보도 설치</option>
-                <option value="FACILITY">기타 시설</option>
-              </select>
-            </div>
-
-            {/* 제목 */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                제목 <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="title"
-                value={form.title}
-                onChange={handleInputChange}
-                placeholder="건의사항 제목을 입력해주세요"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-                maxLength={200}
-              />
-              <div className="text-xs text-gray-500 mt-1">
-                {form.title.length}/200자
+          <Card variant="outlined" padding="md">
+            <CardContent className="p-0 space-y-6">
+              {/* 건의 유형 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  건의 유형 <span className="text-red-500">*</span>
+                </label>
+                <Select
+                  name="suggestion_type"
+                  value={form.suggestion_type}
+                  onChange={handleInputChange}
+                  options={[
+                    { value: "SIGNAL", label: "신호등 설치" },
+                    { value: "CROSSWALK", label: "횡단보도 설치" },
+                    { value: "FACILITY", label: "기타 시설" },
+                  ]}
+                  required
+                />
               </div>
-            </div>
 
-            {/* 내용 */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                내용 <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                name="content"
-                value={form.content}
-                onChange={handleInputChange}
-                placeholder="건의사항 내용을 자세히 작성해주세요&#10;&#10;예시:&#10;- 현재 상황 (사고 위험성, 불편사항 등)&#10;- 개선 필요성&#10;- 기대 효과"
-                rows={8}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                required
-                maxLength={2000}
-              />
-              <div className="text-xs text-gray-500 mt-1">
-                {form.content.length}/2000자
+              {/* 제목 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  제목 <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  type="text"
+                  name="title"
+                  value={form.title}
+                  onChange={handleInputChange}
+                  placeholder="건의사항 제목을 입력해주세요"
+                  required
+                  maxLength={200}
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  {form.title.length}/200자
+                </div>
               </div>
-            </div>
+
+              {/* 내용 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  내용 <span className="text-red-500">*</span>
+                </label>
+                <Textarea
+                  name="content"
+                  value={form.content}
+                  onChange={handleInputChange}
+                  placeholder="건의사항 내용을 자세히 작성해주세요&#10;&#10;예시:&#10;- 현재 상황 (사고 위험성, 불편사항 등)&#10;- 개선 필요성&#10;- 기대 효과"
+                  rows={8}
+                  required
+                  maxLength={2000}
+                  className="resize-none"
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  {form.content.length}/2000자
+                </div>
+              </div>
 
             {/* 위치 선택 */}
             <div className="mb-6">
@@ -235,26 +241,30 @@ export default function CreateSuggestionPage() {
                 </p>
               </div>
             </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* 제출 버튼 */}
           <div className="flex gap-4 justify-end">
-            <button
+            <Button
               type="button"
               onClick={() => router.back()}
-              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 hover:cursor-pointer"
+              variant="outline"
+              className="flex items-center gap-2"
             >
               <FaTimes className="w-4 h-4" />
               취소
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={loading}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 hover:cursor-pointer"
+              variant="primary"
+              loading={loading}
+              className="flex items-center gap-2"
             >
               <FaSave className="w-4 h-4" />
-              {loading ? '등록 중...' : '건의사항 등록'}
-            </button>
+              건의사항 등록
+            </Button>
           </div>
         </form>
       </div>
