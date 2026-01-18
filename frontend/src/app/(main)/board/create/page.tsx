@@ -68,7 +68,7 @@ export default function CreateSuggestionPage() {
 
   // 우선순위 점수 계산 핸들러
   const handlePriorityScoreCalculated = useCallback((score: number) => {
-    console.log('[CreateSuggestionPage] Priority score calculated:', score);
+    // console.log('[CreateSuggestionPage] Priority score calculated:', score);
     setForm(prev => ({
       ...prev,
       priority_score: score

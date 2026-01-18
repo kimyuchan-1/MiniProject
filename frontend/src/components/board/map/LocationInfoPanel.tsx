@@ -133,21 +133,21 @@ export default function LocationInfoPanel({ lat, lon, address, onPriorityScoreCa
         const delta = 0.005;
         const bounds = `${lat - delta},${lon - delta},${lat + delta},${lon + delta}`;
         
-        console.log('[LocationInfoPanel] Fetching accidents with bounds:', bounds);
+        // console.log('[LocationInfoPanel] Fetching accidents with bounds:', bounds);
         
         const response = await fetch(
           `/api/map/acc_hotspots?bounds=${encodeURIComponent(bounds)}&limit=1000`
         );
         
-        console.log('[LocationInfoPanel] Response status:', response.status);
+        // console.log('[LocationInfoPanel] Response status:', response.status);
         
         if (response.ok) {
           const result = await response.json();
-          console.log('[LocationInfoPanel] API Response:', result);
+          // console.log('[LocationInfoPanel] API Response:', result);
           
           const data = result.success ? result.data : [];
-          console.log('[LocationInfoPanel] Extracted data:', data);
-          console.log('[LocationInfoPanel] Data length:', Array.isArray(data) ? data.length : 'not array');
+          // console.log('[LocationInfoPanel] Extracted data:', data);
+          // console.log('[LocationInfoPanel] Data length:', Array.isArray(data) ? data.length : 'not array');
           
           setNearbyAccidents(Array.isArray(data) ? data : []);
         } else {
@@ -175,7 +175,7 @@ export default function LocationInfoPanel({ lat, lon, address, onPriorityScoreCa
   // 우선순위 점수는 위험 지수와 동일
   useEffect(() => {
     if (onPriorityScoreCalculated && lat && lon) {
-      console.log('[LocationInfoPanel] Priority score (= risk score):', riskScore);
+      // console.log('[LocationInfoPanel] Priority score (= risk score):', riskScore);
       onPriorityScoreCalculated(riskScore);
     }
   }, [riskScore, lat, lon, onPriorityScoreCalculated]);
@@ -197,12 +197,12 @@ export default function LocationInfoPanel({ lat, lon, address, onPriorityScoreCa
 
   // 사고 통계
   const accidentStats = useMemo(() => {
-    console.log('[LocationInfoPanel] Calculating accident stats from:', nearbyAccidents.length, 'accidents');
+    // console.log('[LocationInfoPanel] Calculating accident stats from:', nearbyAccidents.length, 'accidents');
     
     const sum = (k: keyof AccidentData) =>
       nearbyAccidents.reduce((acc, cur) => {
         const value = Number(cur[k]) || 0;
-        console.log(`[LocationInfoPanel] ${k}:`, cur[k], '-> value:', value);
+        // console.log(`[LocationInfoPanel] ${k}:`, cur[k], '-> value:', value);
         return acc + value;
       }, 0);
 
@@ -212,7 +212,7 @@ export default function LocationInfoPanel({ lat, lon, address, onPriorityScoreCa
       deaths: sum('fatalityCount'),
     };
     
-    console.log('[LocationInfoPanel] Calculated stats:', stats);
+    // console.log('[LocationInfoPanel] Calculated stats:', stats);
     return stats;
   }, [nearbyAccidents]);
 

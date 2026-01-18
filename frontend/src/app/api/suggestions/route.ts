@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
       sigunguCode: sigungu_code ?? null,
     };
 
-    console.log('[Suggestions API] Creating suggestion with payload:', payload);
+    // console.log('[Suggestions API] Creating suggestion with payload:', payload);
 
     const response = await backendClient.post("/api/suggestions", payload, {
       headers: cookieHeader ? { Cookie: cookieHeader } : {},

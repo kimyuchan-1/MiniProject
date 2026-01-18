@@ -414,7 +414,6 @@ export default function SuggestionDetailPage() {
                 <LocationViewer
                   lat={suggestion.location_lat}
                   lon={suggestion.location_lon}
-                  address={suggestion.address}
                 />
               </div>
 

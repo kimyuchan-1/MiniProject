@@ -37,7 +37,7 @@ export default function Signin() {
         router.push("/");
       } else {
         const data = await response.json().catch(() => null);
-        console.log("signin fail", response.status, data);
+        // console.log("signin fail", response.status, data);
         alert(data?.detail ?? data?.message ?? "로그인 실패!");
       }
     } finally {

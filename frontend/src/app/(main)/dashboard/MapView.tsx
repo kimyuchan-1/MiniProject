@@ -47,7 +47,7 @@ function MapFlyTo({ target }: { target?: MoveTarget }) {
         const z = Number.isFinite(target.zoom as number) ? (target.zoom as number) : 12;
 
         // 디버깅: 실제 호출 확인
-        console.log("[MapFlyTo] flyTo:", { lat, lon, z });
+        // console.log("[MapFlyTo] flyTo:", { lat, lon, z });
 
         // ✅ react-leaflet 렌더 타이밍 이슈 예방: 다음 프레임에 실행
         requestAnimationFrame(() => {

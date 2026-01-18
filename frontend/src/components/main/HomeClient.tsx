@@ -27,9 +27,8 @@ export default function HomeClient() {
 
             <div className="mt-10 bg-white lg:max-w-4xl mx-auto px-6 py-8 rounded-xl shadow-sm backdrop-blur">
               <h2 className="text-2xl font-bold mb-4 text-gray-900">프로젝트 목적</h2>
-              <p className="text-lg text-gray-700 max-w-3xl mx-auto">
-                이 프로젝트는 월별 사고 데이터와 횡단보도·신호등 시설 정보를 결합하여 보행자 안전 지수를 평가하고
-                신호등 설치 및 기능 개선의 우선순위를 정량적으로 제시하는 것을 목표로 합니다.
+              <p className="text-lg text-gray-700 max-w-3xl mx-auto ">
+                이 프로젝트는 월별 사고 데이터와 횡단보도·신호등 시설 정보를 결합하여 보행자 안전 지수를 평가하고, 신호등 설치 및 기능 개선의 우선순위를 정량적으로 제시하는 것을 목표로 합니다.
               </p>
             </div>
 
@@ -47,33 +46,35 @@ export default function HomeClient() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:max-w-4xl mx-auto">
             <FeatureCard icon="/globe.svg" title="인터랙티브 지도 분석">
               <ul className="list-disc list-inside">
-                <li>전국 → 시도 → 시군구 3단계 확대 지도</li>
+                <li>시도, 시군구 기준으로 원하는 지역 이동</li>
                 <li>월별 보행자 사고 분포 시각화</li>
-                <li>사고 다발지역(Hotspot) 히트맵 표시</li>
+                <li>사고 다발지역(Hotspot) 위치 마커 표시</li>
+                <li>횡단보도 및 신호등 위치 마커 표시</li>
               </ul>
             </FeatureCard>
 
             <FeatureCard icon="/window.svg" title="KPI 중심 대시보드">
               <ul className="list-disc list-inside">
-                <li>신호등 설치율 및 사고 감소율</li>
-                <li>시설 취약도 기반 안전 지수</li>
-                <li>지역 간 비교 및 월별 트렌드 분석</li>
-              </ul>
-            </FeatureCard>
-
-            <FeatureCard icon="/file.svg" title="신호등·횡단보도 시설 분석">
-              <ul className="list-disc list-inside">
-                <li>음향신호기 등 편의시설 설치 현황</li>
-                <li>시설 취약성+사고 위험도 결합 분석</li>
-                <li>개선 필요 시설 자동 추천</li>
+                <li>신호등 설치율 분석</li>
+                <li>시설 취약도 기반 안전 지수 계산</li>
+                <li>횡단보도 반경 500m 내 사고다발지역 기반 위험 지수</li>
               </ul>
             </FeatureCard>
 
             <FeatureCard icon="/file.svg" title="시민 참여형 건의 시스템">
               <ul className="list-disc list-inside">
-                <li>지도 기반 신호등 설치 건의</li>
-                <li>주변 사고 이력 자동 첨부</li>
-                <li>관리자 검토·처리 상태 추적</li>
+                <li>지도 기반 신호등 설치 건의 작성</li>
+                <li>선택된 지역 위험 지수 확인</li>
+                <li>댓글 및 좋아요 기능</li>
+              </ul>
+            </FeatureCard>
+
+            <FeatureCard icon="/file.svg" title="사용자 계정 관리">
+              <ul className="list-disc list-inside">
+                <li>OAuth2 기반 소셜 로그인 (구글, 네이버, 깃허브)</li>
+                <li>이메일 기반 회원가입/로그인</li>
+                <li>프로필 관리 및 비밀번호 변경</li>
+                <li>내 활동 내역 조회</li>
               </ul>
             </FeatureCard>
           </div>
@@ -87,23 +88,25 @@ export default function HomeClient() {
         >
           <h2 className="text-3xl font-bold text-center mb-12 text-white">기술 스택</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:max-w-4xl mx-auto">
-            <FeatureCard icon="/frontend.svg" title="프론트엔드 구성">
+            <FeatureCard icon="/frontend.svg" title="프론트엔드">
               <ul className="list-disc list-inside">
-                <li>Next.js 16(App Router)</li>
-                <li>React + TypeScript</li>
-                <li>Leaflet - 인터랙티브 지도</li>
-                <li>Chart.js / D3.js - 통계·트렌드 시각화</li>
-                <li>Tailwind CSS - 반응형 UI</li>
+                <li>Next.js 16 (App Router)</li>
+                <li>React 19 + TypeScript</li>
+                <li>Tailwind CSS 4</li>
+                <li>Leaflet, React-Leaflet</li>
+                <li>Chart.js, React-ChartJS-2</li>
+                <li>Vitest, Fast-check (PBT)</li>
               </ul>
             </FeatureCard>
 
-            <FeatureCard icon="/backend.svg" title="백엔드 구성">
+            <FeatureCard icon="/backend.svg" title="백엔드">
               <ul className="list-disc list-inside">
                 <li>Spring Boot 3.5.8</li>
+                <li>Java 21</li>
                 <li>Spring Data JPA</li>
-                <li>RESTful API</li>
                 <li>MySQL 8</li>
-                <li>OAuth2 기반 인증</li>
+                <li>Spring Security, JWT</li>
+                <li>OAuth2 Client</li>
               </ul>
             </FeatureCard>
           </div>
