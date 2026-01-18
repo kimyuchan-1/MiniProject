@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -35,10 +37,13 @@ public class User {
     @Column(unique = true, nullable = false)
     private String email;
     
+    @JsonIgnore
     @Column(nullable = false)
     private String password;
     
     private String name;
+    
+    private String picture;
     
     @Enumerated(EnumType.STRING)
     private Role role;
@@ -49,6 +54,7 @@ public class User {
     @Column(name = "provider_id")
     private String providerId;
     
+    @JsonIgnore
     @Column(name = "refresh_token")
     private String refreshToken;
     

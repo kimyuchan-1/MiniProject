@@ -136,7 +136,7 @@ export default function SuggestionDetailPage() {
         // Update comment count in suggestion
         setSuggestion(prev => prev ? {
           ...prev,
-          comment_count: prev.comment_count + 1
+          comment_count: (prev.comment_count ?? 0) + 1
         } : null);
       } else if (response.status === 401) {
         alert('로그인이 필요합니다.');
@@ -179,8 +179,8 @@ export default function SuggestionDetailPage() {
         {/* 뒤로가기 버튼 */}
         <div className="mb-6">
           <button
-            onClick={() => router.back()}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+            onClick={() => router.push("/board")}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors hover:cursor-pointer"
           >
             <FaArrowLeft className="w-4 h-4" />
             목록으로 돌아가기
@@ -223,7 +223,7 @@ export default function SuggestionDetailPage() {
             </div>
             <div className="flex items-center gap-1">
               <FaComment className="w-4 h-4" />
-              <span>{comments.length}</span>
+              <span>{suggestion.comment_count}</span>
             </div>
             <span>{suggestion.user?.name ?? "익명"}</span>
             <span>{new Date(suggestion.created_at).toLocaleDateString()}</span>
@@ -255,10 +255,10 @@ export default function SuggestionDetailPage() {
           </div>
 
           {/* 좋아요 버튼 */}
-          <div className="flex items-center justify-between pt-6 border-t">
+          <div className="flex items-center justify-between pt-6 border-t ">
             <button
               onClick={toggleLike}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${suggestion.is_liked
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors hover:cursor-pointer ${suggestion.is_liked
                   ? 'bg-red-100 text-red-700 hover:bg-red-200'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
@@ -292,7 +292,7 @@ export default function SuggestionDetailPage() {
         {/* 댓글 섹션 */}
         <div className="bg-white rounded-lg shadow-sm border p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-6">
-            댓글 ({comments.length})
+            댓글 ({suggestion.comment_count})
           </h3>
 
           {/* 댓글 작성 폼 */}
@@ -303,7 +303,7 @@ export default function SuggestionDetailPage() {
                 <button
                   type="button"
                   onClick={() => setReplyTo(null)}
-                  className="ml-2 text-blue-600 hover:text-blue-700"
+                  className="ml-2 text-blue-600 hover:text-blue-700 hover:cursor-pointer"
                 >
                   취소
                 </button>
@@ -320,7 +320,7 @@ export default function SuggestionDetailPage() {
               <button
                 type="submit"
                 disabled={commentLoading || !newComment.trim()}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer"
               >
                 {commentLoading ? '작성 중...' : '댓글 작성'}
               </button>
@@ -350,7 +350,7 @@ export default function SuggestionDetailPage() {
                       <p className="text-gray-800 whitespace-pre-wrap mb-2">{comment.content}</p>
                       <button
                         onClick={() => setReplyTo(comment.id)}
-                        className="text-sm text-blue-600 hover:text-blue-700"
+                        className="text-sm text-blue-600 hover:text-blue-700 hover:cursor-pointer"
                       >
                         답글
                       </button>

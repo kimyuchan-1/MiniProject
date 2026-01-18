@@ -38,7 +38,7 @@ public class CommentResponse {
             userInfo = UserInfo.builder()
                     .id(user.getId())
                     .name(user.getName())
-                    .picture(null) // User 엔티티에 picture 필드 없음
+                    .picture(user.getPicture())
                     .build();
         }
 

@@ -81,7 +81,6 @@ public class Suggestion {
 	// 연관관계
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "user_id", insertable = false, updatable = false)
-	@JsonIgnore // Jackson 직렬화 제외
 	private User user;
 	
 	public static Suggestion from(Suggestion s) {

@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { FaMapMarkerAlt, FaSave, FaTimes } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaSave, FaTimes, FaArrowLeft } from 'react-icons/fa';
 import dynamic from 'next/dynamic';
 
 // 지도 컴포넌트 (위치 선택용)
@@ -55,7 +55,7 @@ export default function CreateSuggestionPage() {
   // 폼 제출
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!form.title.trim() || !form.content.trim()) {
       alert('제목과 내용을 입력해주세요.');
       return;
@@ -96,6 +96,17 @@ export default function CreateSuggestionPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        {/* 뒤로가기 버튼 */}
+        <div className='mb-6'>
+          <button
+            onClick={() => router.push("/board")}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors hover:cursor-pointer"
+          >
+            <FaArrowLeft className="w-4 h-4" />
+            목록으로 돌아가기
+          </button>
+        </div>
         {/* 헤더 */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900">건의사항 작성</h1>
@@ -175,7 +186,7 @@ export default function CreateSuggestionPage() {
                     <span className="text-blue-800 font-medium">{form.address}</span>
                   </div>
                 )}
-                
+
                 {/* 지도 */}
                 <div className="border border-gray-300 rounded-lg overflow-hidden">
                   <LocationPicker
@@ -199,7 +210,7 @@ export default function CreateSuggestionPage() {
             <button
               type="button"
               onClick={() => router.back()}
-              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 hover:cursor-pointer"
             >
               <FaTimes className="w-4 h-4" />
               취소
@@ -207,7 +218,7 @@ export default function CreateSuggestionPage() {
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 hover:cursor-pointer"
             >
               <FaSave className="w-4 h-4" />
               {loading ? '등록 중...' : '건의사항 등록'}

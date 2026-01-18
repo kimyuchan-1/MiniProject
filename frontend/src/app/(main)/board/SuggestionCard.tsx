@@ -58,7 +58,7 @@ export default function SuggestionCard(props: {
 
                     <button
                         onClick={() => onLike(suggestion.id)}
-                        className="flex items-center gap-1 px-3 py-1 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        className="flex items-center gap-1 px-3 py-1 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors hover:cursor-pointer"
                     >
                         <FaHeart className="w-3 h-3" />
                         <span>{suggestion.like_count}</span>

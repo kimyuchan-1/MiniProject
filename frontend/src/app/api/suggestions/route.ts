@@ -60,8 +60,6 @@ export async function GET(request: NextRequest) {
         address: item.address,
         sido: sido,
         sigungu: sigungu,
-        sido_code: item.sidoCode,
-        sigungu_code: item.sigunguCode,
         suggestion_type: item.suggestionType,
         status: item.status,
         like_count: item.likeCount ?? 0,

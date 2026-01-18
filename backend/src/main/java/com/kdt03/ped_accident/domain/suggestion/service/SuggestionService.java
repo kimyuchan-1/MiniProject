@@ -40,9 +40,9 @@ public class SuggestionService {
     // 전체 조회
     public Page<Suggestion> findAll(Pageable pageable, SuggestionStatus status, String region) {
         if (status != null) {
-            return suggestionRepository.findByStatus(status, pageable);
+            return suggestionRepository.findByStatusWithUser(status, pageable);
         }
-        return suggestionRepository.findAll(pageable);
+        return suggestionRepository.findAllWithUser(pageable);
     }
 
     // 단건 조회 (조회수 증가)
