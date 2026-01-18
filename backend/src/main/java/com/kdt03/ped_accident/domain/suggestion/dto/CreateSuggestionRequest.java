@@ -26,12 +26,6 @@ public class CreateSuggestionRequest {
     @NotBlank(message = "주소는 필수입니다.")
     private String address;
 
-    @NotBlank(message = "시/도는 필수입니다.")
-    private String sido;
-
-    @NotBlank(message = "시/군/구는 필수입니다.")
-    private String sigungu;
-
     @NotNull(message = "건의 유형은 필수입니다.")
     private SuggestionType suggestionType;
 }

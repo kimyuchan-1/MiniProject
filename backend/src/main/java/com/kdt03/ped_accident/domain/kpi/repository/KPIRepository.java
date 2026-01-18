@@ -12,7 +12,7 @@ public class KPIRepository {
 
     public String fetchKpiSummaryJson() {
         return (String) em
-            .createNativeQuery("SELECT data FROM v_kpi_summary_json LIMIT 1")
+            .createNativeQuery("SELECT data FROM v_kpi_summary_fast LIMIT 1")
             .getSingleResult();
     }
 }
