@@ -114,7 +114,9 @@ public class SuggestionService {
 
     // 건의사항 수정
     @Transactional
-    public Suggestion updateSuggestion(Long suggestionId, String title, String content, Long userId) {
+    public Suggestion updateSuggestion(Long suggestionId, String title, String content, 
+                                      SuggestionType suggestionType, Double locationLat, 
+                                      Double locationLon, String address, Long userId) {
         Suggestion suggestion = suggestionRepository.findById(suggestionId)
                 .orElseThrow(() -> new IllegalArgumentException("건의사항을 찾을 수 없습니다."));
 
@@ -128,8 +130,26 @@ public class SuggestionService {
             throw new IllegalArgumentException("접수 상태의 건의사항만 수정할 수 있습니다.");
         }
 
+        // 필드 업데이트
         suggestion.setTitle(title);
         suggestion.setContent(content);
+        
+        if (suggestionType != null) {
+            suggestion.setSuggestionType(suggestionType);
+        }
+        
+        if (locationLat != null) {
+            suggestion.setLocationLat(locationLat);
+        }
+        
+        if (locationLon != null) {
+            suggestion.setLocationLon(locationLon);
+        }
+        
+        if (address != null && !address.isBlank()) {
+            suggestion.setAddress(address);
+        }
+        
         return suggestionRepository.save(suggestion);
     }
 

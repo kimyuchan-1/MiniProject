@@ -100,7 +100,7 @@ public class SuggestionController {
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<?> updateSuggestion(
             @PathVariable Long id,
-            @RequestBody Map<String, String> request,
+            @RequestBody Map<String, Object> request,
             Authentication authentication) {
         
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -111,15 +111,28 @@ public class SuggestionController {
         CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
         Long userId = principal.getUser().getId();
 
-        String title = request.get("title");
-        String content = request.get("content");
+        String title = (String) request.get("title");
+        String content = (String) request.get("content");
+        String suggestionTypeStr = (String) request.get("suggestion_type");
+        Object locationLatObj = request.get("location_lat");
+        Object locationLonObj = request.get("location_lon");
+        String address = (String) request.get("address");
 
         if (title == null || title.isBlank() || content == null || content.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("message", "제목과 내용은 필수입니다."));
         }
 
         try {
-            Suggestion updated = suggestionService.updateSuggestion(id, title, content, userId);
+            SuggestionType suggestionType = suggestionTypeStr != null ? 
+                    SuggestionType.valueOf(suggestionTypeStr) : null;
+            
+            Double locationLat = locationLatObj != null ? 
+                    ((Number) locationLatObj).doubleValue() : null;
+            Double locationLon = locationLonObj != null ? 
+                    ((Number) locationLonObj).doubleValue() : null;
+            
+            Suggestion updated = suggestionService.updateSuggestion(
+                    id, title, content, suggestionType, locationLat, locationLon, address, userId);
             return ResponseEntity.ok(updated);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));

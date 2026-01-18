@@ -95,16 +95,19 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { title, content, suggestion_type } = body ?? {};
+    const { title, content, suggestion_type, location_lat, location_lon, address } = body ?? {};
 
-    if (!title || !content || !suggestion_type) {
-      return NextResponse.json({ error: "필수 필드가 누락되었습니다." }, { status: 400 });
+    if (!title || !content) {
+      return NextResponse.json({ error: "제목과 내용은 필수입니다." }, { status: 400 });
     }
 
     const payload = {
       title,
       content,
-      suggestionType: suggestion_type,
+      suggestion_type,
+      location_lat,
+      location_lon,
+      address,
     };
 
     const response = await backendClient.put(`/api/suggestions/${suggestionId}`, payload, {
