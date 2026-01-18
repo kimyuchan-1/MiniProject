@@ -292,13 +292,6 @@ public class SuggestionController {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
-
-    @GetMapping("/statistics")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<SuggestionStatistics> getSuggestionStatistics() {
-        SuggestionStatistics stats = suggestionService.getSuggestionStatistics();
-        return ResponseEntity.ok(stats);
-    }
     
     @GetMapping("/regions")
     public ResponseEntity<List<String>> getAvailableRegions() {

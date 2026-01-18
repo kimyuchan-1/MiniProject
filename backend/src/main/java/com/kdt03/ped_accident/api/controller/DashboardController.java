@@ -85,12 +85,4 @@ public class DashboardController {
         @RequestParam(required = false) String sigungu) {
 		return null;
 	}
-    
-    @GetMapping("/analysis/improvement-candidates")
-    public ResponseEntity<List<ImprovementCandidate>> getImprovementCandidates(
-        @RequestParam(required = false) String sido,
-        @RequestParam(required = false) String sigungu,
-        @RequestParam(defaultValue = "20") int limit) {
-		return null;
-	}
 }

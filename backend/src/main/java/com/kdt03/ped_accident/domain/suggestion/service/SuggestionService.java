@@ -342,12 +342,6 @@ public class SuggestionService {
     public boolean isLikedByUser(Long suggestionId, Long userId) {
         return likeRepository.existsBySuggestionIdAndUserId(suggestionId, userId);
     }
-
-    // 통계
-    public SuggestionStatistics getSuggestionStatistics() {
-        // TODO: 통계 구현
-        return null;
-    }
     
     // 실제 존재하는 지역 목록 조회
     public List<String> getAvailableRegions() {
