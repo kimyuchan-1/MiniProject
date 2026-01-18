@@ -28,6 +28,14 @@ export default function RegionSelectors(props: {
     return parts.length >= 2 ? parts[parts.length - 1] : c.name;
   };
 
+  // Deduplicate cities by code to avoid React key warnings
+  const uniqueCities = cities.reduce((acc, city) => {
+    if (!acc.find(c => c.code === city.code)) {
+      acc.push(city);
+    }
+    return acc;
+  }, [] as CityOpt[]);
+
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
       <div className="flex items-center gap-2">
@@ -62,7 +70,7 @@ export default function RegionSelectors(props: {
               <option value="ALL">
                 {loadingCities ? "로딩 중..." : "전체 (시도 통계)"}
               </option>
-              {cities.map((c) => (
+              {uniqueCities.map((c) => (
                 <option key={c.code} value={c.code}>
                   {cityLabel(c)}
                 </option>
