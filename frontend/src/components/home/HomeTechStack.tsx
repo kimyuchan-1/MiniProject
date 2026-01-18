@@ -13,7 +13,7 @@ export default function HomeTechStack() {
             <li>Tailwind CSS 4</li>
             <li>Leaflet, React-Leaflet</li>
             <li>Chart.js, React-ChartJS-2</li>
-            <li>Vitest, Fast-check (PBT)</li>
+            <li>Vitest</li>
           </ul>
         </FeatureCard>
 
