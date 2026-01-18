@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import type { FilterState } from "@/features/board/types";
 
 type Props = {
@@ -8,6 +9,28 @@ type Props = {
 };
 
 export default function FiltersPanel({ filters, onChange }: Props) {
+    const [regions, setRegions] = useState<string[]>([]);
+    const [loadingRegions, setLoadingRegions] = useState(true);
+
+    // 지역 목록 조회
+    useEffect(() => {
+        const fetchRegions = async () => {
+            try {
+                const response = await fetch('/api/suggestions/regions');
+                if (response.ok) {
+                    const data = await response.json();
+                    setRegions(data);
+                }
+            } catch (error) {
+                console.error('지역 목록 조회 실패:', error);
+            } finally {
+                setLoadingRegions(false);
+            }
+        };
+
+        fetchRegions();
+    }, []);
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t">
             <div>
@@ -46,12 +69,18 @@ export default function FiltersPanel({ filters, onChange }: Props) {
                     value={filters.region}
                     onChange={(e) => onChange("region", e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    disabled={loadingRegions}
                 >
                     <option value="ALL">전체</option>
-                    <option value="서울특별시">서울특별시</option>
-                    <option value="부산광역시">부산광역시</option>
-                    <option value="대구광역시">대구광역시</option>
-                    <option value="인천광역시">인천광역시</option>
+                    {loadingRegions ? (
+                        <option disabled>로딩 중...</option>
+                    ) : (
+                        regions.map((region) => (
+                            <option key={region} value={region}>
+                                {region}
+                            </option>
+                        ))
+                    )}
                 </select>
             </div>
 

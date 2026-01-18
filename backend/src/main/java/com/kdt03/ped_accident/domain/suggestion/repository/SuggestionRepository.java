@@ -11,6 +11,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 
 @Repository
 public interface SuggestionRepository extends JpaRepository<Suggestion, Long> {
@@ -37,6 +39,12 @@ public interface SuggestionRepository extends JpaRepository<Suggestion, Long> {
         @Param("region") String region,
         Pageable pageable
     );
+    
+    // 실제 존재하는 지역(시/도) 목록 조회
+    @Query("SELECT DISTINCT SUBSTRING(s.address, 1, LOCATE(' ', s.address) - 1) FROM Suggestion s " +
+           "WHERE s.address IS NOT NULL AND s.address != '' " +
+           "ORDER BY SUBSTRING(s.address, 1, LOCATE(' ', s.address) - 1)")
+    List<String> findDistinctRegions();
  
     Page<Suggestion> findAllByOrderByCreatedAtDesc(Pageable pageable);
 

@@ -231,6 +231,12 @@ public class SuggestionController {
         SuggestionStatistics stats = suggestionService.getSuggestionStatistics();
         return ResponseEntity.ok(stats);
     }
+    
+    @GetMapping("/regions")
+    public ResponseEntity<List<String>> getAvailableRegions() {
+        List<String> regions = suggestionService.getAvailableRegions();
+        return ResponseEntity.ok(regions);
+    }
 
     @GetMapping("/my")
     public ResponseEntity<ApiResponse<PagedItems<Suggestion>>> mySuggestions(
