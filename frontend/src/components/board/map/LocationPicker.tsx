@@ -69,13 +69,36 @@ const getAddressFromCoords = async (lat: number, lon: number): Promise<string> =
     
     if (response.ok) {
       const data = await response.json();
-      return data.display_name || `위도: ${lat.toFixed(6)}, 경도: ${lon.toFixed(6)}`;
+      const originalAddress = data.display_name || `위도: ${lat.toFixed(6)}, 경도: ${lon.toFixed(6)}`;
+      
+      // 주소를 역순으로 변환
+      return reverseAddress(originalAddress);
     }
   } catch (error) {
     console.error('주소 변환 실패:', error);
   }
   
   return `위도: ${lat.toFixed(6)}, 경도: ${lon.toFixed(6)}`;
+};
+
+// 주소를 역순으로 변환하는 함수
+// 예: "세종대로19길, 태평로2가, 소공동, 중구, 서울특별시, 04524, 대한민국"
+// -> "서울특별시 중구 소공동 태평로2가 세종대로19길"
+const reverseAddress = (address: string): string => {
+  // 쉼표로 분리
+  const parts = address.split(',').map(part => part.trim());
+  
+  // 우편번호와 국가명 제거 (숫자만 있거나 "대한민국" 등)
+  const filtered = parts.filter(part => {
+    // 숫자만 있는 경우 (우편번호) 제거
+    if (/^\d+$/.test(part)) return false;
+    // "대한민국", "South Korea" 등 국가명 제거
+    if (part === '대한민국' || part.toLowerCase().includes('korea')) return false;
+    return true;
+  });
+  
+  // 역순으로 변환하고 공백으로 연결
+  return filtered.reverse().join(' ');
 };
 
 export default function LocationPicker({ 

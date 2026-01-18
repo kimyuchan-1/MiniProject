@@ -41,9 +41,16 @@ public interface SuggestionRepository extends JpaRepository<Suggestion, Long> {
     );
     
     // 실제 존재하는 지역(시/도) 목록 조회
-    @Query("SELECT DISTINCT SUBSTRING(s.address, 1, LOCATE(' ', s.address) - 1) FROM Suggestion s " +
+    // 주소 형식: "서울특별시 중구 소공동 태평로2가 세종대로19길"
+    // 첫 번째 공백 전까지가 시/도
+    @Query("SELECT DISTINCT SUBSTRING(s.address, 1, " +
+           "CASE WHEN LOCATE(' ', s.address) > 0 THEN LOCATE(' ', s.address) - 1 " +
+           "ELSE LENGTH(s.address) END) " +
+           "FROM Suggestion s " +
            "WHERE s.address IS NOT NULL AND s.address != '' " +
-           "ORDER BY SUBSTRING(s.address, 1, LOCATE(' ', s.address) - 1)")
+           "ORDER BY SUBSTRING(s.address, 1, " +
+           "CASE WHEN LOCATE(' ', s.address) > 0 THEN LOCATE(' ', s.address) - 1 " +
+           "ELSE LENGTH(s.address) END)")
     List<String> findDistinctRegions();
  
     Page<Suggestion> findAllByOrderByCreatedAtDesc(Pageable pageable);

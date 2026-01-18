@@ -10,6 +10,7 @@ function parseIntStrict(v: string) {
 
 function transformSuggestion(item: any) {
   // Extract sido and sigungu from address
+  // 주소 형식: "서울특별시 중구 소공동 태평로2가 세종대로19길"
   const addressParts = (item.address ?? "").split(" ");
   const sido = addressParts[0] ?? "";
   const sigungu = addressParts[1] ?? "";
