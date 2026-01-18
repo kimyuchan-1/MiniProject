@@ -65,7 +65,7 @@ public class SuggestionService {
         // null 체크
         int currentViewCount = suggestion.getViewCount() != null ? suggestion.getViewCount() : 0;
         suggestion.setViewCount(currentViewCount + 1);
-        suggestion.calculatePriorityScore();
+        // 우선순위 점수는 위험 지수로 고정되므로 재계산하지 않음
         return suggestionRepository.save(suggestion);
     }
 
@@ -79,7 +79,7 @@ public class SuggestionService {
         // 조회수 증가
         int currentViewCount = suggestion.getViewCount() != null ? suggestion.getViewCount() : 0;
         suggestion.setViewCount(currentViewCount + 1);
-        suggestion.calculatePriorityScore();
+        // 우선순위 점수는 위험 지수로 고정되므로 재계산하지 않음
         suggestionRepository.save(suggestion);
 
         // 작성자 정보 조회
@@ -250,8 +250,7 @@ public class SuggestionService {
         int currentCommentCount = suggestion.getCommentCount() != null ? suggestion.getCommentCount() : 0;
         suggestion.setCommentCount(currentCommentCount + 1);
         
-        // 우선순위 점수 재계산
-        suggestion.calculatePriorityScore();
+        // 우선순위 점수는 위험 지수로 고정되므로 재계산하지 않음
         suggestionRepository.save(suggestion);
 
         // User 조회해서 DTO로 반환
@@ -302,8 +301,7 @@ public class SuggestionService {
         int currentCommentCount = suggestion.getCommentCount() != null ? suggestion.getCommentCount() : 0;
         suggestion.setCommentCount(Math.max(0, currentCommentCount - 1 - (int)replyCount));
         
-        // 우선순위 점수 재계산
-        suggestion.calculatePriorityScore();
+        // 우선순위 점수는 위험 지수로 고정되므로 재계산하지 않음
         suggestionRepository.save(suggestion);
     }
 
@@ -322,7 +320,7 @@ public class SuggestionService {
             // 좋아요 취소
             likeRepository.delete(existingLike.get());
             suggestion.setLikeCount(Math.max(0, currentLikeCount - 1));
-            suggestion.calculatePriorityScore();
+            // 우선순위 점수는 위험 지수로 고정되므로 재계산하지 않음
             suggestionRepository.save(suggestion);
             return false;
         } else {
@@ -333,7 +331,7 @@ public class SuggestionService {
                     .build();
             likeRepository.save(like);
             suggestion.setLikeCount(currentLikeCount + 1);
-            suggestion.calculatePriorityScore();
+            // 우선순위 점수는 위험 지수로 고정되므로 재계산하지 않음
             suggestionRepository.save(suggestion);
             return true;
         }
