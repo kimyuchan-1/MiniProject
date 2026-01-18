@@ -15,6 +15,18 @@ const LocationPicker = dynamic(() => import('../../../../../components/board/map
   ),
 });
 
+// 위치 정보 패널 (위험/안전 지수 표시)
+const LocationInfoPanel = dynamic(() => import('../../../../../components/board/map/LocationInfoPanel'), {
+  ssr: false,
+  loading: () => (
+    <div className="rounded-xl border bg-gray-50 p-6">
+      <div className="text-center text-gray-500">
+        <div className="text-sm font-medium">위치 정보 로딩 중...</div>
+      </div>
+    </div>
+  ),
+});
+
 interface SuggestionForm {
   title: string;
   content: string;
@@ -247,8 +259,16 @@ export default function EditSuggestionPage() {
                     }
                   />
                 </div>
+
+                {/* 위치 정보 패널 */}
+                <LocationInfoPanel
+                  lat={form.location_lat}
+                  lon={form.location_lon}
+                  address={form.address}
+                />
+
                 <p className="text-xs text-gray-500">
-                  지도를 클릭하여 건의사항 위치를 변경할 수 있습니다
+                  지도를 클릭하여 건의사항 위치를 변경할 수 있습니다. 선택한 위치의 위험 지수와 주변 사고 정보가 표시됩니다.
                 </p>
               </div>
             </div>

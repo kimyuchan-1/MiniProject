@@ -177,7 +177,7 @@ export default function IndexExplain() {
                         <button
                             type="button"
                             onClick={() => setShowDetail((v) => !v)}
-                            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:cursor-pointer"
                         >
                             {showDetail ? "접기" : "펼치기"}
                         </button>

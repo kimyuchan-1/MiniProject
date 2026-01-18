@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,16 +19,4 @@ public class MapController {
         @RequestParam String bounds) {
 		return null;
 	}
-    
-//    @GetMapping("/crosswalks/{cwUid}")
-//    public ResponseEntity<CrosswalkDetails> getCrosswalkDetails(
-//        @PathVariable String cwUid) {
-//		return null;
-//	}
-//    
-//    @GetMapping("/accidents")
-//    public ResponseEntity<List<AccidentData>> getAccidents(
-//        @RequestParam String bounds) {
-//		return null;
-//	}
 }

@@ -86,8 +86,6 @@ export function YearlyTrendChart({ yearlyData }: { yearlyData: AccData[] }) {
         min: left.min,
         max: left.max,
         ticks: {
-          // 변화량을 보기 쉬운 간격으로: 자동 or 직접 stepSize
-          // stepSize: 200, // 예시(데이터에 맞게)
           maxTicksLimit: 6,
         },
         title: { display: true, text: '사고/사상자' },
@@ -98,7 +96,6 @@ export function YearlyTrendChart({ yearlyData }: { yearlyData: AccData[] }) {
         max: right.max,
         grid: { drawOnChartArea: false },
         ticks: {
-          // stepSize: 20, // 예시(데이터에 맞게)
           maxTicksLimit: 6,
         },
         title: { display: true, text: '사망자' },

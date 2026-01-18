@@ -102,7 +102,7 @@ export default function MySuggestionsList() {
                         {items.map((it) => (
                             <li key={String(it.id)} className="border-t">
                                 <Link
-                                    href={`/suggestions/${it.id}`}
+                                    href={`/board/${it.id}`}
                                     className="grid grid-cols-[1fr_100px] md:grid-cols-[1fr_120px_160px] gap-3 px-4 py-4 hover:bg-gray-50"
                                 >
                                     <div className="min-w-0">

@@ -18,6 +18,18 @@ const LocationViewer = dynamic(() => import('../../../../components/board/map/Lo
   ),
 });
 
+// 위치 정보 패널 (위험/안전 지수 표시)
+const LocationInfoPanel = dynamic(() => import('../../../../components/board/map/LocationInfoPanel'), {
+  ssr: false,
+  loading: () => (
+    <div className="rounded-xl border bg-gray-50 p-6">
+      <div className="text-center text-gray-500">
+        <div className="text-sm font-medium">위치 정보 로딩 중...</div>
+      </div>
+    </div>
+  ),
+});
+
 interface CurrentUser {
   id: number;
   email: string;
@@ -396,6 +408,8 @@ export default function SuggestionDetailPage() {
                 <FaMapMarkerAlt className="text-blue-600 w-4 h-4" />
                 <span className="text-blue-800 font-medium">{suggestion.address}</span>
               </div>
+              
+              {/* 지도 */}
               <div className="border border-gray-300 rounded-lg overflow-hidden">
                 <LocationViewer
                   lat={suggestion.location_lat}
@@ -403,6 +417,13 @@ export default function SuggestionDetailPage() {
                   address={suggestion.address}
                 />
               </div>
+
+              {/* 위치 정보 패널 */}
+              <LocationInfoPanel
+                lat={suggestion.location_lat}
+                lon={suggestion.location_lon}
+                address={suggestion.address}
+              />
             </div>
           </div>
 

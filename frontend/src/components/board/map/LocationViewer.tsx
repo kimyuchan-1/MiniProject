@@ -7,7 +7,6 @@ import { MapContainer, TileLayer, Marker, Circle } from "react-leaflet";
 interface LocationViewerProps {
   lat: number;
   lon: number;
-  address: string;
   showRadius?: boolean;
   radiusMeters?: number;
 }
@@ -40,7 +39,6 @@ const locationIcon = L.divIcon({
 export default function LocationViewer({ 
   lat, 
   lon, 
-  address, 
   showRadius = true, 
   radiusMeters = 30
 }: LocationViewerProps) {
@@ -87,18 +85,6 @@ export default function LocationViewer({
             />
           )}
         </MapContainer>
-      </div>
-
-      {/* 주소 표시 */}
-      <div className="absolute bottom-4 left-4 right-4 bg-white/95 px-3 py-2 rounded-lg shadow-sm">
-        <div className="text-sm font-medium text-gray-900 truncate">
-          📍 {address}
-        </div>
-        {showRadius && (
-          <div className="text-xs text-gray-600 mt-1">
-            반경 {radiusMeters}m 내 시설 현황 표시
-          </div>
-        )}
       </div>
     </div>
   );

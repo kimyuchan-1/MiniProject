@@ -1,8 +1,6 @@
 package com.kdt03.ped_accident.domain.safety.service;
 
-import com.kdt03.ped_accident.api.dto.response.DashboardStats;
 import com.kdt03.ped_accident.api.dto.response.RiskScore;
-import com.kdt03.ped_accident.api.dto.response.SignalEffectAnalysis;
 import com.kdt03.ped_accident.api.dto.response.VulnerabilityScore;
 import com.kdt03.ped_accident.domain.accidentHotSpot.repository.AccidentHotspotRepository;
 import com.kdt03.ped_accident.domain.crosswalk.entity.Crosswalk;
@@ -24,20 +22,6 @@ public class SafetyAnalysisService {
     private final CrosswalkRepository crosswalkRepository;
     private final DistrictRepository districtRepository;
     private final CwSigMapRepository cwSigMapRepository;
-
-    /**
-     * 특정 지역의 대시보드 통계를 조회합니다.
-     *
-     * @param districtCode 지역 코드
-     * @return 대시보드 통계
-     */
-//    public DashboardStats getDashboardStats(Long districtCode) {
-//        // TODO: Implement actual logic to calculate dashboard statistics
-//        // This would involve querying accident data for the given district code.
-//        // For example: accidentHotspotRepository.findBySidoCodeAndSigunguCode(...)
-//        // The DTO constructor might need adjustment based on its actual definition.
-//        return new DashboardStats(0, 0, 0.0, 0.0);
-//    }
 
     /**
      * 개선이 시급한 횡단보도 후보 목록을 조회합니다.
@@ -73,12 +57,5 @@ public class SafetyAnalysisService {
         return new RiskScore(0.0);
     }
 
-//    public SignalEffectAnalysis analyzeSignalEffect(Long districtCode) {
-//        // TODO: Implement logic to analyze the effect of traffic signals.
-//        // This would involve comparing accident rates at crosswalks with and without signals.
-//        return new SignalEffectAnalysis(0.0, 0.0);
-//    }
-
     public record CrosswalkWithScore(Crosswalk crosswalk, double score) {}
 }
-
