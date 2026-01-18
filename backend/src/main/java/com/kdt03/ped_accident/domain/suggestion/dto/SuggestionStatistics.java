@@ -13,3 +13,5 @@ public class SuggestionStatistics {
     private long rejectedCount;
     private long completedCount;
 }
+
+
