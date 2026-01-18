@@ -169,6 +169,19 @@ public class SuggestionService {
             throw new IllegalArgumentException("접수 상태의 건의사항만 삭제할 수 있습니다.");
         }
 
+        // 관련된 댓글 먼저 삭제
+        List<SuggestionComment> comments = commentRepository.findBySuggestionIdOrderByCreatedAtAsc(suggestionId);
+        if (!comments.isEmpty()) {
+            commentRepository.deleteAll(comments);
+        }
+        
+        // 관련된 좋아요 삭제
+        List<SuggestionLike> likes = likeRepository.findBySuggestionId(suggestionId);
+        if (!likes.isEmpty()) {
+            likeRepository.deleteAll(likes);
+        }
+
+        // 건의사항 삭제
         suggestionRepository.delete(suggestion);
     }
 

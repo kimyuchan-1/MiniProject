@@ -347,14 +347,14 @@ export default function SuggestionDetailPage() {
               <div className="flex gap-2 ml-4">
                 <button
                   onClick={() => router.push(`/board/${suggestionId}/edit`)}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors hover:cursor-pointer"
                 >
                   <FaEdit className="w-3.5 h-3.5" />
                   수정
                 </button>
                 <button
                   onClick={handleDeleteSuggestion}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors hover:cursor-pointer"
                 >
                   <FaTrash className="w-3.5 h-3.5" />
                   삭제
@@ -512,13 +512,13 @@ export default function SuggestionDetailPage() {
                           <div className="flex gap-2">
                             <button
                               onClick={() => handleUpdateComment(comment.id)}
-                              className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                              className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 hover:cursor-pointer"
                             >
                               저장
                             </button>
                             <button
                               onClick={cancelEditComment}
-                              className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                              className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 hover:cursor-pointer"
                             >
                               취소
                             </button>
@@ -584,13 +584,13 @@ export default function SuggestionDetailPage() {
                                 <div className="flex gap-2">
                                   <button
                                     onClick={() => handleUpdateComment(reply.id)}
-                                    className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                                    className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 hover:cursor-pointer"
                                   >
                                     저장
                                   </button>
                                   <button
                                     onClick={cancelEditComment}
-                                    className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                                    className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 hover:cursor-pointer"
                                   >
                                     취소
                                   </button>
