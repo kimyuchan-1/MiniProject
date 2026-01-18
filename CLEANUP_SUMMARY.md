@@ -1,10 +1,30 @@
-# 코드 정리 요약 (Code Cleanup Summary)
+# 코드 정리 요약 (Code Cleanup Summary) - 최종 버전
 
 ## 삭제된 파일 (Deleted Files)
 
-### 백엔드 (Backend)
+### 백엔드 서비스 (Backend Services)
 - `backend/src/main/java/com/kdt03/ped_accident/global/service/DataImportService.java`
   - 이유: 완전히 비어있는 서비스 클래스, 어디서도 사용되지 않음
+- `backend/src/main/java/com/kdt03/ped_accident/global/service/MapService.java`
+  - 이유: 모든 메서드가 null 반환, 실제 구현 없음
+- `backend/src/main/java/com/kdt03/ped_accident/domain/suggestion/service/SuggestionStatistics.java`
+  - 이유: 사용되지 않는 통계 서비스
+
+### 백엔드 DTO (Backend DTOs)
+- `backend/src/main/java/com/kdt03/ped_accident/api/dto/response/DashboardStats.java`
+- `backend/src/main/java/com/kdt03/ped_accident/api/dto/response/SignalEffectAnalysis.java`
+- `backend/src/main/java/com/kdt03/ped_accident/api/dto/response/ImprovementCandidate.java`
+- `backend/src/main/java/com/kdt03/ped_accident/api/dto/response/SuggestionStatistics.java`
+- `backend/src/main/java/com/kdt03/ped_accident/domain/suggestion/dto/SuggestionStatistics.java`
+- `backend/src/main/java/com/kdt03/ped_accident/api/dto/response/VulnerabilityScore.java`
+- `backend/src/main/java/com/kdt03/ped_accident/api/dto/response/RiskScore.java`
+- `backend/src/main/java/com/kdt03/ped_accident/api/dto/response/RegionStats.java`
+- `backend/src/main/java/com/kdt03/ped_accident/api/dto/response/CorrelationData.java`
+- `backend/src/main/java/com/kdt03/ped_accident/api/dto/response/RegionalComparison.java`
+- `backend/src/main/java/com/kdt03/ped_accident/api/dto/response/RegionalStatistics.java`
+- `backend/src/main/java/com/kdt03/ped_accident/api/dto/response/SafetyIndex.java`
+- `backend/src/main/java/com/kdt03/ped_accident/api/dto/response/KPITrend.java`
+  - 이유: 모두 사용되지 않는 DTO 클래스들
 
 ### 루트 파일 (Root Files)
 - `~$미니프로젝트계획서.pptx`
@@ -36,21 +56,34 @@
 
 ### 백엔드 (Backend)
 
-#### 1. 주석 처리된 메서드 제거
+#### 1. DashboardController 정리
+- **파일**: `backend/src/main/java/com/kdt03/ped_accident/api/controller/DashboardController.java`
+- **제거**:
+  - `getDashboardStats()` 엔드포인트 (null 반환)
+  - `getAccidentHeatmap()` 엔드포인트 (null 반환)
+  - `getCrosswalks()` 엔드포인트 (null 반환)
+  - `getSignals()` 엔드포인트 (null 반환)
+  - `getSignalEffectAnalysis()` 엔드포인트 (null 반환)
+  - 관련 사용하지 않는 imports
+
+#### 2. MapController 정리
 - **파일**: `backend/src/main/java/com/kdt03/ped_accident/api/controller/MapController.java`
 - **제거**:
   - 주석 처리된 `getCrosswalkDetails()` 엔드포인트
   - 주석 처리된 `getAccidents()` 엔드포인트
   - 사용하지 않는 import: `@PathVariable`
 
-#### 2. 주석 처리된 메서드 및 사용하지 않는 import 제거
-- **파일**: `backend/src/main/java/com/kdt03/ped_accident/domain/safety/service/SafetyAnalysisService.java`
+#### 3. SuggestionService 정리
+- **파일**: `backend/src/main/java/com/kdt03/ped_accident/domain/suggestion/service/SuggestionService.java`
 - **제거**:
-  - 주석 처리된 `getDashboardStats()` 메서드
-  - 주석 처리된 `analyzeSignalEffect()` 메서드
-  - 사용하지 않는 import: `DashboardStats`, `SignalEffectAnalysis`
+  - `getSuggestionStatistics()` 메서드 (TODO로 표시, 사용되지 않음)
 
-#### 3. 주석 처리된 오버라이드 메서드 제거
+#### 4. SuggestionController 정리
+- **파일**: `backend/src/main/java/com/kdt03/ped_accident/api/controller/SuggestionController.java`
+- **제거**:
+  - 사용하지 않는 import: `SuggestionStatistics`
+
+#### 5. CustomUserPrincipal 정리
 - **파일**: `backend/src/main/java/com/kdt03/ped_accident/domain/user/service/CustomUserPrincipal.java`
 - **제거**:
   - 주석 처리된 `isAccountNonExpired()` 메서드
@@ -60,48 +93,61 @@
 
 ## 유지된 항목 (Kept Items)
 
-### 구현 필요 메서드 (TODO Methods)
-다음 메서드들은 TODO로 표시되어 있지만 API 엔드포인트에서 사용되므로 유지:
-
-1. **SuggestionService.getSuggestionStatistics()**
-   - 사용처: `SuggestionController.getSuggestionStatistics()`
-   - 상태: 구현 필요
-
-2. **SafetyAnalysisService.getImprovementCandidates()**
-   - 사용처: `DashboardController.getImprovementCandidates()`
-   - 상태: 구현 필요
-
-3. **SafetyAnalysisService.calculateVulnerabilityScore()**
-   - 상태: 구현 필요
-
-4. **SafetyAnalysisService.calculateRiskScore()**
-   - 상태: 구현 필요
+### SQL 파일
+- `add_priority_score_column.sql` - priority_score 컬럼이 실제로 사용 중
+- `database_optimization_kpi.sql` - KPI 최적화 참고 문서
 
 ### 데이터셋 파일 (Dataset Files)
-- `dataset/report/` 폴더는 비어있지만 향후 사용을 위해 유지
-- `dataset/python code/` 내의 Jupyter 노트북들은 데이터 처리에 사용될 수 있으므로 유지
-- 중간 CSV 파일들도 데이터 처리 파이프라인에 필요할 수 있으므로 유지
+- `dataset/python code/` 내의 Jupyter 노트북들 - 데이터 처리에 사용될 수 있으므로 유지
+- 중간 CSV 파일들 - 데이터 처리 파이프라인에 필요할 수 있으므로 유지
+- `dataset/python code/.env` - MySQL 연결 정보
+
+### Eclipse 메타데이터
+- `backend/.metadata/` - Eclipse IDE 설정 폴더 (`.gitignore`에 추가 권장)
 
 ## 정리 효과 (Cleanup Impact)
 
-- **삭제된 파일**: 2개
-- **제거된 코드 라인**: 약 60-80줄
-- **제거된 사용하지 않는 import**: 3개
+- **삭제된 파일**: 17개
+  - 서비스: 3개
+  - DTO: 13개
+  - 기타: 1개
+- **제거된 코드 라인**: 약 200-250줄
+- **제거된 사용하지 않는 import**: 10개 이상
 - **제거된 사용하지 않는 props/types**: 2개
 - **제거된 의존성**: 1개 (jotai)
+- **제거된 엔드포인트**: 7개 (모두 null 반환)
 
 ## 권장 사항 (Recommendations)
 
 ### 높은 우선순위
-1. TODO로 표시된 메서드들을 구현하거나 사용하지 않는 경우 제거
-2. `dataset/python code/test.ipynb` 검토 후 불필요시 삭제
-3. `dataset/python code/table.ipynb`가 `table_updated.ipynb`로 대체되었는지 확인
+1. ✅ 완료: 사용하지 않는 서비스 및 DTO 파일 삭제
+2. ✅ 완료: null 반환하는 엔드포인트 제거
+3. ✅ 완료: 주석 처리된 코드 제거
+4. `.gitignore`에 `backend/.metadata/` 추가
+5. `dataset/python code/test.ipynb` 검토 후 불필요시 삭제
 
 ### 중간 우선순위
-1. Eclipse 메타데이터 폴더 (`backend/.metadata/`) 검토 - Git에서 제외되어야 함
+1. `dataset/python code/table.ipynb`가 `table_updated.ipynb`로 대체되었는지 확인
 2. 데이터셋 폴더의 중간 CSV 파일들이 여전히 필요한지 확인
-3. SQL 마이그레이션 파일들을 별도 폴더로 이동 고려
+3. SQL 마이그레이션 파일들을 별도 `migrations/` 폴더로 이동 고려
 
 ### 낮은 우선순위
 1. 오래된 Python 노트북들을 아카이브 폴더로 이동
 2. 프로젝트 문서화 개선
+3. `dataset/python code/.env`를 `.env.example`로 복사하여 템플릿 제공
+
+## 정리 전후 비교
+
+### 정리 전
+- 불필요한 서비스 클래스 3개
+- 사용되지 않는 DTO 13개
+- null 반환하는 엔드포인트 7개
+- 주석 처리된 코드 다수
+- 사용하지 않는 의존성 1개
+
+### 정리 후
+- 깔끔한 코드베이스
+- 명확한 API 구조
+- 유지보수 용이성 향상
+- 빌드 시간 단축 (불필요한 파일 제거)
+

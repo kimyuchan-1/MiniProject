@@ -27,7 +27,6 @@ import com.kdt03.ped_accident.domain.suggestion.dto.CommentResponse;
 import com.kdt03.ped_accident.domain.suggestion.dto.CreateSuggestionRequest;
 import com.kdt03.ped_accident.domain.suggestion.dto.PagedItems;
 import com.kdt03.ped_accident.domain.suggestion.dto.SuggestionDetailResponse;
-import com.kdt03.ped_accident.domain.suggestion.dto.SuggestionStatistics;
 import com.kdt03.ped_accident.domain.suggestion.dto.UpdateSuggestionStatusRequest;
 import com.kdt03.ped_accident.domain.suggestion.entity.Suggestion;
 import com.kdt03.ped_accident.domain.suggestion.entity.SuggestionStatus;
