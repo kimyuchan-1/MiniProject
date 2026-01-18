@@ -20,6 +20,9 @@ public interface SuggestionRepository extends JpaRepository<Suggestion, Long> {
     @Query("SELECT s FROM Suggestion s LEFT JOIN FETCH s.user")
     Page<Suggestion> findAllWithUser(Pageable pageable);
     
+    @Query("SELECT s FROM Suggestion s LEFT JOIN FETCH s.user WHERE s.id = :id")
+    Optional<Suggestion> findByIdWithUser(@Param("id") Long id);
+    
     @Query("SELECT s FROM Suggestion s LEFT JOIN FETCH s.user WHERE s.status = :status")
     Page<Suggestion> findByStatusWithUser(@Param("status") SuggestionStatus status, Pageable pageable);
     

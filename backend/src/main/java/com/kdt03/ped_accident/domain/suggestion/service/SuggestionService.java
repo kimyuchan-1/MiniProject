@@ -117,7 +117,7 @@ public class SuggestionService {
     public Suggestion updateSuggestion(Long suggestionId, String title, String content, 
                                       SuggestionType suggestionType, Double locationLat, 
                                       Double locationLon, String address, Long userId) {
-        Suggestion suggestion = suggestionRepository.findById(suggestionId)
+        Suggestion suggestion = suggestionRepository.findByIdWithUser(suggestionId)
                 .orElseThrow(() -> new IllegalArgumentException("건의사항을 찾을 수 없습니다."));
 
         // 본인 글만 수정 가능
@@ -156,7 +156,7 @@ public class SuggestionService {
     // 건의사항 삭제
     @Transactional
     public void deleteSuggestion(Long suggestionId, Long userId) {
-        Suggestion suggestion = suggestionRepository.findById(suggestionId)
+        Suggestion suggestion = suggestionRepository.findByIdWithUser(suggestionId)
                 .orElseThrow(() -> new IllegalArgumentException("건의사항을 찾을 수 없습니다."));
 
         // 본인 글만 삭제 가능
