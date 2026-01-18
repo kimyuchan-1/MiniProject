@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
         sigungu: sigungu,
         suggestion_type: item.suggestionType,
         status: item.status,
-        priority_score: item.priorityScore ?? 0,
+        priority_score: item.priorityScore ?? 0.0,
         like_count: item.likeCount ?? 0,
         view_count: item.viewCount ?? 0,
         comment_count: item.commentCount ?? 0,
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
       locationLat: location_lat,
       locationLon: location_lon,
       address,
-      priorityScore: priority_score != null ? Math.round(priority_score) : 0,
+      priorityScore: priority_score != null ? priority_score : 0.0, // Double로 전달
       sidoCode: sido_code ?? null,
       sigunguCode: sigungu_code ?? null,
     };
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
       sigungu_code: item.sigunguCode,
       suggestion_type: item.suggestionType,
       status: item.status,
-      priority_score: item.priorityScore ?? 0,
+      priority_score: item.priorityScore ?? 0.0,
       like_count: item.likeCount ?? 0,
       view_count: item.viewCount ?? 0,
       comment_count: item.commentCount ?? 0,

@@ -71,7 +71,7 @@ public class Suggestion {
     private Integer commentCount = 0;
     
     @Column(name = "priority_score")
-    private Integer priorityScore = 0;
+    private Double priorityScore = 0.0;
 
 	@CreationTimestamp
 	@Column(name = "created_at")

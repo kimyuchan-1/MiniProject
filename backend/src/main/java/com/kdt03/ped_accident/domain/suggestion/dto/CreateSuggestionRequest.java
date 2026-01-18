@@ -29,5 +29,5 @@ public class CreateSuggestionRequest {
     @NotNull(message = "건의 유형은 필수입니다.")
     private SuggestionType suggestionType;
     
-    private Integer priorityScore; // 우선순위 점수 (0-100)
+    private Double priorityScore; // 우선순위 점수 (0-100, 소수점 포함)
 }
