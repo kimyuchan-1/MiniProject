@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, content, suggestion_type, location_lat, location_lon, address, sido_code, sigungu_code } = body;
+    const { title, content, suggestion_type, location_lat, location_lon, address, priority_score, sido_code, sigungu_code } = body;
 
     if (!title || !content || !suggestion_type || location_lat == null || location_lon == null || !address) {
       return NextResponse.json({ error: "필수 필드가 누락되었습니다." }, { status: 400 });
@@ -119,9 +119,12 @@ export async function POST(request: NextRequest) {
       locationLat: location_lat,
       locationLon: location_lon,
       address,
+      priorityScore: priority_score != null ? Math.round(priority_score) : 0,
       sidoCode: sido_code ?? null,
       sigunguCode: sigungu_code ?? null,
     };
+
+    console.log('[Suggestions API] Creating suggestion with payload:', payload);
 
     const response = await backendClient.post("/api/suggestions", payload, {
       headers: cookieHeader ? { Cookie: cookieHeader } : {},
@@ -141,6 +144,7 @@ export async function POST(request: NextRequest) {
       sigungu_code: item.sigunguCode,
       suggestion_type: item.suggestionType,
       status: item.status,
+      priority_score: item.priorityScore ?? 0,
       like_count: item.likeCount ?? 0,
       view_count: item.viewCount ?? 0,
       comment_count: item.commentCount ?? 0,

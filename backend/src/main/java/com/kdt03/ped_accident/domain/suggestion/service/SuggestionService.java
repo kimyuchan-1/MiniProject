@@ -112,6 +112,7 @@ public class SuggestionService {
                 .viewCount(0)
                 .likeCount(0)
                 .commentCount(0)
+                .priorityScore(request.getPriorityScore() != null ? request.getPriorityScore() : 0)
                 .build();
 
         return suggestionRepository.save(suggestion);

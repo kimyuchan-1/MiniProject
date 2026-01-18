@@ -1,28 +1,40 @@
 import Link from "next/link";
-import { FaComment, FaEye, FaHeart, FaMapMarkerAlt } from "react-icons/fa";
+import { FaComment, FaEye, FaHeart, FaMapMarkerAlt, FaExclamationTriangle } from "react-icons/fa";
 import type { Suggestion } from "@/features/board/types";
 import { StatusColors, SuggestionStatusLabels, SuggestionTypeLabels } from "@/features/board/constants";
+import { getPriorityLevel } from "@/features/acc_calculate/priorityScore";
 
 export default function SuggestionCard(props: {
     suggestion: Suggestion;
     onLike: (id: number) => void;
 }) {
     const { suggestion, onLike } = props;
+    
+    // 우선순위 레벨 계산
+    const priorityLevel = getPriorityLevel(suggestion.priority_score || 0);
+    const showPriorityBadge = (suggestion.priority_score || 0) >= 60; // 높음 이상만 표시
 
     return (
         <div className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow">
             <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
                             <span className={`px-2 py-1 text-xs font-medium rounded-full ${StatusColors[suggestion.status]}`}>
                                 {SuggestionStatusLabels[suggestion.status]}
                             </span>
                             <span className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-full">
                                 {SuggestionTypeLabels[suggestion.suggestion_type]}
                             </span>
-                            {suggestion.priority_score > 7 && (
-                                <span className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded-full">긴급</span>
+                            {showPriorityBadge && (
+                                <span className={`px-2 py-1 text-xs font-medium rounded-full flex items-center gap-1 ${
+                                    priorityLevel.level === 'CRITICAL' ? 'bg-red-100 text-red-700' :
+                                    priorityLevel.level === 'HIGH' ? 'bg-orange-100 text-orange-700' :
+                                    'bg-yellow-100 text-yellow-700'
+                                }`}>
+                                    <FaExclamationTriangle className="w-3 h-3" />
+                                    우선순위 {priorityLevel.label}
+                                </span>
                             )}
                         </div>
 

@@ -34,6 +34,7 @@ interface SuggestionForm {
   location_lat: number | null;
   location_lon: number | null;
   address: string;
+  priority_score: number;
 }
 
 export default function CreateSuggestionPage() {
@@ -45,7 +46,8 @@ export default function CreateSuggestionPage() {
     suggestion_type: 'SIGNAL',
     location_lat: null,
     location_lon: null,
-    address: ''
+    address: '',
+    priority_score: 0
   });
 
   // 폼 입력 핸들러
@@ -61,6 +63,15 @@ export default function CreateSuggestionPage() {
       location_lat: lat,
       location_lon: lon,
       address: address
+    }));
+  }, []);
+
+  // 우선순위 점수 계산 핸들러
+  const handlePriorityScoreCalculated = useCallback((score: number) => {
+    console.log('[CreateSuggestionPage] Priority score calculated:', score);
+    setForm(prev => ({
+      ...prev,
+      priority_score: score
     }));
   }, []);
 
@@ -216,6 +227,7 @@ export default function CreateSuggestionPage() {
                   lat={form.location_lat}
                   lon={form.location_lon}
                   address={form.address}
+                  onPriorityScoreCalculated={handlePriorityScoreCalculated}
                 />
 
                 <p className="text-xs text-gray-500">

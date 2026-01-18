@@ -110,9 +110,10 @@ interface LocationInfoPanelProps {
   lat: number | null;
   lon: number | null;
   address: string;
+  onPriorityScoreCalculated?: (score: number) => void;
 }
 
-export default function LocationInfoPanel({ lat, lon, address }: LocationInfoPanelProps) {
+export default function LocationInfoPanel({ lat, lon, address, onPriorityScoreCalculated }: LocationInfoPanelProps) {
   const [nearbyAccidents, setNearbyAccidents] = useState<AccidentData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -165,11 +166,19 @@ export default function LocationInfoPanel({ lat, lon, address }: LocationInfoPan
     fetchNearbyAccidents();
   }, [lat, lon]);
 
-  // 위험 지수 계산
+  // 위험 지수 계산 (= 우선순위 점수)
   const riskScore = useMemo(() => {
     if (!lat || !lon || nearbyAccidents.length === 0) return 0;
     return clamp(calculateAggregatedRiskScore(nearbyAccidents, lat, lon), 0, 100);
   }, [nearbyAccidents, lat, lon]);
+
+  // 우선순위 점수는 위험 지수와 동일
+  useEffect(() => {
+    if (onPriorityScoreCalculated && lat && lon) {
+      console.log('[LocationInfoPanel] Priority score (= risk score):', riskScore);
+      onPriorityScoreCalculated(riskScore);
+    }
+  }, [riskScore, lat, lon, onPriorityScoreCalculated]);
 
   // 100m 내 사고다발지역 개수
   const nearbyHotspots = useMemo(() => {
@@ -228,30 +237,36 @@ export default function LocationInfoPanel({ lat, lon, address }: LocationInfoPan
       <div className={cx('h-1 w-full', strip)} />
 
       <div className="p-4">
-        {/* 한 줄 레이아웃 */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          {/* 위험 지수 */}
-          <div className="flex items-center gap-3">
-            <div>
-              <div className="text-xs text-gray-500">위험 지수</div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-gray-900">{riskScore.toFixed(1)}</span>
-                <span className={cx('text-sm font-medium', riskTone.text)}>{riskLevel.label}</span>
-              </div>
+        {/* 위험 지수 (= 우선순위 점수) */}
+        <div className="flex items-center gap-3 p-4 bg-linear-to-r from-gray-50 to-white rounded-lg mb-4 border">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="text-sm font-medium text-gray-700">위험 지수 (우선순위 점수)</div>
+              <span className={cx('text-xs px-2 py-0.5 rounded-full font-medium', riskTone.chip)}>
+                {riskLevel.label}
+              </span>
             </div>
-            <div className={cx('h-12 w-12 rounded-full flex items-center justify-center', riskTone.chip)}>
-              <div className={cx('h-8 w-8 rounded-full', riskTone.bar)} style={{ 
-                background: `conic-gradient(${riskTone.bar.replace('bg-', '')} ${riskScore}%, #e5e7eb ${riskScore}%)` 
-              }} />
+            <div className="flex items-baseline gap-3">
+              <span className="text-4xl font-bold text-gray-900">{riskScore.toFixed(1)}</span>
+              <span className="text-sm text-gray-500">/ 100</span>
+            </div>
+            <div className="mt-3 h-3 w-full rounded-full bg-gray-200 overflow-hidden">
+              <div 
+                className={cx('h-3 rounded-full transition-all duration-500', riskTone.bar)} 
+                style={{ width: `${riskScore}%` }} 
+              />
             </div>
           </div>
+          <div className={cx('h-16 w-16 rounded-full flex items-center justify-center shadow-sm', riskTone.chip)}>
+            <div className={cx('h-12 w-12 rounded-full', riskTone.bar)} />
+          </div>
+        </div>
 
-          {/* 구분선 */}
-          <div className="hidden sm:block h-12 w-px bg-gray-200" />
-
+        {/* 사고 요약 및 안내 */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 pt-4 border-t">
           {/* 사고 요약 */}
           <div className="flex-1">
-            <div className="text-xs text-gray-500 mb-1">주변 사고 요약 (반경 500m)</div>
+            <div className="text-xs text-gray-500 mb-2">주변 사고 요약 (반경 500m)</div>
             {loading ? (
               <div className="flex gap-4">
                 <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
@@ -259,7 +274,7 @@ export default function LocationInfoPanel({ lat, lon, address }: LocationInfoPan
                 <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
               </div>
             ) : (
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
                 <span className="text-gray-700">
                   사고 <b className="text-gray-900">{accidentStats.accidents}</b>건
                 </span>
@@ -269,7 +284,7 @@ export default function LocationInfoPanel({ lat, lon, address }: LocationInfoPan
                 <span className="text-gray-700">
                   사망 <b className="text-red-600">{accidentStats.deaths}</b>명
                 </span>
-                <span className={cx('text-xs px-2 py-0.5 rounded-full', 
+                <span className={cx('text-xs px-2 py-1 rounded-full font-medium', 
                   nearbyHotspots >= 5 ? 'bg-red-100 text-red-700' : 
                   nearbyHotspots >= 2 ? 'bg-orange-100 text-orange-700' : 
                   'bg-gray-100 text-gray-700')}>
@@ -279,13 +294,10 @@ export default function LocationInfoPanel({ lat, lon, address }: LocationInfoPan
             )}
           </div>
 
-          {/* 구분선 */}
-          <div className="hidden sm:block h-12 w-px bg-gray-200" />
-
           {/* 안내 */}
-          <div className="text-xs text-gray-600 max-w-xs">
-            <span className="font-medium text-gray-900">💡 </span>
-            위험 지수가 높을수록 교통 안전 시설 개선이 필요합니다
+          <div className="text-xs text-gray-600 bg-blue-50 px-3 py-2 rounded-lg border border-blue-100">
+            <span className="font-medium text-blue-900">💡 </span>
+            위험 지수가 높을수록 개선이 시급합니다
           </div>
 
           {/* 로딩/에러 상태 */}
