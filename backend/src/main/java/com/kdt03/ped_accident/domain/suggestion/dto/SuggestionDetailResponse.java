@@ -28,7 +28,7 @@ public class SuggestionDetailResponse {
     private Integer viewCount;
     private Integer likeCount;
     private Integer commentCount;
-    private Integer priorityScore;
+    private Double priorityScore;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private Long userId;
@@ -65,7 +65,7 @@ public class SuggestionDetailResponse {
                 .viewCount(s.getViewCount() != null ? s.getViewCount() : 0)
                 .likeCount(s.getLikeCount() != null ? s.getLikeCount() : 0)
                 .commentCount(s.getCommentCount() != null ? s.getCommentCount() : 0)
-                .priorityScore(s.getPriorityScore() != null ? s.getPriorityScore() : 0)
+                .priorityScore(s.getPriorityScore() != null ? s.getPriorityScore() : 0.0)
                 .createdAt(s.getCreatedAt())
                 .updatedAt(s.getUpdatedAt())
                 .userId(s.getUserId())

@@ -28,7 +28,7 @@ function transformSuggestion(item: any) {
     sigungu_code: item.sigunguCode,
     suggestion_type: item.suggestionType,
     status: item.status,
-    priority_score: item.priorityScore ?? 0,
+    priority_score: item.priorityScore ?? 0.0,
     like_count: item.likeCount ?? 0,
     view_count: item.viewCount ?? 0,
     comment_count: item.commentCount ?? 0,
