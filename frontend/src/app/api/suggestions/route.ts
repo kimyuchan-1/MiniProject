@@ -45,25 +45,34 @@ export async function GET(request: NextRequest) {
     const data = response.data;
 
     // Spring Page 응답을 프론트엔드 형식으로 변환
-    const content = (data.content ?? []).map((item: any) => ({
-      id: item.id,
-      title: item.title,
-      content: item.content,
-      location_lat: item.locationLat,
-      location_lon: item.locationLon,
-      address: item.address,
-      sido_code: item.sidoCode,
-      sigungu_code: item.sigunguCode,
-      suggestion_type: item.suggestionType,
-      status: item.status,
-      like_count: item.likeCount ?? 0,
-      view_count: item.viewCount ?? 0,
-      comment_count: item.commentCount ?? 0,
-      created_at: item.createdAt,
-      updated_at: item.updatedAt,
-      user_id: item.userId,
-      user: item.user ? { id: item.user.id, name: item.user.name, picture: item.user.picture ?? null } : null,
-    }));
+    const content = (data.content ?? []).map((item: any) => {
+      // Extract sido and sigungu from address
+      const addressParts = (item.address ?? "").split(" ");
+      const sido = addressParts[0] ?? "";
+      const sigungu = addressParts[1] ?? "";
+
+      return {
+        id: item.id,
+        title: item.title,
+        content: item.content,
+        location_lat: item.locationLat,
+        location_lon: item.locationLon,
+        address: item.address,
+        sido: sido,
+        sigungu: sigungu,
+        sido_code: item.sidoCode,
+        sigungu_code: item.sigunguCode,
+        suggestion_type: item.suggestionType,
+        status: item.status,
+        like_count: item.likeCount ?? 0,
+        view_count: item.viewCount ?? 0,
+        comment_count: item.commentCount ?? 0,
+        created_at: item.createdAt,
+        updated_at: item.updatedAt,
+        user_id: item.userId,
+        user: item.user ? { id: item.user.id, name: item.user.name, picture: item.user.picture ?? null } : null,
+      };
+    });
 
     return NextResponse.json({
       content,

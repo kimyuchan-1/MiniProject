@@ -9,6 +9,11 @@ function parseIntStrict(v: string) {
 }
 
 function transformSuggestion(item: any) {
+  // Extract sido and sigungu from address
+  const addressParts = (item.address ?? "").split(" ");
+  const sido = addressParts[0] ?? "";
+  const sigungu = addressParts[1] ?? "";
+
   return {
     id: item.id,
     title: item.title,
@@ -16,16 +21,21 @@ function transformSuggestion(item: any) {
     location_lat: item.locationLat,
     location_lon: item.locationLon,
     address: item.address,
+    sido: sido,
+    sigungu: sigungu,
     sido_code: item.sidoCode,
     sigungu_code: item.sigunguCode,
     suggestion_type: item.suggestionType,
     status: item.status,
+    priority_score: item.priorityScore ?? 0,
     like_count: item.likeCount ?? 0,
     view_count: item.viewCount ?? 0,
     comment_count: item.commentCount ?? 0,
     comment_count_num: item.commentCount ?? 0,
     created_at: item.createdAt,
     updated_at: item.updatedAt,
+    processed_at: item.processedAt,
+    admin_response: item.adminResponse,
     user_id: item.userId,
     user: item.user ? { id: item.user.id, name: item.user.name, picture: item.user.picture ?? null } : null,
     is_liked: item.isLiked ?? false,

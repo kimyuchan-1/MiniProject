@@ -65,8 +65,20 @@ export default function SuggestionDetailPage() {
   };
 
   useEffect(() => {
-    fetchSuggestion();
-    fetchComments();
+    let isMounted = true;
+    
+    const loadData = async () => {
+      if (isMounted) {
+        await fetchSuggestion();
+        await fetchComments();
+      }
+    };
+    
+    loadData();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [suggestionId]);
 
   // 좋아요 토글
@@ -80,14 +92,19 @@ export default function SuggestionDetailPage() {
       });
 
       if (response.ok) {
+        const data = await response.json();
+        // Update local state based on backend response
         setSuggestion(prev => prev ? {
           ...prev,
-          like_count: prev.is_liked ? prev.like_count - 1 : prev.like_count + 1,
-          is_liked: !prev.is_liked
+          like_count: data.liked ? prev.like_count + 1 : Math.max(0, prev.like_count - 1),
+          is_liked: data.liked
         } : null);
+      } else if (response.status === 401) {
+        alert('로그인이 필요합니다.');
       }
     } catch (error) {
       console.error('좋아요 처리 실패:', error);
+      alert('좋아요 처리 중 오류가 발생했습니다.');
     }
   };
 
@@ -114,10 +131,22 @@ export default function SuggestionDetailPage() {
       if (response.ok) {
         setNewComment('');
         setReplyTo(null);
-        fetchComments();
+        // Refresh comments
+        await fetchComments();
+        // Update comment count in suggestion
+        setSuggestion(prev => prev ? {
+          ...prev,
+          comment_count: prev.comment_count + 1
+        } : null);
+      } else if (response.status === 401) {
+        alert('로그인이 필요합니다.');
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || '댓글 작성에 실패했습니다.');
       }
     } catch (error) {
       console.error('댓글 작성 실패:', error);
+      alert('댓글 작성 중 오류가 발생했습니다.');
     } finally {
       setCommentLoading(false);
     }
