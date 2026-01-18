@@ -69,6 +69,9 @@ public class Suggestion {
 
 	@Column(name = "comment_count")
     private Integer commentCount = 0;
+    
+    @Column(name = "priority_score")
+    private Integer priorityScore = 0;
 
 	@CreationTimestamp
 	@Column(name = "created_at")
@@ -82,6 +85,14 @@ public class Suggestion {
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "user_id", insertable = false, updatable = false)
 	private User user;
+	
+	// 우선순위 점수 계산 (좋아요 * 3 + 댓글 * 2 + 조회수 * 0.1)
+	public void calculatePriorityScore() {
+		int likes = this.likeCount != null ? this.likeCount : 0;
+		int comments = this.commentCount != null ? this.commentCount : 0;
+		int views = this.viewCount != null ? this.viewCount : 0;
+		this.priorityScore = (likes * 3) + (comments * 2) + (int)(views * 0.1);
+	}
 	
 	public static Suggestion from(Suggestion s) {
         return Suggestion.builder()

@@ -20,6 +20,7 @@ import com.kdt03.ped_accident.domain.suggestion.entity.Suggestion;
 import com.kdt03.ped_accident.domain.suggestion.entity.SuggestionComment;
 import com.kdt03.ped_accident.domain.suggestion.entity.SuggestionLike;
 import com.kdt03.ped_accident.domain.suggestion.entity.SuggestionStatus;
+import com.kdt03.ped_accident.domain.suggestion.entity.SuggestionType;
 import com.kdt03.ped_accident.domain.suggestion.repository.SuggestionCommentRepository;
 import com.kdt03.ped_accident.domain.suggestion.repository.SuggestionLikeRepository;
 import com.kdt03.ped_accident.domain.suggestion.repository.SuggestionRepository;
@@ -37,12 +38,16 @@ public class SuggestionService {
     private final SuggestionLikeRepository likeRepository;
     private final UserRepository userRepository;
 
-    // 전체 조회
-    public Page<Suggestion> findAll(Pageable pageable, SuggestionStatus status, String region) {
-        if (status != null) {
-            return suggestionRepository.findByStatusWithUser(status, pageable);
+    // 전체 조회 (필터링 포함)
+    public Page<Suggestion> findAll(Pageable pageable, SuggestionStatus status, SuggestionType type, String region) {
+        // 모든 필터가 null이면 전체 조회
+        if (status == null && type == null && (region == null || region.isEmpty() || region.equals("ALL"))) {
+            return suggestionRepository.findAllWithUser(pageable);
         }
-        return suggestionRepository.findAllWithUser(pageable);
+        
+        // 필터 조합으로 조회
+        String regionFilter = (region != null && !region.isEmpty() && !region.equals("ALL")) ? region : null;
+        return suggestionRepository.findByFiltersWithUser(status, type, regionFilter, pageable);
     }
 
     // 단건 조회 (조회수 증가)
@@ -55,6 +60,7 @@ public class SuggestionService {
         // null 체크
         int currentViewCount = suggestion.getViewCount() != null ? suggestion.getViewCount() : 0;
         suggestion.setViewCount(currentViewCount + 1);
+        suggestion.calculatePriorityScore();
         return suggestionRepository.save(suggestion);
     }
 
@@ -68,6 +74,7 @@ public class SuggestionService {
         // 조회수 증가
         int currentViewCount = suggestion.getViewCount() != null ? suggestion.getViewCount() : 0;
         suggestion.setViewCount(currentViewCount + 1);
+        suggestion.calculatePriorityScore();
         suggestionRepository.save(suggestion);
 
         // 작성자 정보 조회
@@ -203,6 +210,9 @@ public class SuggestionService {
         // 댓글 수 증가 (null 체크)
         int currentCommentCount = suggestion.getCommentCount() != null ? suggestion.getCommentCount() : 0;
         suggestion.setCommentCount(currentCommentCount + 1);
+        
+        // 우선순위 점수 재계산
+        suggestion.calculatePriorityScore();
         suggestionRepository.save(suggestion);
 
         // User 조회해서 DTO로 반환
@@ -225,6 +235,7 @@ public class SuggestionService {
             // 좋아요 취소
             likeRepository.delete(existingLike.get());
             suggestion.setLikeCount(Math.max(0, currentLikeCount - 1));
+            suggestion.calculatePriorityScore();
             suggestionRepository.save(suggestion);
             return false;
         } else {
@@ -235,6 +246,7 @@ public class SuggestionService {
                     .build();
             likeRepository.save(like);
             suggestion.setLikeCount(currentLikeCount + 1);
+            suggestion.calculatePriorityScore();
             suggestionRepository.save(suggestion);
             return true;
         }

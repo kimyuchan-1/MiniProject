@@ -29,13 +29,16 @@ export async function GET(request: NextRequest) {
     const params: Record<string, any> = {
       page: page - 1, // Spring은 0-based
       size,
-      sort: sort === "popular" ? "likeCount,desc" : sort === "status" ? "status,asc" : "createdAt,desc",
+      sort: sort === "popular" ? "likeCount,desc" : 
+            sort === "priority" ? "priorityScore,desc" : 
+            sort === "status" ? "status,asc" : 
+            "createdAt,desc",
     };
 
     if (status && status !== "ALL") params.status = status;
+    if (type && type !== "ALL") params.type = type;
     if (region && region !== "ALL") params.region = region;
     if (search) params.search = search;
-    if (type && type !== "ALL") params.type = type;
 
     const response = await backendClient.get("/api/suggestions", {
       params,
@@ -62,6 +65,7 @@ export async function GET(request: NextRequest) {
         sigungu: sigungu,
         suggestion_type: item.suggestionType,
         status: item.status,
+        priority_score: item.priorityScore ?? 0,
         like_count: item.likeCount ?? 0,
         view_count: item.viewCount ?? 0,
         comment_count: item.commentCount ?? 0,

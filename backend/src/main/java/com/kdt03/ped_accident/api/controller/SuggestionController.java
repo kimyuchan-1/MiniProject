@@ -31,6 +31,7 @@ import com.kdt03.ped_accident.domain.suggestion.dto.SuggestionStatistics;
 import com.kdt03.ped_accident.domain.suggestion.dto.UpdateSuggestionStatusRequest;
 import com.kdt03.ped_accident.domain.suggestion.entity.Suggestion;
 import com.kdt03.ped_accident.domain.suggestion.entity.SuggestionStatus;
+import com.kdt03.ped_accident.domain.suggestion.entity.SuggestionType;
 import com.kdt03.ped_accident.domain.suggestion.service.SuggestionService;
 import com.kdt03.ped_accident.domain.user.service.CustomUserPrincipal;
 
@@ -50,9 +51,10 @@ public class SuggestionController {
     public ResponseEntity<Page<Suggestion>> getSuggestions(
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam(required = false) SuggestionStatus status,
+            @RequestParam(required = false) SuggestionType type,
             @RequestParam(required = false) String region) {
 
-        Page<Suggestion> suggestions = suggestionService.findAll(pageable, status, region);
+        Page<Suggestion> suggestions = suggestionService.findAll(pageable, status, type, region);
         return ResponseEntity.ok(suggestions);
     }
 
