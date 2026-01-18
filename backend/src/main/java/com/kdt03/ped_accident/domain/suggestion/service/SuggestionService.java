@@ -39,15 +39,20 @@ public class SuggestionService {
     private final UserRepository userRepository;
 
     // 전체 조회 (필터링 포함)
-    public Page<Suggestion> findAll(Pageable pageable, SuggestionStatus status, SuggestionType type, String region) {
+    public Page<Suggestion> findAll(Pageable pageable, SuggestionStatus status, SuggestionType type, String region, String search) {
+        // 검색어 정리
+        String searchFilter = (search != null && !search.trim().isEmpty()) ? search.trim() : null;
+        
+        // 지역 필터 정리
+        String regionFilter = (region != null && !region.isEmpty() && !region.equals("ALL")) ? region : null;
+        
         // 모든 필터가 null이면 전체 조회
-        if (status == null && type == null && (region == null || region.isEmpty() || region.equals("ALL"))) {
+        if (status == null && type == null && regionFilter == null && searchFilter == null) {
             return suggestionRepository.findAllWithUser(pageable);
         }
         
         // 필터 조합으로 조회
-        String regionFilter = (region != null && !region.isEmpty() && !region.equals("ALL")) ? region : null;
-        return suggestionRepository.findByFiltersWithUser(status, type, regionFilter, pageable);
+        return suggestionRepository.findByFiltersWithUser(status, type, regionFilter, searchFilter, pageable);
     }
 
     // 단건 조회 (조회수 증가)

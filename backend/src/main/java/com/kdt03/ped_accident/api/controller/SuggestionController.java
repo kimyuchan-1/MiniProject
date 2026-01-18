@@ -52,9 +52,10 @@ public class SuggestionController {
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam(required = false) SuggestionStatus status,
             @RequestParam(required = false) SuggestionType type,
-            @RequestParam(required = false) String region) {
+            @RequestParam(required = false) String region,
+            @RequestParam(required = false) String search) {
 
-        Page<Suggestion> suggestions = suggestionService.findAll(pageable, status, type, region);
+        Page<Suggestion> suggestions = suggestionService.findAll(pageable, status, type, region, search);
         return ResponseEntity.ok(suggestions);
     }
 

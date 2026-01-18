@@ -36,11 +36,13 @@ public interface SuggestionRepository extends JpaRepository<Suggestion, Long> {
     @Query("SELECT s FROM Suggestion s LEFT JOIN FETCH s.user WHERE " +
            "(:status IS NULL OR s.status = :status) AND " +
            "(:type IS NULL OR s.suggestionType = :type) AND " +
-           "(:region IS NULL OR s.address LIKE CONCAT(:region, '%'))")
+           "(:region IS NULL OR s.address LIKE CONCAT(:region, '%')) AND " +
+           "(:search IS NULL OR s.title LIKE CONCAT('%', :search, '%') OR s.content LIKE CONCAT('%', :search, '%') OR s.address LIKE CONCAT('%', :search, '%'))")
     Page<Suggestion> findByFiltersWithUser(
         @Param("status") SuggestionStatus status,
         @Param("type") SuggestionType type,
         @Param("region") String region,
+        @Param("search") String search,
         Pageable pageable
     );
     

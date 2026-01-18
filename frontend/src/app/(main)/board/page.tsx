@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Suggestion, FilterState } from '@/features/board/types';
 import SuggestionList from './SuggestionList';
 import Pagination from './Pagination';
@@ -13,6 +13,7 @@ export default function BoardPage() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchQuery, setSearchQuery] = useState(''); // 실제 검색에 사용되는 값
   const [filters, setFilters] = useState<FilterState>({
     status: 'ALL',
     type: 'ALL',
@@ -24,13 +25,13 @@ export default function BoardPage() {
   const [showFilters, setShowFilters] = useState(false);
 
   // 건의사항 목록 조회
-  const fetchSuggestions = async () => {
+  const fetchSuggestions = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
         page: currentPage.toString(),
         size: '10',
-        search: searchTerm,
+        search: searchQuery,
         status: filters.status !== 'ALL' ? filters.status : '',
         type: filters.type !== 'ALL' ? filters.type : '',
         region: filters.region !== 'ALL' ? filters.region : '',
@@ -48,11 +49,11 @@ export default function BoardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, filters, searchQuery]);
 
   useEffect(() => {
     fetchSuggestions();
-  }, [currentPage, filters, searchTerm]);
+  }, [fetchSuggestions]);
 
   // 좋아요 토글
   const toggleLike = async (suggestionId: number) => {
@@ -76,11 +77,10 @@ export default function BoardPage() {
     setCurrentPage(1);
   };
 
-  // 검색
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+  // 검색 실행
+  const handleSearch = () => {
+    setSearchQuery(searchTerm);
     setCurrentPage(1);
-    fetchSuggestions();
   };
 
   return (
@@ -107,9 +107,9 @@ export default function BoardPage() {
         <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
           <SearchBar
             value={searchTerm}
-            onChange={(v) => { setSearchTerm(v); setCurrentPage(1); }}
+            onChange={setSearchTerm}
             onToggleFilters={() => setShowFilters(v => !v)}
-            onSubmit={() => fetchSuggestions()}
+            onSubmit={handleSearch}
           />
           {/* 필터 옵션 */}
           {showFilters && (
