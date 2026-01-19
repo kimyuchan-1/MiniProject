@@ -2,9 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { changePassword } from "@/lib/api/account";
-import { Input } from "@/components/ui/Input";
-import { Button } from "@/components/ui/Button";
-import { Card, CardContent } from "@/components/ui/Card";
 
 function validPw(pw: string) {
   return pw.length >= 8;
@@ -52,10 +49,10 @@ export default function PasswordForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <Card variant="outlined" padding="md">
-        <CardContent className="p-0 space-y-3">
-          <Input
-            label="현재 비밀번호"
+      <div className="rounded-xl border p-4 space-y-3">
+        <div>
+          <label className="block text-sm font-medium mb-1">현재 비밀번호</label>
+          <input
             type="password"
             value={currentPassword}
             onChange={(e) => {
@@ -63,10 +60,13 @@ export default function PasswordForm() {
               setOkMsg(null);
               setError(null);
             }}
+            className="w-full px-3 py-2 border rounded-lg"
           />
+        </div>
 
-          <Input
-            label="새 비밀번호"
+        <div>
+          <label className="block text-sm font-medium mb-1">새 비밀번호</label>
+          <input
             type="password"
             value={newPassword}
             onChange={(e) => {
@@ -74,12 +74,17 @@ export default function PasswordForm() {
               setOkMsg(null);
               setError(null);
             }}
+            className="w-full px-3 py-2 border rounded-lg"
             placeholder="최소 8자"
-            error={!validPw(newPassword) && newPassword.length > 0 ? "비밀번호는 최소 8자 이상이어야 합니다." : undefined}
           />
+          {!validPw(newPassword) && newPassword.length > 0 ? (
+            <p className="text-xs text-red-600 mt-1">비밀번호는 최소 8자 이상이어야 해.</p>
+          ) : null}
+        </div>
 
-          <Input
-            label="새 비밀번호 확인"
+        <div>
+          <label className="block text-sm font-medium mb-1">새 비밀번호 확인</label>
+          <input
             type="password"
             value={confirm}
             onChange={(e) => {
@@ -87,21 +92,23 @@ export default function PasswordForm() {
               setOkMsg(null);
               setError(null);
             }}
-            error={pwMismatch ? "새 비밀번호가 일치하지 않습니다." : undefined}
+            className="w-full px-3 py-2 border rounded-lg"
           />
+          {pwMismatch ? (
+            <p className="text-xs text-red-600 mt-1">새 비밀번호가 일치하지 않아.</p>
+          ) : null}
+        </div>
 
-          <div className="flex justify-end">
-            <Button
-              type="submit"
-              disabled={!canSave || saving}
-              variant="primary"
-              loading={saving}
-            >
-              변경
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={!canSave || saving}
+            className="px-4 py-2 rounded-lg border bg-black text-white disabled:opacity-40"
+          >
+            {saving ? "변경 중..." : "변경"}
+          </button>
+        </div>
+      </div>
 
       {okMsg ? <p className="text-sm text-green-700">{okMsg}</p> : null}
       {error ? <p className="text-sm text-red-600">{error}</p> : null}

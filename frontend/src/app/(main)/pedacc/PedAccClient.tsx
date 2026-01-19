@@ -8,44 +8,24 @@ import { AccData, ProvinceOpt, CityOpt } from "@/features/pedacc/types";
 import RegionSelectors from "./RegionSelectors";
 import TablesSection from "./TablesSection";
 
-interface PedAccClientProps {
-  initialData: {
-    region: string | null;
-    regionType: string;
-    yearly: AccData[];
-    monthly: AccData[];
-  };
-  initialProvinces: ProvinceOpt[];
-  initialRegion?: string;
-}
-
-export default function PedAccClient({ initialData, initialProvinces, initialRegion }: PedAccClientProps) {
+export default function PedAccClient() {
   const router = useRouter();
   const sp = useSearchParams();
-  const region = sp.get("region") ?? initialRegion ?? ""; // 없으면 전국
+  const region = sp.get("region") ?? ""; // 없으면 전국
 
-  const [provinces, setProvinces] = useState<ProvinceOpt[]>(initialProvinces);
+  const [provinces, setProvinces] = useState<ProvinceOpt[]>([]);
   const [cities, setCities] = useState<CityOpt[]>([]);
   const [selectedProvince, setSelectedProvince] = useState<string>("ALL");
   const [selectedCity, setSelectedCity] = useState<string>("ALL");
   const [loading, setLoading] = useState(false);
   const [loadingCities, setLoadingCities] = useState(false);
-  const [yearly, setYearly] = useState<AccData[]>(initialData.yearly);
-  const [monthly, setMonthly] = useState<AccData[]>(initialData.monthly);
+  const [yearly, setYearly] = useState<AccData[]>([]);
+  const [monthly, setMonthly] = useState<AccData[]>([]);
   const [error, setError] = useState<string>("");
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [regionReady, setRegionReady] = useState(false);
 
   const reqIdRef = useRef(0);
-
-  // Initialize selectedYear from initial data
-  useEffect(() => {
-    if (initialData.monthly.length > 0) {
-      const years: number[] = Array.from(new Set(initialData.monthly.map((r: any) => Number(r.year))));
-      const newest = years.length ? years.sort((a, b) => b - a)[0] : null;
-      setSelectedYear(newest);
-    }
-  }, [initialData.monthly]);
 
   // URL 파라미터에서 시도/시군구 분리
   useEffect(() => {
@@ -79,10 +59,8 @@ export default function PedAccClient({ initialData, initialProvinces, initialReg
     setRegionReady(true);
   }, [region]);
 
-  // 시도 목록 로딩 - only if not already loaded from server
+  // 시도 목록 로딩
   useEffect(() => {
-    if (provinces.length > 0) return; // Already have data from server
-    
     const run = async () => {
       try {
         const resp = await fetch("/api/district/provinces");
@@ -95,7 +73,7 @@ export default function PedAccClient({ initialData, initialProvinces, initialReg
       }
     };
     run();
-  }, [provinces.length]);
+  }, []);
 
   // 선택된 시도의 시군구 목록 로딩
   useEffect(() => {

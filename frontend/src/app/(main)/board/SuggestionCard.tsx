@@ -1,49 +1,22 @@
-'use client'
-
 import Link from "next/link";
-import { useState } from "react";
 import { FaComment, FaEye, FaHeart, FaMapMarkerAlt, FaExclamationTriangle } from "react-icons/fa";
 import type { Suggestion } from "@/features/board/types";
 import { StatusColors, SuggestionStatusLabels, SuggestionTypeLabels } from "@/features/board/constants";
 import { getPriorityLevel } from "@/features/acc_calculate/priorityScore";
-import { Button } from "@/components/ui/Button";
-import { Card, CardContent } from "@/components/ui/Card";
 
 export default function SuggestionCard(props: {
     suggestion: Suggestion;
+    onLike: (id: number) => void;
 }) {
-    const { suggestion } = props;
-    const [likeCount, setLikeCount] = useState(suggestion.like_count);
-    const [isLiking, setIsLiking] = useState(false);
+    const { suggestion, onLike } = props;
     
     // 우선순위 레벨 계산
     const priorityLevel = getPriorityLevel(suggestion.priority_score || 0);
     const showPriorityBadge = (suggestion.priority_score || 0) >= 60; // 높음 이상만 표시
 
-    const handleLike = async () => {
-      if (isLiking) return;
-      
-      setIsLiking(true);
-      try {
-        const response = await fetch(`/api/suggestions/${suggestion.id}/like`, {
-          method: 'POST',
-          credentials: 'include'
-        });
-
-        if (response.ok) {
-          // Optimistically update the like count
-          setLikeCount(prev => prev + 1);
-        }
-      } catch (error) {
-        console.error('좋아요 처리 실패:', error);
-      } finally {
-        setIsLiking(false);
-      }
-    };
-
     return (
-        <Card variant="outlined" padding="md" className="hover:shadow-md transition-shadow">
-            <CardContent className="p-0">
+        <div className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow">
+            <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -95,16 +68,13 @@ export default function SuggestionCard(props: {
                         <span>{new Date(suggestion.created_at).toLocaleDateString()}</span>
                     </div>
 
-                    <Button
-                        onClick={handleLike}
-                        disabled={isLiking}
-                        variant="ghost"
-                        size="sm"
-                        className="text-gray-600 hover:text-red-600 hover:bg-red-50"
+                    <button
+                        onClick={() => onLike(suggestion.id)}
+                        className="flex items-center gap-1 px-3 py-1 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors hover:cursor-pointer"
                     >
                         <FaHeart className="w-3 h-3" />
-                        <span>{likeCount}</span>
-                    </Button>
+                        <span>{suggestion.like_count}</span>
+                    </button>
                 </div>
 
                 {suggestion.admin_response && (
@@ -113,7 +83,7 @@ export default function SuggestionCard(props: {
                         <p className="text-sm text-blue-700">{suggestion.admin_response}</p>
                     </div>
                 )}
-            </CardContent>
-        </Card>
+            </div>
+        </div>
     );
 }
