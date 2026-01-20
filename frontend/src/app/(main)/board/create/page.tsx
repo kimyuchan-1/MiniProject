@@ -118,10 +118,10 @@ export default function CreateSuggestionPage() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc]"> {/* 더 밝은 slate 톤 배경 */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
 
         {/* 상단 네비게이션 & 헤더 */}
-        <div className="mb-10">
+        <div className="mb-2">
           <button
             onClick={() => router.push("/board")}
             className="group flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-all mb-4 text-sm font-medium hover:cursor-pointer"
@@ -130,7 +130,7 @@ export default function CreateSuggestionPage() {
             목록으로 돌아가기
           </button>
           <div className="flex items-end justify-between">
-            <div>
+            <div className="border-b border-slate-100 m-4 pb-4">
               <h1 className="text-3xl font-bold text-slate-900 tracking-tight">건의사항 작성</h1>
               <p className="text-slate-500 mt-2 flex items-center gap-2 text-sm md:text-base">
                 <FaInfoCircle className="text-blue-500" />

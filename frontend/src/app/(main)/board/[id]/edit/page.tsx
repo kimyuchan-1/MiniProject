@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { FaMapMarkerAlt, FaSave, FaTimes, FaArrowLeft, FaEdit, FaRegClipboard } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaSave, FaTimes, FaArrowLeft, FaEdit, FaRegClipboard, FaChartBar } from 'react-icons/fa';
 import dynamic from 'next/dynamic';
 
 // 지도 컴포넌트 (위치 선택용)
@@ -160,164 +160,175 @@ export default function EditSuggestionPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
-      {/* 상단 네비게이션 바 */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+        {/* 상단 네비게이션 바 */}
         <div className="mb-2">
           <button
             onClick={() => router.push(`/board/${suggestionId}`)}
-            className="group flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-all mb-8 text-sm font-medium hover:cursor-pointer"
+            className="group flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-all mb-4 text-sm font-medium hover:cursor-pointer"
           >
             <FaArrowLeft className="w-3 h-3 group-hover:-translate-x-1 transition-transform" />
             취소하고 돌아가기
           </button>
 
           <div className="flex items-end justify-between">
-            {/* 헤더 섹션 */}
-            <div className="mb-10 text-center md:text-left">
+            <div className="border-b border-slate-100 m-4 pb-4">
               <h1 className="text-3xl font-bold text-slate-900 tracking-tight">건의사항 수정</h1>
-              <p className="ext-slate-500 mt-2 flex items-center gap-2 text-sm md:text-base">더 나은 도로 환경을 위해 상세 내용을 보완해주세요.</p>
+              <p className="text-slate-500 mt-2 flex items-center gap-2 text-sm md:text-base">더 나은 도로 환경을 위해 상세 내용을 보완해주세요.</p>
             </div>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* 왼쪽: 입력 폼 섹션 */}
-          <div className="lg:col-span-7 space-y-6">
-            <div className="bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 p-8 md:p-10 transition-all">
+        <form onSubmit={handleSubmit} className="space-y-8">
+          
+          {/* 상단 영역: 입력 폼 + 지도 선택 (Grid 구조) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* 왼쪽: 입력 폼 섹션 */}
+            <div className="lg:col-span-7 space-y-6">
+              <div className="bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 p-8 md:p-10 transition-all h-full">
+                <div className="space-y-8">
+                  {/* 건의 유형 선택 (칩 스타일) */}
+                  <div>
+                    <label className="block text-sm font-black text-slate-700 mb-4 items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-600" /> 건의 유형
+                    </label>
+                    <div className="grid grid-cols-3 gap-3">
+                      {(['SIGNAL', 'CROSSWALK', 'FACILITY'] as const).map((type) => (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => setForm(prev => ({ ...prev, suggestion_type: type }))}
+                          className={cx(
+                            "py-3 px-4 rounded-2xl text-sm font-bold transition-all border-2 hover:cursor-pointer",
+                            form.suggestion_type === type
+                              ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200"
+                              : "bg-white border-slate-100 text-slate-400 hover:border-slate-200"
+                          )}
+                        >
+                          {type === 'SIGNAL' ? '신호등' : type === 'CROSSWALK' ? '횡단보도' : '기타 시설'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-              <div className="space-y-8">
-                {/* 건의 유형 선택 (칩 스타일) */}
-                <div>
-                  <label className="block text-sm font-black text-slate-700 mb-4 items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-600" /> 건의 유형
-                  </label>
-                  <div className="grid grid-cols-3 gap-3">
-                    {(['SIGNAL', 'CROSSWALK', 'FACILITY'] as const).map((type) => (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() => setForm(prev => ({ ...prev, suggestion_type: type }))}
-                        className={cx(
-                          "py-3 px-4 rounded-2xl text-sm font-bold transition-all border-2 hover:cursor-pointer",
-                          form.suggestion_type === type
-                            ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200"
-                            : "bg-white border-slate-100 text-slate-400 hover:border-slate-200"
-                        )}
-                      >
-                        {type === 'SIGNAL' ? '신호등' : type === 'CROSSWALK' ? '횡단보도' : '기타 시설'}
-                      </button>
-                    ))}
+                  {/* 제목 입력 */}
+                  <div>
+                    <label className="block text-sm font-black text-slate-700 mb-2 items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-600" /> 제목
+                      </span>
+                      <span className={cx("text-[10px]", form.title.length > 180 ? "text-red-500" : "text-slate-400")}>
+                        {form.title.length}/200
+                      </span>
+                    </label>
+                    <input
+                      type="text"
+                      name="title"
+                      value={form.title}
+                      onChange={handleInputChange}
+                      placeholder="핵심 내용을 요약해주세요"
+                      className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 transition-all font-bold text-slate-800 placeholder:text-slate-300"
+                      required
+                    />
+                  </div>
+
+                  {/* 내용 입력 */}
+                  <div>
+                    <label className="block text-sm font-black text-slate-700 mb-2 items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-600" /> 상세 내용
+                      </span>
+                      <span className={cx("text-[10px]", form.content.length > 1800 ? "text-red-500" : "text-slate-400")}>
+                        {form.content.length}/2000
+                      </span>
+                    </label>
+                    <textarea
+                      name="content"
+                      value={form.content}
+                      onChange={handleInputChange}
+                      placeholder="현재 상황과 개선 아이디어를 들려주세요."
+                      rows={10}
+                      className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 transition-all font-medium text-slate-700 leading-relaxed resize-none placeholder:text-slate-300"
+                      required
+                    />
                   </div>
                 </div>
+              </div>
+            </div>
 
-                {/* 제목 입력 */}
-                <div>
-                  <label className="block text-sm font-black text-slate-700 mb-2 items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-600" /> 제목
-                    </span>
-                    <span className={cx("text-[10px]", form.title.length > 180 ? "text-red-500" : "text-slate-400")}>
-                      {form.title.length}/200
-                    </span>
-                  </label>
-                  <input
-                    type="text"
-                    name="title"
-                    value={form.title}
-                    onChange={handleInputChange}
-                    placeholder="핵심 내용을 요약해주세요"
-                    className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 transition-all font-bold text-slate-800 placeholder:text-slate-300"
-                    required
-                  />
-                </div>
+            {/* 오른쪽: 지도 및 주소 확인 섹션 (분석 패널 제거됨) */}
+            <div className="lg:col-span-5 space-y-6">
+              <div className="bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 p-6 md:p-8 sticky top-24">
+                <label className="block text-sm font-black text-slate-700 mb-4 items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600" /> 위치 정보 수정
+                </label>
 
-                {/* 내용 입력 */}
-                <div>
-                  <label className="block text-sm font-black text-slate-700 mb-2 items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-600" /> 상세 내용
-                    </span>
-                    <span className={cx("text-[10px]", form.content.length > 1800 ? "text-red-500" : "text-slate-400")}>
-                      {form.content.length}/2000
-                    </span>
-                  </label>
-                  <textarea
-                    name="content"
-                    value={form.content}
-                    onChange={handleInputChange}
-                    placeholder="현재 상황과 개선 아이디어를 들려주세요."
-                    rows={10}
-                    className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 transition-all font-medium text-slate-700 leading-relaxed resize-none placeholder:text-slate-300"
-                    required
-                  />
+                <div className="space-y-6">
+                  {/* 주소 표시 칩 */}
+                  <div className="flex items-center gap-3 p-4 bg-slate-900 rounded-2xl shadow-lg">
+                    <div className="p-2 bg-white/10 rounded-xl">
+                      <FaMapMarkerAlt className="text-blue-400 w-4 h-4" />
+                    </div>
+                    <div className="flex-1 overflow-hidden">
+                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-tighter leading-none mb-1">Current Address</p>
+                      <p className="text-white font-bold text-sm truncate">{form.address || '지도를 클릭해 위치를 선택하세요'}</p>
+                    </div>
+                  </div>
+
+                  {/* 지도 선택 영역 */}
+                  <div className="rounded-3xl overflow-hidden border-4 border-white shadow-inner ring-1 ring-slate-100 h-75">
+                    <LocationPicker
+                      onLocationSelect={handleLocationSelect}
+                      initialLocation={
+                        form.location_lat && form.location_lon
+                          ? { lat: form.location_lat, lon: form.location_lon }
+                          : undefined
+                      }
+                    />
+                  </div>
+                  
+                  {/* 저장 버튼 그룹 (지도 바로 아래 배치) */}
+                  <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100 mt-6">
+                    <button
+                      type="button"
+                      onClick={() => router.push(`/board/${suggestionId}`)}
+                      className="py-4 rounded-2xl border border-slate-200 text-slate-500 font-bold hover:bg-slate-50 transition-all flex items-center justify-center gap-2 hover:cursor-pointer"
+                    >
+                      <FaTimes /> 취소
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={saving}
+                      className="py-4 rounded-2xl bg-slate-900 text-white font-bold hover:bg-black disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-xl shadow-slate-200 hover:cursor-pointer"
+                    >
+                      {saving ? (
+                        <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <FaSave className="text-blue-400" />
+                      )}
+                      {saving ? '저장 중' : '수정 저장'}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* 오른쪽: 위치 및 분석 정보 섹션 */}
-          <div className="lg:col-span-5 space-y-6">
-            <div className="bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 p-6 md:p-8 sticky top-24">
-              <label className="block text-sm font-black text-slate-700 mb-4 items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-600" /> 위치 정보 수정
+          {/* 하단 영역: 교통 위험 분석 패널 (전체 너비) */}
+          <div className="bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 p-8 md:p-10">
+             <label className="block text-sm font-black text-slate-700 mb-6 items-center gap-2">
+                <FaChartBar className="text-blue-600" />
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-600" /> 해당 위치 교통 분석 정보
               </label>
-
-              <div className="space-y-6">
-                {/* 주소 표시 칩 */}
-                <div className="flex items-center gap-3 p-4 bg-slate-900 rounded-2xl shadow-lg">
-                  <div className="p-2 bg-white/10 rounded-xl">
-                    <FaMapMarkerAlt className="text-blue-400 w-4 h-4" />
-                  </div>
-                  <div className="flex-1 overflow-hidden">
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-tighter leading-none mb-1">Current Address</p>
-                    <p className="text-white font-bold text-sm truncate">{form.address || '지도를 클릭해 위치를 선택하세요'}</p>
-                  </div>
-                </div>
-
-                {/* 지도 선택 영역 */}
-                <div className="rounded-3xl overflow-hidden border-4 border-white shadow-inner ring-1 ring-slate-100">
-                  <LocationPicker
-                    onLocationSelect={handleLocationSelect}
-                    initialLocation={
-                      form.location_lat && form.location_lon
-                        ? { lat: form.location_lat, lon: form.location_lon }
-                        : undefined
-                    }
-                  />
-                </div>
-
-                {/* 실시간 분석 패널 연동 */}
-                <LocationInfoPanel
-                  lat={form.location_lat}
-                  lon={form.location_lon}
-                  address={form.address}
-                />
-
-                {/* 저장 버튼 그룹 */}
-                <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100 mt-6">
-                  <button
-                    type="button"
-                    onClick={() => router.push(`/board/${suggestionId}`)}
-                    className="py-4 rounded-2xl border border-slate-200 text-slate-500 font-bold hover:bg-slate-50 transition-all flex items-center justify-center gap-2 hover:cursor-pointer"
-                  >
-                    <FaTimes /> 취소
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className="py-4 rounded-2xl bg-slate-900 text-white font-bold hover:bg-black disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-xl shadow-slate-200 hover:cursor-pointer"
-                  >
-                    {saving ? (
-                      <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <FaSave className="text-blue-400" />
-                    )}
-                    {saving ? '저장 중' : '수정 저장'}
-                  </button>
-                </div>
-              </div>
-            </div>
+            
+            {/* 분석 패널 컴포넌트 */}
+            <LocationInfoPanel
+              lat={form.location_lat}
+              lon={form.location_lon}
+              address={form.address}
+            />
           </div>
+
         </form>
       </div>
     </div>

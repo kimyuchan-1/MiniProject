@@ -230,7 +230,7 @@ export default function PedAccClient() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
-      <div className="max-w-400 mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
         <div className="flex flex-row justify-between gap-6 mb-8">
           <div className="border-b border-slate-100 m-4 pb-4">
             <h1 className="text-3xl font-bold text-slate-900 tracking-tight">보행자 사고 현황</h1>

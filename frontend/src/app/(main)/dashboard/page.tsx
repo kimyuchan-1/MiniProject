@@ -84,9 +84,9 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc]"> {/* 배경색을 약간 더 밝은 슬레이트 톤으로 변경 */}
-      <main className="max-w-400 mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
 
-        <div className="flex flex-row justify-between gap-6 mb-8">
+        <div className="flex flex-row justify-between gap-6 mb-8 ">
           {/* 상단: 제목 섹션 (전체 너비 사용) */}
           <div className="border-b border-slate-100 m-4 pb-4">
             <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
@@ -142,10 +142,12 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* 메인 콘텐츠 (지도 & 패널) */}
+        {/* 메인 콘텐츠 (지도 & 패널 비율 조정) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-8 xl:col-span-9">
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden h-150 lg:h-175">
+          
+          {/* 지도 섹션: 비중을 12 중 7로 축소 (기존 8~9) */}
+          <div className="lg:col-span-7 xl:col-span-8">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden h-125 lg:h-175">
               <MapView
                 selectedCrosswalkId={selectedCrosswalk?.cw_uid ?? null}
                 onSelectCrosswalk={setSelectedCrosswalk}
@@ -154,7 +156,8 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="lg:col-span-4 xl:col-span-3">
+          {/* 상세 패널 섹션: 비중을 12 중 5로 확대 (기존 3~4) */}
+          <div className="lg:col-span-5 xl:col-span-4">
             <div className="sticky top-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm h-full max-h-175 flex flex-col">
               <SelectedCrosswalkPanel
                 selected={enhancedSelected}
@@ -165,6 +168,7 @@ export default function Dashboard() {
               />
             </div>
           </div>
+
         </div>
 
         {/* 모던 모달 (지수 정보) */}

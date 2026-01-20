@@ -319,13 +319,13 @@ export default function SuggestionDetailPage() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
         
         {/* 상단 네비게이션 */}
         <div className="mb-8 flex justify-between items-center">
           <button
             onClick={() => router.push("/board")}
-            className="group flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-colors text-sm font-semibold"
+            className="group flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-colors text-sm font-semibold hover:cursor-pointer"
           >
             <FaArrowLeft className="w-3 h-3 group-hover:-translate-x-1 transition-transform" />
             목록으로 돌아가기
