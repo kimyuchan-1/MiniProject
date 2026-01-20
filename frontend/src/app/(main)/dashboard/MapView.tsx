@@ -90,20 +90,28 @@ function validateAccHotspotData(data: unknown): data is Acc[] {
 
 const createClusterCustomIcon = (cluster: any) => {
     const count = cluster.getChildCount();
-    let size = 'small';
+    let sizeClass = 'cluster-s';
+    let sizePx = 40;
 
-    if (count < 10) {
-        size = 'small';
-    } else if (count < 100) {
-        size = 'medium';
-    } else {
-        size = 'large';
+    if (count >= 10 && count < 100) {
+        sizeClass = 'cluster-m';
+        sizePx = 50;
+    } else if (count >= 100) {
+        sizeClass = 'cluster-l';
+        sizePx = 64;
     }
 
     return L.divIcon({
-        html: `<div><span>${count}</span></div>`,
-        className: `custom-marker-cluster custom-marker-cluster-${size}`,
-        iconSize: L.point(50, 50, true),
+        html: `
+            <div class="modern-cluster ${sizeClass}">
+                <div class="cluster-inner">
+                    <span>${count.toLocaleString()}</span>
+                </div>
+                <div class="cluster-ring"></div>
+            </div>
+        `,
+        className: 'custom-cluster-container',
+        iconSize: L.point(sizePx, sizePx, true),
     });
 };
 
@@ -334,73 +342,67 @@ export default function MapView(props: MapViewProps) {
     return (
         <section className="relative w-full h-full">
             <style jsx global>{`
-                /* 지도 모노톤 스타일 */
-                .map-grayscale {
-                    filter: grayscale(100%) contrast(120%) brightness(110%);
+                /* 모던 클러스터 스타일 */
+                .custom-cluster-container {
+                    background: none !important;
+                    border: none !important;
                 }
-                
-                .custom-marker-cluster {
-                    background-color: #3b82f6;
-                    border: 3px solid white;
-                    border-radius: 50%;
-                    text-align: center;
-                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+
+                .modern-cluster {
+                    position: relative;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                }
-                
-                .custom-marker-cluster div {
                     width: 100%;
                     height: 100%;
+                }
+
+                .cluster-inner {
+                    position: relative;
+                    z-index: 2;
+                    width: 80%;
+                    height: 80%;
+                    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+                    border: 2px solid rgba(255, 255, 255, 0.8);
+                    border-radius: 50%;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    border-radius: 50%;
-                }
-                
-                .custom-marker-cluster span {
                     color: white;
-                    font-weight: bold;
-                    font-size: 16px;
-                    line-height: 1;
+                    font-weight: 700;
+                    box-shadow: 0 4px 15px rgba(29, 78, 216, 0.4);
+                    backdrop-filter: blur(4px);
                 }
-                
-                .custom-marker-cluster-small {
-                    width: 40px;
-                    height: 40px;
-                    background-color: #3b82f6;
+
+                .cluster-ring {
+                    position: absolute;
+                    z-index: 1;
+                    top: 0; left: 0; right: 0; bottom: 0;
+                    background: rgba(59, 130, 246, 0.2);
+                    border-radius: 50%;
+                    animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
                 }
-                
-                .custom-marker-cluster-small span {
-                    font-size: 14px;
+
+                @keyframes pulse-ring {
+                    0% { transform: scale(0.8); opacity: 0.5; }
+                    50% { transform: scale(1.05); opacity: 0.3; }
+                    100% { transform: scale(0.8); opacity: 0.5; }
                 }
-                
-                .custom-marker-cluster-medium {
-                    width: 50px;
-                    height: 50px;
-                    background-color: #2563eb;
-                }
-                
-                .custom-marker-cluster-medium span {
-                    font-size: 16px;
-                }
-                
-                .custom-marker-cluster-large {
-                    width: 60px;
-                    height: 60px;
-                    background-color: #1d4ed8;
-                }
-                
-                .custom-marker-cluster-large span {
-                    font-size: 18px;
+
+                /* 사이즈별 색상 차별화 */
+                .cluster-m .cluster-inner { background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%); }
+                .cluster-l .cluster-inner { background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); }
+
+                /* 지도 커스텀 */
+                .leaflet-container {
+                    background-color: #f8fafc !important;
                 }
             `}</style>
             <div className="relative h-full w-full overflow-hidden rounded-lg bg-white shadow">
                 <MapContainer center={center} zoom={20} className="h-full w-full">
                     <TileLayer
-                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        attribution='&copy; OpenStreetMap'
+                        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
                     />
                     <MapFlyTo target={moveTo ?? null} />
 
@@ -427,7 +429,7 @@ export default function MapView(props: MapViewProps) {
                         chunkedLoading
                         iconCreateFunction={createClusterCustomIcon}
                         maxClusterRadius={30}
-                        disableClusteringAtZoom={15}
+                        disableClusteringAtZoom={16}
                         removeOutsideVisibleBounds
                         spiderfyOnMaxZoom
                         showCoverageOnHover={false}
@@ -455,14 +457,16 @@ export default function MapView(props: MapViewProps) {
                     </MarkerClusterGroup>
                 </MapContainer>
 
-                {/* 로딩 뱃지 */}
-                <div
-                    className={[
-                        "pointer-events-none absolute right-3 bottom-3 z-100 rounded-full border bg-white/90 px-3 py-1 text-xs shadow transition-opacity",
-                        loading ? "opacity-100" : "opacity-0",
-                    ].join(" ")}
-                >
-                    불러오는 중…
+                {/* 모던 로딩 인디케이터 */}
+                <div className={`
+                    absolute bottom-6 left-1/2 -translate-x-1/2 z-1000
+                    flex items-center gap-2 px-4 py-2 rounded-full
+                    bg-white/80 backdrop-blur-md border border-slate-200 shadow-lg
+                    transition-all duration-300
+                    ${loading ? "translate-y-0 opacity-100" : "translate-y-12 opacity-0"}
+                `}>
+                    <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-sm font-medium text-slate-600">데이터 갱신 중...</span>
                 </div>
                 <MapFilter value={filter} onChange={setFilter} />
             </div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { FaMapMarkerAlt, FaHeart, FaComment, FaEye, FaArrowLeft, FaEdit, FaTrash } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaHeart, FaComment, FaEye, FaArrowLeft, FaEdit, FaTrash, FaCheckCircle, FaUserCircle, FaReply } from 'react-icons/fa';
 import { Suggestion, Comment } from '@/features/board/types';
 import { SuggestionStatusLabels, SuggestionTypeLabels, StatusColors } from '@/features/board/constants';
 import dynamic from 'next/dynamic';
@@ -318,330 +318,255 @@ export default function SuggestionDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* 뒤로가기 버튼 */}
-        <div className="mb-6">
+    <div className="min-h-screen bg-[#f8fafc]">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        
+        {/* 상단 네비게이션 */}
+        <div className="mb-8 flex justify-between items-center">
           <button
             onClick={() => router.push("/board")}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors hover:cursor-pointer"
+            className="group flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-colors text-sm font-semibold"
           >
-            <FaArrowLeft className="w-4 h-4" />
+            <FaArrowLeft className="w-3 h-3 group-hover:-translate-x-1 transition-transform" />
             목록으로 돌아가기
           </button>
+          
+          {canEditSuggestion() && (
+            <div className="flex gap-2">
+              <button
+                onClick={() => router.push(`/board/${suggestionId}/edit`)}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-slate-600 hover:bg-white hover:shadow-sm rounded-xl transition-all border border-transparent hover:border-slate-200 hover:cursor-pointer"
+              >
+                <FaEdit className="w-3.5 h-3.5" /> 수정
+              </button>
+              <button
+                onClick={handleDeleteSuggestion}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-rose-600 hover:bg-rose-50 rounded-xl transition-all hover:cursor-pointer"
+              >
+                <FaTrash className="w-3.5 h-3.5" /> 삭제
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* 건의사항 상세 */}
-        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-          {/* 헤더 */}
-          <div className="flex items-start justify-between mb-6">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-3">
-                <span className={`px-3 py-1 text-sm font-medium rounded-full ${StatusColors[suggestion.status]}`}>
-                  {SuggestionStatusLabels[suggestion.status]}
+        {/* 본문 카드 */}
+        <div className="bg-white rounded-4xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+          <div className="p-8 md:p-12">
+            {/* 카테고리 & 상태 라벨 */}
+            <div className="flex flex-wrap items-center gap-2 mb-6">
+              <span className={`px-4 py-1.5 text-xs font-black uppercase tracking-wider rounded-full shadow-sm ${StatusColors[suggestion.status]}`}>
+                {SuggestionStatusLabels[suggestion.status]}
+              </span>
+              <span className="px-4 py-1.5 text-xs font-bold bg-slate-100 text-slate-600 rounded-full">
+                {SuggestionTypeLabels[suggestion.suggestion_type]}
+              </span>
+              {suggestion.priority_score > 7 && (
+                <span className="px-4 py-1.5 text-xs font-bold bg-rose-100 text-rose-600 rounded-full animate-pulse">
+                  긴급 요청
                 </span>
-                <span className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-full">
-                  {SuggestionTypeLabels[suggestion.suggestion_type]}
-                </span>
-                {suggestion.priority_score > 7 && (
-                  <span className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded-full">
-                    긴급
-                  </span>
-                )}
+              )}
+            </div>
+
+            <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-8 tracking-tight leading-tight">
+              {suggestion.title}
+            </h1>
+
+            {/* 작성자 정보 바 */}
+            <div className="flex flex-wrap items-center gap-y-4 gap-x-8 text-sm text-slate-400 mb-10 pb-8 border-b border-slate-100 font-medium">
+              <div className="flex items-center gap-2 text-slate-900">
+                <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px]">👤</div>
+                {suggestion.user?.name ?? "익명"}
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-4">
-                {suggestion.title}
-              </h1>
-            </div>
-            
-            {/* 수정/삭제 버튼 */}
-            {canEditSuggestion() && (
-              <div className="flex gap-2 ml-4">
-                <button
-                  onClick={() => router.push(`/board/${suggestionId}/edit`)}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors hover:cursor-pointer"
-                >
-                  <FaEdit className="w-3.5 h-3.5" />
-                  수정
-                </button>
-                <button
-                  onClick={handleDeleteSuggestion}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors hover:cursor-pointer"
-                >
-                  <FaTrash className="w-3.5 h-3.5" />
-                  삭제
-                </button>
+              <div className="flex items-center gap-1.5">
+                <FaEye className="w-3.5 h-3.5" /> {suggestion.view_count.toLocaleString()}
               </div>
-            )}
-          </div>
-
-          {/* 메타 정보 */}
-          <div className="flex items-center gap-6 text-sm text-gray-500 mb-6 pb-6 border-b">
-            <div className="flex items-center gap-1">
-              <FaMapMarkerAlt className="w-4 h-4" />
-              <span>{suggestion.sido} {suggestion.sigungu}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <FaEye className="w-4 h-4" />
-              <span>{suggestion.view_count}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <FaComment className="w-4 h-4" />
-              <span>{suggestion.comment_count}</span>
-            </div>
-            <span>{suggestion.user?.name ?? "익명"}</span>
-            <span>{new Date(suggestion.created_at).toLocaleDateString()}</span>
-          </div>
-
-          {/* 내용 */}
-          <div className="prose max-w-none mb-6">
-            <div className="whitespace-pre-wrap text-gray-800 leading-relaxed">
-              {suggestion.content}
-            </div>
-          </div>
-
-          {/* 위치 정보 */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">위치 정보</h3>
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <FaMapMarkerAlt className="text-blue-600 w-4 h-4" />
-                <span className="text-blue-800 font-medium">{suggestion.address}</span>
+              <div className="flex items-center gap-1.5">
+                <FaComment className="w-3.5 h-3.5" /> {suggestion.comment_count}
               </div>
-              
-              {/* 지도 */}
-              <div className="border border-gray-300 rounded-lg overflow-hidden">
-                <LocationViewer
-                  lat={suggestion.location_lat}
-                  lon={suggestion.location_lon}
-                />
+              <div className="ml-auto">
+                {new Date(suggestion.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
               </div>
-
-              {/* 위치 정보 패널 */}
-              <LocationInfoPanel
-                lat={suggestion.location_lat}
-                lon={suggestion.location_lon}
-                address={suggestion.address}
-              />
             </div>
-          </div>
 
-          {/* 좋아요 버튼 */}
-          <div className="flex items-center justify-between pt-6 border-t ">
-            <button
-              onClick={toggleLike}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors hover:cursor-pointer ${suggestion.is_liked
-                  ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-            >
-              <FaHeart className={`w-4 h-4 ${suggestion.is_liked ? 'text-red-600' : ''}`} />
-              <span>{suggestion.like_count}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* 관리자 답변 */}
-        {suggestion.admin_response && (
-          <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
-                관
+            {/* 본문 내용 */}
+            <div className="prose prose-slate max-w-none mb-12">
+              <div className="whitespace-pre-wrap text-slate-700 leading-loose text-lg">
+                {suggestion.content}
               </div>
-              <div>
-                <div className="font-semibold text-gray-900">관리자 답변</div>
-                <div className="text-sm text-gray-500">
-                  {suggestion.processed_at && new Date(suggestion.processed_at).toLocaleDateString()}
+            </div>
+
+            {/* 위치 섹션 (인셋 카드 형태) */}
+            <div className="bg-slate-50 rounded-2xl p-6 md:p-8 border border-slate-100">
+              <div className="flex items-center gap-2 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                  <FaMapMarkerAlt />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">제안 위치 정보</h3>
+                  <p className="text-sm text-slate-500 font-medium">{suggestion.address}</p>
                 </div>
               </div>
+              
+              <div className="space-y-6">
+                <div className="rounded-2xl overflow-hidden border-4 border-white shadow-sm h-75">
+                  <LocationViewer lat={suggestion.location_lat} lon={suggestion.location_lon} />
+                </div>
+                <LocationInfoPanel lat={suggestion.location_lat} lon={suggestion.location_lon} address={suggestion.address} />
+              </div>
             </div>
-            <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400">
-              <p className="text-blue-800 whitespace-pre-wrap">{suggestion.admin_response}</p>
+
+            {/* 하단 인터랙션 */}
+            <div className="mt-12 pt-4 border-t border-slate-100 flex justify-end">
+              <button
+                onClick={toggleLike}
+                className={`group flex items-center gap-3 px-10 py-4 rounded-2xl font-bold transition-all hover:cursor-pointer ${
+                  suggestion.is_liked
+                    ? 'bg-rose-50 text-rose-600 ring-1 ring-rose-200'
+                    : 'bg-white text-slate-600 border border-slate-200 hover:border-rose-300 hover:text-rose-500'
+                }`}
+              >
+                <FaHeart className={`w-5 h-5 transition-transform group-hover:scale-125 ${suggestion.is_liked ? 'fill-rose-600' : ''}`} />
+                <span className="text-lg">{suggestion.like_count}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* 관리자 답변 (Special Highlight) */}
+        {suggestion.admin_response && (
+          <div className="relative mb-8 group">
+            <div className="absolute -inset-1 bg-linear-to-r from-blue-600 to-indigo-600 rounded-4xl blur opacity-25 group-hover:opacity-40 transition duration-1000"></div>
+            <div className="relative bg-white rounded-4xl p-8 md:p-10 border border-blue-100 shadow-xl">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                    <FaCheckCircle className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="text-xl font-black text-slate-900 tracking-tight">공식 답변</h4>
+                    <p className="text-sm text-slate-400 font-bold">{new Date(suggestion.processed_at!).toLocaleDateString()}</p>
+                  </div>
+                </div>
+                <span className="bg-blue-50 text-blue-700 text-xs font-black px-3 py-1 rounded-lg border border-blue-100 uppercase tracking-widest">Official</span>
+              </div>
+              <div className="bg-slate-50/50 p-6 rounded-2xl text-slate-700 leading-relaxed font-medium border border-slate-100">
+                {suggestion.admin_response}
+              </div>
             </div>
           </div>
         )}
 
         {/* 댓글 섹션 */}
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">
-            댓글 ({suggestion.comment_count})
-          </h3>
+        <div className="bg-white rounded-4xl shadow-sm border border-slate-200 p-8 md:p-10">
+          <div className="flex items-center gap-3 mb-10">
+            <h3 className="text-2xl font-black text-slate-900 tracking-tight">의견 나눔</h3>
+            <span className="bg-slate-100 text-slate-500 px-3 py-1 rounded-lg text-sm font-bold">{suggestion.comment_count}</span>
+          </div>
 
           {/* 댓글 작성 폼 */}
-          <form onSubmit={handleCommentSubmit} className="mb-6">
-            {replyTo && (
-              <div className="mb-2 text-sm text-gray-600">
-                답글 작성 중...
-                <button
-                  type="button"
-                  onClick={() => setReplyTo(null)}
-                  className="ml-2 text-blue-600 hover:text-blue-700 hover:cursor-pointer"
-                >
-                  취소
-                </button>
+          <form onSubmit={handleCommentSubmit} className="mb-12 relative group">
+             {replyTo && (
+              <div className="flex items-center gap-2 mb-3 text-sm font-bold text-blue-600 bg-blue-50 px-4 py-2 rounded-xl w-fit animate-in fade-in slide-in-from-top-1">
+                <FaReply className="w-3 h-3" /> 답글을 작성하는 중입니다
+                <button type="button" onClick={() => setReplyTo(null)} className="ml-2 underline underline-offset-2 opacity-60 hover:opacity-100 hover:cursor-pointer">취소</button>
               </div>
             )}
-            <div className="flex gap-3">
+            <div className="relative">
               <textarea
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
-                placeholder="댓글을 작성해주세요..."
+                placeholder="타인을 배려하는 따뜻한 댓글을 남겨주세요."
                 rows={3}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                className="w-full px-6 py-5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all outline-none resize-none font-medium text-slate-700 placeholder:text-slate-400"
               />
-              <button
-                type="submit"
-                disabled={commentLoading || !newComment.trim()}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer"
-              >
-                {commentLoading ? '작성 중...' : '댓글 작성'}
-              </button>
+              <div className="absolute bottom-4 right-4 flex items-center gap-4">
+                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">{newComment.length} characters</span>
+                <button
+                  type="submit"
+                  disabled={commentLoading || !newComment.trim()}
+                  className="px-6 py-2 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-blue-600 disabled:opacity-30 transition-all shadow-md active:scale-95 hover:cursor-pointer disabled:cursor-not-allowed"
+                >
+                  {commentLoading ? '전송 중' : '댓글 등록'}
+                </button>
+              </div>
             </div>
           </form>
 
           {/* 댓글 목록 */}
-          <div className="space-y-4">
+          <div className="space-y-8">
             {comments.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                첫 번째 댓글을 작성해보세요!
+              <div className="text-center py-16">
+                <div className="text-4xl mb-4 opacity-20">💬</div>
+                <p className="text-slate-400 font-medium italic">아직 작성된 의견이 없습니다.<br/>첫 번째 의견을 들려주세요!</p>
               </div>
             ) : (
               comments.map((comment) => (
-                <div key={comment.id} className="border-b border-gray-100 pb-4 last:border-b-0">
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-sm font-medium">
+                <div key={comment.id} className="group animate-in fade-in slide-in-from-bottom-2">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-slate-100 to-slate-200 flex items-center justify-center text-slate-500 font-bold shadow-sm">
                       {(comment.user?.name ?? "익명").charAt(0)}
                     </div>
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="font-medium text-gray-900">{comment.user?.name ?? "익명"}</span>
-                        <span className="text-sm text-gray-500">
-                          {new Date(comment.created_at).toLocaleDateString()}
-                        </span>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-900">{comment.user?.name ?? "익명"}</span>
+                          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-tight">{new Date(comment.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                           <button onClick={() => setReplyTo(comment.id)} className="p-2 text-slate-400 hover:text-blue-500 transition-colors hover:cursor-pointer"><FaReply className="w-3.5 h-3.5" /></button>
+                           {canEditComment(comment) && (
+                             <>
+                               <button onClick={() => startEditComment(comment.id, comment.content)} className="p-2 text-slate-400 hover:text-blue-500 transition-colors hover:cursor-pointer"><FaEdit className="w-3.5 h-3.5" /></button>
+                               <button onClick={() => handleDeleteComment(comment.id)} className="p-2 text-slate-400 hover:text-rose-500 transition-colors hover:cursor-pointer"><FaTrash className="w-3.5 h-3.5" /></button>
+                             </>
+                           )}
+                        </div>
                       </div>
                       
-                      {/* 댓글 내용 또는 수정 폼 */}
                       {editingCommentId === comment.id ? (
-                        <div className="space-y-2">
+                        <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200 mt-2">
                           <textarea
                             value={editingContent}
                             onChange={(e) => setEditingContent(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                            className="w-full bg-white px-4 py-3 border border-slate-200 rounded-xl outline-none focus:border-blue-500 text-sm font-medium resize-none"
                             rows={3}
                           />
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleUpdateComment(comment.id)}
-                              className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 hover:cursor-pointer"
-                            >
-                              저장
-                            </button>
-                            <button
-                              onClick={cancelEditComment}
-                              className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 hover:cursor-pointer"
-                            >
-                              취소
-                            </button>
+                          <div className="flex justify-end gap-2">
+                            <button onClick={cancelEditComment} className="px-3 py-1.5 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-lg hover:cursor-pointer">취소</button>
+                            <button onClick={() => handleUpdateComment(comment.id)} className="px-3 py-1.5 text-xs font-bold bg-blue-600 text-white rounded-lg shadow-sm hover:cursor-pointer">수정 완료</button>
                           </div>
                         </div>
                       ) : (
-                        <>
-                          <p className="text-gray-800 whitespace-pre-wrap mb-2">{comment.content}</p>
-                          <div className="flex gap-3">
-                            <button
-                              onClick={() => setReplyTo(comment.id)}
-                              className="text-sm text-blue-600 hover:text-blue-700 hover:cursor-pointer"
-                            >
-                              답글
-                            </button>
-                            {canEditComment(comment) && (
-                              <>
-                                <button
-                                  onClick={() => startEditComment(comment.id, comment.content)}
-                                  className="text-sm text-gray-600 hover:text-gray-700 hover:cursor-pointer"
-                                >
-                                  수정
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteComment(comment.id)}
-                                  className="text-sm text-red-600 hover:text-red-700 hover:cursor-pointer"
-                                >
-                                  삭제
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </>
+                        <p className="text-slate-600 leading-relaxed font-medium bg-slate-50/50 p-4 rounded-2xl rounded-tl-none inline-block min-w-25 border border-slate-100">
+                          {comment.content}
+                        </p>
+                      )}
+                      
+                      {/* 대댓글 영역 (Replied Nested) */}
+                      {comment.replies && comment.replies.length > 0 && (
+                        <div className="mt-6 ml-4 border-l-2 border-slate-100 pl-8 space-y-6">
+                          {comment.replies.map((reply) => (
+                            <div key={reply.id} className="relative">
+                              <div className="flex items-start gap-3">
+                                <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-[10px] text-slate-500 font-black">
+                                  {(reply.user?.name ?? "익명").charAt(0)}
+                                </div>
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-sm font-bold text-slate-800">{reply.user?.name ?? "익명"}</span>
+                                    <span className="text-[10px] font-bold text-slate-300 uppercase">{new Date(reply.created_at).toLocaleDateString()}</span>
+                                  </div>
+                                  <p className="text-sm text-slate-600 font-medium bg-white p-3 rounded-xl rounded-tl-none border border-slate-100 inline-block shadow-sm">
+                                    {reply.content}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
                   </div>
-
-                  {/* 답글 */}
-                  {comment.replies && comment.replies.length > 0 && (
-                    <div className="ml-11 mt-4 space-y-3">
-                      {comment.replies.map((reply) => (
-                        <div key={reply.id} className="flex items-start gap-3">
-                          <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-xs">
-                            {(reply.user?.name ?? "익명").charAt(0)}
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-medium text-gray-900 text-sm">{reply.user?.name ?? "익명"}</span>
-                              <span className="text-xs text-gray-500">
-                                {new Date(reply.created_at).toLocaleDateString()}
-                              </span>
-                            </div>
-                            
-                            {/* 대댓글 내용 또는 수정 폼 */}
-                            {editingCommentId === reply.id ? (
-                              <div className="space-y-2">
-                                <textarea
-                                  value={editingContent}
-                                  onChange={(e) => setEditingContent(e.target.value)}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm"
-                                  rows={2}
-                                />
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={() => handleUpdateComment(reply.id)}
-                                    className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 hover:cursor-pointer"
-                                  >
-                                    저장
-                                  </button>
-                                  <button
-                                    onClick={cancelEditComment}
-                                    className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 hover:cursor-pointer"
-                                  >
-                                    취소
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <>
-                                <p className="text-gray-800 text-sm whitespace-pre-wrap mb-1">{reply.content}</p>
-                                {canEditComment(reply) && (
-                                  <div className="flex gap-2">
-                                    <button
-                                      onClick={() => startEditComment(reply.id, reply.content)}
-                                      className="text-xs text-gray-600 hover:text-gray-700 hover:cursor-pointer"
-                                    >
-                                      수정
-                                    </button>
-                                    <button
-                                      onClick={() => handleDeleteComment(reply.id)}
-                                      className="text-xs text-red-600 hover:text-red-700 hover:cursor-pointer"
-                                    >
-                                      삭제
-                                    </button>
-                                  </div>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
               ))
             )}

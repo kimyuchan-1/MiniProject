@@ -30,7 +30,7 @@ export default function SearchBar(props: {
             <button
                 type="button"
                 onClick={onToggleFilters}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2"
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2 hover:cursor-pointer"
             >
                 <FaFilter className="w-4 h-4" />
                 필터

@@ -1,7 +1,7 @@
-// src/components/dashboard/DistrictSelectors.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { MapPin, ChevronDown } from "lucide-react"; // 아이콘 라이브러리 추가
 
 type ProvinceOpt = { province: string; lat: number; lon: number };
 type CityOpt = { key: string; city: string; lat: number; lon: number };
@@ -17,7 +17,7 @@ export default function DistrictSelectors({
   const [cityKey, setCityKey] = useState("ALL");
   const [loadingCities, setLoadingCities] = useState(false);
 
-  // 1) provinces
+  // 1) provinces fetch
   useEffect(() => {
     (async () => {
       const r = await fetch("/api/dashboard/provinces", { cache: "no-store" });
@@ -27,7 +27,7 @@ export default function DistrictSelectors({
     })();
   }, []);
 
-  // 2) cities for province
+  // 2) cities fetch
   useEffect(() => {
     (async () => {
       if (province === "ALL") {
@@ -48,7 +48,7 @@ export default function DistrictSelectors({
     })();
   }, [province]);
 
-  // 3) province 선택 시: 시도 중심으로 먼저 이동(선택 UX 좋음)
+  // 3) 이동 로직 (생략 없이 원본 유지)
   useEffect(() => {
     if (province === "ALL") return;
     const p = provinces.find(x => x.province === province);
@@ -56,7 +56,6 @@ export default function DistrictSelectors({
     onMove({ lat: p.lat, lon: p.lon, zoom: 10 });
   }, [province, provinces, onMove]);
 
-  // 4) city 선택 시: 시군구 중심으로 이동
   useEffect(() => {
     if (province === "ALL" || cityKey === "ALL") return;
     const c = cities.find(x => x.key === cityKey);
@@ -64,39 +63,46 @@ export default function DistrictSelectors({
     onMove({ lat: c.lat, lon: c.lon, zoom: 12 });
   }, [province, cityKey, cities, onMove]);
 
-  const cityOptions = useMemo(() => cities, [cities]);
-
   return (
-    <div className="flex flex-col gap-2 justify-center items-end">
-      <select
-        className="h-10 rounded-md border bg-white px-3 text-sm"
-        value={province}
-        onChange={(e) => {
-          setProvince(e.target.value);
-          setCityKey("ALL");
-        }}
-      >
-        <option value="ALL">시/도 선택</option>
-        {provinces.map(p => (
-          <option key={p.province} value={p.province}>
-            {p.province}
-          </option>
-        ))}
-      </select>
+    <div className="flex flex-col gap-3 p-2 bg-white/80  border-slate-200 w-full max-w-60">
 
-      <select
-        className="h-10 rounded-md border bg-white px-3 text-sm"
-        value={cityKey}
-        onChange={(e) => setCityKey(e.target.value)}
-        disabled={province === "ALL" || loadingCities}
-      >
-        <option value="ALL">{loadingCities ? "불러오는 중..." : "시/군/구 선택"}</option>
-        {cityOptions.map(c => (
-          <option key={c.key} value={c.key}>
-            {c.city}
+      <div className="relative group">
+        <select
+          className="w-full h-11 appearance-none rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 transition-all hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 disabled:bg-slate-50 disabled:text-slate-400"
+          value={province}
+          onChange={(e) => {
+            setProvince(e.target.value);
+            setCityKey("ALL");
+          }}
+        >
+          <option value="ALL">시/도 전체</option>
+          {provinces.map(p => (
+            <option key={p.province} value={p.province}>
+              {p.province}
+            </option>
+          ))}
+        </select>
+        <ChevronDown className="absolute right-3 top-3.5 w-4 h-4 text-slate-400 pointer-events-none group-focus-within:rotate-180 transition-transform" />
+      </div>
+
+      <div className="relative group">
+        <select
+          className="w-full h-11 appearance-none rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 transition-all hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 disabled:bg-slate-50 disabled:text-slate-400"
+          value={cityKey}
+          onChange={(e) => setCityKey(e.target.value)}
+          disabled={province === "ALL" || loadingCities}
+        >
+          <option value="ALL">
+            {loadingCities ? "데이터 로딩 중..." : "시/군/구 전체"}
           </option>
-        ))}
-      </select>
+          {cities.map(c => (
+            <option key={c.key} value={c.key}>
+              {c.city}
+            </option>
+          ))}
+        </select>
+        <ChevronDown className="absolute right-3 top-3.5 w-4 h-4 text-slate-400 pointer-events-none group-focus-within:rotate-180 transition-transform" />
+      </div>
     </div>
   );
 }

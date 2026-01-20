@@ -84,18 +84,18 @@ export default function BoardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-[#f8fafc]">
+      <div className="max-w-400 mx-auto px-6 py-8">
         {/* 헤더 */}
-        <div className="mb-8">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">시민 건의사항</h1>
-              <p className="text-gray-600 mt-1">교통 안전 시설 개선을 위한 시민 참여 공간</p>
-            </div>
+        <div className="flex flex-row justify-between gap-6 mb-8">
+          <div className="border-b border-slate-100 m-4 pb-4">
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">시민 건의사항</h1>
+            <p className="text-slate-500 mt-2 flex items-center gap-2 text-sm md:text-base">교통 안전 시설 개선을 위한 시민 참여 공간</p>
+          </div>
+          <div className='flex items-end'>
             <Link
               href="/board/create"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 h-12 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               <FaPlus className="w-4 h-4" />
               건의사항 작성
@@ -104,7 +104,7 @@ export default function BoardPage() {
         </div>
 
         {/* 검색 및 필터 */}
-        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <SearchBar
             value={searchTerm}
             onChange={setSearchTerm}
