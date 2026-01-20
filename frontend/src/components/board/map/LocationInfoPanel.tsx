@@ -1,8 +1,7 @@
-'use client';
-
 import { useMemo, useEffect, useState } from 'react';
 import { AccidentData } from '@/features/acc_calculate/types';
 import { calculateAggregatedRiskScore } from '@/features/acc_calculate/utils';
+import { FaExclamationTriangle, FaInfoCircle, FaSkull, FaBriefcaseMedical, FaMapMarkerAlt } from 'react-icons/fa';
 
 function cx(...xs: Array<string | false | null | undefined>) {
   return xs.filter(Boolean).join(' ');
@@ -12,98 +11,23 @@ function clamp(n: number, lo = 0, hi = 100) {
   return Math.max(lo, Math.min(hi, n));
 }
 
-function scoreLevel(score: number, kind: 'risk' | 'safety') {
+function scoreLevel(score: number) {
   const s = clamp(score, 0, 100);
-  if (kind === 'risk') {
-    if (s >= 80) return { label: '매우 높음', tone: 'red' as const };
-    if (s >= 60) return { label: '높음', tone: 'red' as const };
-    if (s >= 40) return { label: '보통', tone: 'orange' as const };
-    if (s >= 20) return { label: '낮음', tone: 'gray' as const };
-    return { label: '매우 낮음', tone: 'gray' as const };
-  } else {
-    if (s >= 80) return { label: '매우 좋음', tone: 'blue' as const };
-    if (s >= 60) return { label: '좋음', tone: 'blue' as const };
-    if (s >= 40) return { label: '보통', tone: 'gray' as const };
-    if (s >= 20) return { label: '낮음', tone: 'orange' as const };
-    return { label: '매우 낮음', tone: 'red' as const };
-  }
+  if (s >= 80) return { label: '심각', tone: 'red' as const, description: '사고 발생 위험이 매우 높은 지역입니다.' };
+  if (s >= 60) return { label: '주의', tone: 'orange' as const, description: '사고가 빈번하여 주의가 필요합니다.' };
+  if (s >= 40) return { label: '보통', tone: 'yellow' as const, description: '평균 수준의 사고 위험을 보입니다.' };
+  if (s >= 20) return { label: '안전', tone: 'blue' as const, description: '상대적으로 사고 위험이 낮은 지역입니다.' };
+  return { label: '매우 안전', tone: 'emerald' as const, description: '사고 기록이 거의 없는 깨끗한 지역입니다.' };
 }
 
-function toneClasses(tone: 'red' | 'orange' | 'blue' | 'gray') {
+function toneClasses(tone: 'red' | 'orange' | 'yellow' | 'blue' | 'emerald') {
   switch (tone) {
-    case 'red':
-      return {
-        chip: 'bg-red-50 border-red-200 text-red-800',
-        bar: 'bg-red-500',
-        text: 'text-red-700',
-        strip: 'bg-red-500',
-      };
-    case 'orange':
-      return {
-        chip: 'bg-orange-50 border-orange-200 text-orange-800',
-        bar: 'bg-orange-500',
-        text: 'text-orange-700',
-        strip: 'bg-orange-500',
-      };
-    case 'blue':
-      return {
-        chip: 'bg-blue-50 border-blue-200 text-blue-800',
-        bar: 'bg-blue-500',
-        text: 'text-blue-700',
-        strip: 'bg-blue-500',
-      };
-    default:
-      return {
-        chip: 'bg-gray-50 border-gray-200 text-gray-800',
-        bar: 'bg-gray-500',
-        text: 'text-gray-700',
-        strip: 'bg-gray-500',
-      };
+    case 'red': return { bar: 'bg-rose-500', bg: 'bg-rose-50', text: 'text-rose-600', border: 'border-rose-100', accent: 'text-rose-700' };
+    case 'orange': return { bar: 'bg-orange-500', bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-100', accent: 'text-orange-700' };
+    case 'yellow': return { bar: 'bg-amber-500', bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-100', accent: 'text-amber-700' };
+    case 'blue': return { bar: 'bg-blue-500', bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-100', accent: 'text-blue-700' };
+    case 'emerald': return { bar: 'bg-emerald-500', bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-100', accent: 'text-emerald-700' };
   }
-}
-
-function StatPill(props: { label: string; value: string; tone?: 'red' | 'orange' | 'blue' | 'gray' }) {
-  const tone = toneClasses(props.tone ?? 'gray');
-  return (
-    <span className={cx('inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs', tone.chip)}>
-      <span className="opacity-90">{props.label}</span>
-      <b className={cx('font-semibold', tone.text)}>{props.value}</b>
-    </span>
-  );
-}
-
-function ProgressCard(props: {
-  title: string;
-  score: number;
-  kind: 'risk' | 'safety';
-  subtitle?: React.ReactNode;
-}) {
-  const s = clamp(props.score, 0, 100);
-  const lv = scoreLevel(s, props.kind);
-  const tone = toneClasses(lv.tone);
-
-  return (
-    <div className="rounded-xl border bg-white p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-xs text-gray-500">{props.title}</div>
-          <div className="mt-1 flex items-baseline gap-2">
-            <div className="text-2xl font-bold text-gray-900">{s.toFixed(1)}</div>
-          </div>
-        </div>
-        <div className='flex flex-col'>
-          <div className={cx('h-2 w-16 rounded-full', 'bg-gray-100')}>
-            <div className={cx('h-2 rounded-full', tone.bar)} style={{ width: `${s}%` }} />
-          </div>
-          <span className={cx('text-xs font-medium mt-6 ml-1', tone.text)}>{lv.label}</span>
-        </div>
-      </div>
-      {props.subtitle ? <div className="mt-1 text-xs text-gray-500">{props.subtitle}</div> : null}
-      <div className="mt-3 h-2 w-full rounded-full bg-gray-100">
-        <div className={cx('h-2 rounded-full', tone.bar)} style={{ width: `${s}%` }} />
-      </div>
-    </div>
-  );
 }
 
 interface LocationInfoPanelProps {
@@ -166,7 +90,6 @@ export default function LocationInfoPanel({ lat, lon, address, onPriorityScoreCa
     fetchNearbyAccidents();
   }, [lat, lon]);
 
-  // 위험 지수 계산 (= 우선순위 점수)
   const riskScore = useMemo(() => {
     if (!lat || !lon || nearbyAccidents.length === 0) return 0;
     return clamp(calculateAggregatedRiskScore(nearbyAccidents, lat, lon), 0, 100);
@@ -195,123 +118,135 @@ export default function LocationInfoPanel({ lat, lon, address, onPriorityScoreCa
     return new Set(nearby.map(a => a.accidentId)).size;
   }, [nearbyAccidents, lat, lon]);
 
-  // 사고 통계
-  const accidentStats = useMemo(() => {
-    // console.log('[LocationInfoPanel] Calculating accident stats from:', nearbyAccidents.length, 'accidents');
-    
-    const sum = (k: keyof AccidentData) =>
-      nearbyAccidents.reduce((acc, cur) => {
-        const value = Number(cur[k]) || 0;
-        // console.log(`[LocationInfoPanel] ${k}:`, cur[k], '-> value:', value);
-        return acc + value;
-      }, 0);
+  const { accidents, casualties, deaths, hotspots } = useMemo(() => {
+    const sum = (k: keyof AccidentData) => nearbyAccidents.reduce((acc, cur) => acc + (Number(cur[k]) || 0), 0);
+    const uniqueHotspots = new Set(nearbyAccidents.filter(acc => {
+      if (!lat || !lon) return false;
+      return Math.abs(acc.accidentLat - lat) <= 0.001 && Math.abs(acc.accidentLon - lon) <= 0.001;
+    }).map(a => a.accidentId)).size;
 
-    const stats = {
+    return {
       accidents: sum('accidentCount'),
       casualties: sum('casualtyCount'),
       deaths: sum('fatalityCount'),
+      hotspots: uniqueHotspots
     };
-    
-    // console.log('[LocationInfoPanel] Calculated stats:', stats);
-    return stats;
-  }, [nearbyAccidents]);
+  }, [nearbyAccidents, lat, lon]);
 
   if (!lat || !lon) {
     return (
-      <div className="rounded-xl border bg-gray-50 p-4">
-        <div className="text-center text-gray-500 text-sm">
-          지도에서 위치를 선택하면 해당 지점의 위험 지수와 주변 사고 정보가 표시됩니다.
+      <div className="rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50 p-8 transition-all">
+        <div className="flex flex-col items-center text-center">
+          <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center text-slate-300 mb-4">
+            <FaMapMarkerAlt className="w-5 h-5" />
+          </div>
+          <p className="text-slate-500 font-bold tracking-tight">지도를 클릭하여 위치를 선택해주세요</p>
+          <p className="text-slate-400 text-sm mt-1">선택한 지점의 실시간 위험 분석 데이터가 표시됩니다.</p>
         </div>
       </div>
     );
   }
 
-  const headerStripTone = scoreLevel(riskScore, 'risk').tone;
-  const strip = toneClasses(headerStripTone).strip;
-  const riskLevel = scoreLevel(riskScore, 'risk');
-  const riskTone = toneClasses(riskLevel.tone);
+  const level = scoreLevel(riskScore);
+  const tone = toneClasses(level.tone);
 
   return (
-    <div className="rounded-lg border bg-white shadow-sm overflow-hidden">
-      {/* 상단 스트립 */}
-      <div className={cx('h-1 w-full', strip)} />
+    <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+      
+      {/* 위험지수 메인 카드 */}
+      <div className={cx("relative overflow-hidden rounded-4xl border transition-all duration-700 shadow-xl shadow-slate-200/50", tone.bg, tone.border)}>
+        {/* 상단 장식용 그라데이션 라인 */}
+        <div className={cx("absolute top-0 left-0 right-0 h-1.5 opacity-50", tone.bar)} />
+        
+        <div className="p-6 md:p-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className={cx("px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest text-white shadow-sm", tone.bar)}>
+                  Risk Analytics
+                </span>
+                <span className={cx("text-sm font-bold flex items-center gap-1.5", tone.text)}>
+                  <FaExclamationTriangle className="w-3 h-3" /> {level.label} 단계
+                </span>
+              </div>
+              <h4 className="text-slate-900 text-lg font-black tracking-tight">교통 위험 분석 결과</h4>
+              <p className="text-slate-500 text-sm font-medium">{level.description}</p>
+            </div>
 
-      <div className="p-4">
-        {/* 위험 지수 (= 우선순위 점수) */}
-        <div className="flex items-center gap-3 p-4 bg-linear-to-r from-gray-50 to-white rounded-lg mb-4 border">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="text-sm font-medium text-gray-700">위험 지수 (우선순위 점수)</div>
-              <span className={cx('text-xs px-2 py-0.5 rounded-full font-medium', riskTone.chip)}>
-                {riskLevel.label}
-              </span>
+            <div className="flex items-center gap-5 bg-white/60 backdrop-blur-md p-4 rounded-3xl border border-white/50 shadow-inner">
+              <div className="text-right">
+                <div className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Danger Score</div>
+                <div className="text-4xl font-black text-slate-900 tracking-tighter tabular-nums">
+                  {riskScore.toFixed(1)}
+                  <span className="text-lg text-slate-300 ml-1">/100</span>
+                </div>
+              </div>
+              <div className="relative w-16 h-16 flex items-center justify-center">
+                 {/* 원형 프로그레스 바 배경 */}
+                 <svg className="absolute w-full h-full -rotate-90">
+                    <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="6" fill="transparent" className="text-slate-100" />
+                    <circle 
+                      cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="6" fill="transparent" 
+                      strokeDasharray={175.9} strokeDashoffset={175.9 - (175.9 * riskScore) / 100}
+                      className={cx("transition-all duration-1000 ease-out", tone.text)} 
+                    />
+                 </svg>
+                 <div className={cx("w-3 h-3 rounded-full animate-pulse", tone.bar)} />
+              </div>
             </div>
-            <div className="flex items-baseline gap-3">
-              <span className="text-4xl font-bold text-gray-900">{riskScore.toFixed(1)}</span>
-              <span className="text-sm text-gray-500">/ 100</span>
-            </div>
-            <div className="mt-3 h-3 w-full rounded-full bg-gray-200 overflow-hidden">
+          </div>
+
+          {/* 수평 프로그레스 바 */}
+          <div className="mt-8">
+            <div className="h-4 w-full rounded-full bg-slate-200/50 p-1 overflow-hidden shadow-inner">
               <div 
-                className={cx('h-3 rounded-full transition-all duration-500', riskTone.bar)} 
+                className={cx("h-full rounded-full transition-all duration-1000 ease-out shadow-sm", tone.bar)} 
                 style={{ width: `${riskScore}%` }} 
               />
             </div>
           </div>
-          <div className={cx('h-16 w-16 rounded-full flex items-center justify-center shadow-sm', riskTone.chip)}>
-            <div className={cx('h-12 w-12 rounded-full', riskTone.bar)} />
-          </div>
-        </div>
-
-        {/* 사고 요약 및 안내 */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 pt-4 border-t">
-          {/* 사고 요약 */}
-          <div className="flex-1">
-            <div className="text-xs text-gray-500 mb-2">주변 사고 요약 (반경 500m)</div>
-            {loading ? (
-              <div className="flex gap-4">
-                <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
-                <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
-                <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
-              </div>
-            ) : (
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-                <span className="text-gray-700">
-                  사고 <b className="text-gray-900">{accidentStats.accidents}</b>건
-                </span>
-                <span className="text-gray-700">
-                  사상자 <b className="text-gray-900">{accidentStats.casualties}</b>명
-                </span>
-                <span className="text-gray-700">
-                  사망 <b className="text-red-600">{accidentStats.deaths}</b>명
-                </span>
-                <span className={cx('text-xs px-2 py-1 rounded-full font-medium', 
-                  nearbyHotspots >= 5 ? 'bg-red-100 text-red-700' : 
-                  nearbyHotspots >= 2 ? 'bg-orange-100 text-orange-700' : 
-                  'bg-gray-100 text-gray-700')}>
-                  사고다발 {nearbyHotspots}곳
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* 안내 */}
-          <div className="text-xs text-gray-600 bg-blue-50 px-3 py-2 rounded-lg border border-blue-100">
-            <span className="font-medium text-blue-900">💡 </span>
-            위험 지수가 높을수록 개선이 시급합니다
-          </div>
-
-          {/* 로딩/에러 상태 */}
-          {loading && (
-            <span className="inline-flex items-center gap-1 text-xs text-gray-500">
-              <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-gray-400" />
-              로딩 중
-            </span>
-          )}
-          {error && (
-            <span className="text-xs text-red-600">⚠️ 데이터 오류</span>
-          )}
         </div>
       </div>
+
+      {/* 세부 통계 그리드 */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard icon={<FaExclamationTriangle />} label="누적 사고" value={`${accidents}건`} loading={loading} />
+        <StatCard icon={<FaBriefcaseMedical />} label="부상자수" value={`${casualties}명`} loading={loading} />
+        <StatCard icon={<FaSkull />} label="사망자수" value={`${deaths}명`} tone={deaths > 0 ? 'red' : 'gray'} loading={loading} />
+        <StatCard icon={<FaMapMarkerAlt />} label="사고다발" value={`${hotspots}곳`} tone={hotspots >= 2 ? 'orange' : 'gray'} loading={loading} />
+      </div>
+
+      {/* 정보 안내 팁 */}
+      <div className="flex items-center gap-3 bg-blue-50/50 border border-blue-100 p-4 rounded-2xl">
+        <div className="bg-white p-2 rounded-xl shadow-sm">
+          <FaInfoCircle className="text-blue-500 w-4 h-4" />
+        </div>
+        <p className="text-xs text-blue-800 font-medium leading-relaxed">
+          해당 지표는 반경 500m 내의 최근 교통사고 데이터를 기반으로 <span className="font-bold underline">가중치 알고리즘</span>을 통해 산출되었습니다.
+          수치가 높을수록 우선적인 도로 개선이 필요함을 의미합니다.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// 서브 컴포넌트: 통계 카드
+function StatCard({ icon, label, value, tone = 'gray', loading }: { icon: React.ReactNode, label: string, value: string, tone?: 'gray' | 'red' | 'orange', loading: boolean }) {
+  const tones = {
+    gray: 'text-slate-400 bg-white border-slate-200',
+    red: 'text-rose-500 bg-rose-50 border-rose-100',
+    orange: 'text-orange-500 bg-orange-50 border-orange-100'
+  };
+
+  return (
+    <div className={cx("border p-4 rounded-2xl flex flex-col items-center justify-center transition-all hover:shadow-md", tones[tone])}>
+      <div className="mb-2 opacity-80">{icon}</div>
+      <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{label}</div>
+      {loading ? (
+        <div className="h-5 w-12 bg-slate-100 animate-pulse rounded" />
+      ) : (
+        <div className="text-lg font-black text-slate-800 tracking-tight tabular-nums">{value}</div>
+      )}
     </div>
   );
 }

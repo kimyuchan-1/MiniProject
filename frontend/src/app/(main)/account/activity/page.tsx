@@ -6,7 +6,7 @@ export default function ActivityPage() {
         <div className="space-y-6">
             <SectionHeader
                 title="활동 내역"
-                description="내가 작성한 건의를 확인합니다."
+                description="지금까지 작성하신 건의사항과 진행 상황을 한곳에서 관리하세요."
             />
             <MySuggestionsList />
         </div>

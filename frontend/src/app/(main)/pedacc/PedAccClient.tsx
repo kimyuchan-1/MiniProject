@@ -229,12 +229,12 @@ export default function PedAccClient() {
   };
 
   return (
-    <div className="w-full bg-gray-50 h-full">
-      <div className="max-w-7xl p-6 space-y-6 h-full  mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">보행자 사고 현황</h1>
-            <div className="text-sm text-gray-600">선택 지역: {selectedName}</div>
+    <div className="min-h-screen bg-[#f8fafc]">
+      <div className="max-w-400 mx-auto px-6 py-8">
+        <div className="flex flex-row justify-between gap-6 mb-8">
+          <div className="border-b border-slate-100 m-4 pb-4">
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">보행자 사고 현황</h1>
+            <div className="text-slate-500 mt-2 flex items-center gap-2 text-sm md:text-base">선택 지역: {selectedName}</div>
           </div>
 
           <RegionSelectors
@@ -248,41 +248,66 @@ export default function PedAccClient() {
           />
         </div>
 
-        {loading && <div>로딩 중…</div>}
-        {error && <div className="text-red-600">에러: {error}</div>}
+        {/* 메인 콘텐츠 */}
+        <main className="max-w-7xl mx-auto space-y-8">
 
-        {/* 그래프 섹션 */}
-        {yearlyAggregated.length > 0 && (
-          <div className="space-y-6">
-            {/* 연도별 추세 그래프 */}
-            <div className="rounded-xl border p-4 bg-white">
-              <YearlyTrendChart yearlyData={yearlyAggregated} />
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* 사고 유형별 그래프 */}
-              <div className="rounded-xl border p-4 bg-white">
-                <AccidentTypeChart yearlyData={yearlyAggregated} />
+          {/* 상태 안내 (로딩/에러) */}
+          {loading && (
+            <div className="flex items-center justify-center py-12 bg-white rounded-2xl border border-dashed border-gray-300">
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-gray-500 font-medium">데이터를 분석 중입니다...</p>
               </div>
-
-              {/* 월별 상세 그래프 */}
-              {selectedYear && (
-                <div className="rounded-xl border p-4 bg-white">
-                  <MonthlyChart monthlyData={monthly} selectedYear={selectedYear} />
-                </div>
-              )}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* 테이블 섹션 */}
-        <TablesSection
-          yearlyAggregated={yearlyAggregated}
-          selectedYear={selectedYear}
-          availableYears={availableYears}
-          selectedYearMonthly={selectedYearMonthly}
-          setSelectedYear={setSelectedYear}
-        />
+          {error && (
+            <div className="p-4 bg-red-50 border border-red-100 rounded-xl flex items-center gap-3 text-red-700">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+              <span className="font-medium">{error}</span>
+            </div>
+          )}
+
+          {/* 대시보드 콘텐츠 */}
+          {!loading && yearlyAggregated.length > 0 && (
+            <div className="space-y-8 animate-in fade-in duration-500">
+              {/* 상단: 연도별 전체 추세 */}
+              <section>
+                <YearlyTrendChart yearlyData={yearlyAggregated} />
+              </section>
+
+              {/* 중간: 유형별 & 월별 상세 (그리드) */}
+              <section className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                <div className="lg:col-span-2">
+                  <AccidentTypeChart yearlyData={yearlyAggregated} />
+                </div>
+                <div className="lg:col-span-3">
+                  {selectedYear && (
+                    <MonthlyChart monthlyData={monthly} selectedYear={selectedYear} />
+                  )}
+                </div>
+              </section>
+
+              {/* 하단: 상세 데이터 테이블 */}
+              <section className="pt-4">
+                <TablesSection
+                  yearlyAggregated={yearlyAggregated}
+                  selectedYear={selectedYear}
+                  availableYears={availableYears}
+                  selectedYearMonthly={selectedYearMonthly}
+                  setSelectedYear={setSelectedYear}
+                />
+              </section>
+            </div>
+          )}
+
+          {/* 데이터 없음 상태 */}
+          {!loading && !error && yearlyAggregated.length === 0 && (
+            <div className="text-center py-20 bg-white rounded-2xl border border-gray-100 shadow-sm">
+              <p className="text-gray-400 text-lg">해당 지역의 사고 데이터가 존재하지 않습니다.</p>
+            </div>
+          )}
+        </main>
       </div>
     </div>
   );
