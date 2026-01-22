@@ -222,19 +222,6 @@ Response (200 OK):
 }
 ```
 
-#### 토큰 갱신
-```
-POST /api/auth/refresh
-Cookie: refresh_token=...
-
-Response (200 OK):
-{
-  "success": true,
-  "accessToken": "new_access_token",
-  "refreshToken": "new_refresh_token"
-}
-```
-
 #### OAuth2 로그인
 ```
 GET /oauth2/authorization/{provider}
@@ -642,27 +629,6 @@ Cookie: accessToken=...
 Response (200 OK):
 {
   "message": "건의사항이 삭제되었습니다."
-}
-```
-
-#### 건의사항 상태 변경 (관리자 전용)
-```
-PUT /api/suggestions/{id}/status
-Cookie: accessToken=...
-Content-Type: application/json
-
-Request Body:
-{
-  "status": "COMPLETED",
-  "adminResponse": "신호등 설치가 완료되었습니다."
-}
-
-Response (200 OK):
-{
-  "id": 1,
-  "status": "COMPLETED",
-  "admin_response": "신호등 설치가 완료되었습니다.",
-  "processed_at": "2024-01-20T15:00:00"
 }
 ```
 
