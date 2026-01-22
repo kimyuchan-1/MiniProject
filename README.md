@@ -632,27 +632,6 @@ Response (200 OK):
 }
 ```
 
-#### 건의사항 상태 변경 (관리자 전용)
-```
-PUT /api/suggestions/{id}/status
-Cookie: accessToken=...
-Content-Type: application/json
-
-Request Body:
-{
-  "status": "COMPLETED",
-  "adminResponse": "신호등 설치가 완료되었습니다."
-}
-
-Response (200 OK):
-{
-  "id": 1,
-  "status": "COMPLETED",
-  "admin_response": "신호등 설치가 완료되었습니다.",
-  "processed_at": "2024-01-20T15:00:00"
-}
-```
-
 #### 내 건의사항 목록 조회
 ```
 GET /api/suggestions/my?page=1&pageSize=10&status=ALL
