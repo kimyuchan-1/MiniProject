@@ -222,19 +222,6 @@ Response (200 OK):
 }
 ```
 
-#### 토큰 갱신
-```
-POST /api/auth/refresh
-Cookie: refresh_token=...
-
-Response (200 OK):
-{
-  "success": true,
-  "accessToken": "new_access_token",
-  "refreshToken": "new_refresh_token"
-}
-```
-
 #### OAuth2 로그인
 ```
 GET /oauth2/authorization/{provider}
